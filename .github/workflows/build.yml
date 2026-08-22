@@ -164,13 +164,35 @@ jobs:
         run: |
           TARGET="$ITCH_USER/$ITCH_GAME"
           VER="${GITHUB_SHA::7}"
-          web_dir="$(dirname "$(find dist/build-Web -name index.html | head -1)")"
+          # Web channel: lightweight iframe wrapper pointing at the GitHub Pages
+          # build instead of bundling the whole game again.
+          mkdir -p web-wrapper
+          cat > web-wrapper/index.html <<'EOF'
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Brackeys 2026.2</title>
+            <style>
+              html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #05010f; }
+              iframe { display: block; width: 100%; height: 100%; border: 0; }
+            </style>
+          </head>
+          <body>
+            <iframe src="https://sodomita.github.io/Brackeys2026.2/"
+                    title="Brackeys 2026.2"
+                    allow="autoplay; fullscreen; gamepad; clipboard-write"
+                    allowfullscreen></iframe>
+          </body>
+          </html>
+          EOF
           win_dir="$(dirname "$(find dist/build-Windows -name '*.exe' | head -1)")"
           lin_dir="$(dirname "$(find dist/build-Linux -name '*.x86_64' | head -1)")"
           mac_dir="$(dirname "$(find dist/build-macOS -name '*.zip' | head -1)")"
           and_dir="$(dirname "$(find dist/build-Android -name '*.apk' | head -1)")"
-          butler push "$web_dir" "$TARGET:web"     --userversion "$VER"
-          butler push "$win_dir" "$TARGET:windows" --userversion "$VER"
-          butler push "$lin_dir" "$TARGET:linux"   --userversion "$VER"
-          butler push "$mac_dir" "$TARGET:macos"   --userversion "$VER"
-          butler push "$and_dir" "$TARGET:android" --userversion "$VER"
+          butler push web-wrapper "$TARGET:web"     --userversion "$VER"
+          butler push "$win_dir"  "$TARGET:windows" --userversion "$VER"
+          butler push "$lin_dir"  "$TARGET:linux"   --userversion "$VER"
+          butler push "$mac_dir"  "$TARGET:macos"   --userversion "$VER"
+          butler push "$and_dir"  "$TARGET:android" --userversion "$VER"
