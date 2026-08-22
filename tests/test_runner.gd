@@ -1,0 +1,66 @@
+extends SceneTree
+## Headless test runner — no addons required.
+##
+## Usage:
+##   godot --headless --path . --script res://tests/test_runner.gd
+##
+## Discovers every tests/test_*.gd file, runs all of its test_* methods,
+## prints a report and exits with code 1 when anything failed (CI-friendly).
+
+const TEST_DIR := "res://tests"
+
+var _passed := 0
+var _failed := 0
+
+
+func _initialize() -> void:
+	print("")
+	print("=== Brackeys 2026.2 — test suite ===")
+	for fname in _collect_tests():
+		_run_suite(fname)
+	print("=== %d passed, %d failed ===" % [_passed, _failed])
+	print("")
+	quit(1 if _failed > 0 else 0)
+
+
+func _collect_tests() -> Array:
+	var out: Array = []
+	var dir := DirAccess.open(TEST_DIR)
+	if dir == null:
+		push_error("Cannot open test directory: %s" % TEST_DIR)
+		return out
+	dir.list_dir_begin()
+	var f := dir.get_next()
+	while f != "":
+		if f.begins_with("test_") and f.ends_with(".gd") \
+				and not f in ["test_runner.gd", "test_base.gd"]:
+			out.append(f)
+		f = dir.get_next()
+	dir.list_dir_end()
+	out.sort()
+	return out
+
+
+func _run_suite(fname: String) -> void:
+	var script: GDScript = load(TEST_DIR.path_join(fname))
+	if script == null:
+		_failed += 1
+		print("[FAIL] %s — cannot load script" % fname)
+		return
+	var suite = script.new()
+	suite.runner = self
+	var methods: Array = []
+	for m in script.get_script_method_list():
+		if String(m["name"]).begins_with("test_"):
+			methods.append(m["name"])
+	for mname in methods:
+		var before: int = suite.failures.size()
+		suite.call(mname)
+		if suite.failures.size() == before:
+			_passed += 1
+			print("[PASS] %s :: %s" % [fname, mname])
+		else:
+			_failed += 1
+			print("[FAIL] %s :: %s" % [fname, mname])
+			for i in range(before, suite.failures.size()):
+				print("       - %s" % suite.failures[i])

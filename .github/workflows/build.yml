@@ -1,0 +1,107 @@
+name: Build
+
+on:
+  push:
+    branches: [build]
+  workflow_dispatch:
+
+env:
+  GODOT_VERSION: "4.7.2"
+
+jobs:
+  export:
+    name: Export — ${{ matrix.preset }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - preset: Web
+            out: build/web/index.html
+            flags: --export-release
+          - preset: Windows
+            out: build/windows/brackeys2026.2.exe
+            flags: --export-release
+          - preset: Linux
+            out: build/linux/brackeys2026.2.x86_64
+            flags: --export-release
+          - preset: macOS
+            out: build/macos/brackeys2026.2.zip
+            flags: --export-release
+          - preset: Android
+            out: build/android/brackeys2026.2.apk
+            flags: --export-debug
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK (Android debug keystore)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Cache Godot binary
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: godot
+          key: godot-linux-${{ env.GODOT_VERSION }}
+
+      - name: Download Godot editor
+        if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          curl -fsSL -o godot.zip \
+            "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q godot.zip
+          mv "Godot_v${GODOT_VERSION}-stable_linux.x86_64" godot
+
+      - name: Download and install export templates
+        run: |
+          curl -fsSL -o templates.tpz \
+            "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+          mkdir -p ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
+          unzip -q templates.tpz "templates/*"
+          cp templates/* ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable/
+
+      - name: Set up Android tooling (keystore, SDK components, editor settings)
+        run: |
+          # Debug signing keystore
+          keytool -keyalg RSA -genkeypair \
+            -alias androiddebugkey -keypass android \
+            -keystore "$HOME/debug.keystore" -storepass android \
+            -dname "CN=Android Debug,O=Android,C=US" \
+            -validity 9999 -deststoretype pkcs12
+          # Ensure the SDK components Godot needs (adb, apksigner) are present
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null 2>&1 || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
+            "platform-tools" "build-tools;34.0.0" > /dev/null
+          # Point Godot at the SDK / JDK / keystore (note: Godot 4.7 uses a
+          # minor-versioned settings file name)
+          mkdir -p ~/.config/godot
+          printf '%s\n\n%s\n%s\n%s\n%s\n%s\n%s\n' \
+            '[gd_resource type="EditorSettings" format=3]' \
+            '[resource]' \
+            'export/android/android_sdk_path = "'"$ANDROID_HOME"'"' \
+            'export/android/java_sdk_path = "'"$JAVA_HOME"'"' \
+            'export/android/debug_keystore = "'"$HOME"'/debug.keystore"' \
+            'export/android/debug_keystore_user = "androiddebugkey"' \
+            'export/android/debug_keystore_pass = "android"' \
+            > ~/.config/godot/editor_settings-4.7.tres
+
+      - name: Import project
+        run: |
+          chmod +x godot
+          ./godot --headless --path . --import
+
+      - name: Export ${{ matrix.preset }}
+        run: |
+          mkdir -p "$(dirname "${{ matrix.out }}")"
+          ./godot --headless --path . ${{ matrix.flags }} "${{ matrix.preset }}" "${{ matrix.out }}"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ matrix.preset }}
+          path: build/
+          if-no-files-found: error

@@ -1,0 +1,24 @@
+; Engine configuration file.
+; Brackeys Game Jam 2026.2 — project template (Godot 4.7.x, GL Compatibility)
+config_version=5
+
+[application]
+
+config/name="Brackeys 2026.2"
+config/description="Brackeys Game Jam 2026.2 — Godot 4.7 project template with CI, tests and multi-platform export."
+run/main_scene="res://scenes/main.tscn"
+config/features=PackedStringArray("4.7", "GL Compatibility")
+config/icon="res://icon.svg"
+
+[display]
+
+window/size/viewport_width=1280
+window/size/viewport_height=720
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+
+[rendering]
+
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+textures/vram_compression/import_etc2_astc=true

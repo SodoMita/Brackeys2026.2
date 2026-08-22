@@ -1,0 +1,13 @@
+# Godot 4
+.godot/
+*.translation
+
+# Local builds
+build/
+
+# Local editor state
+editor_settings-4.tres
+
+# OS cruft
+.DS_Store
+Thumbs.db
