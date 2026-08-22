@@ -7,6 +7,8 @@ on:
 
 env:
   GODOT_VERSION: "4.7.2"
+  ITCH_USER: "delatel"
+  ITCH_GAME: "brackeys2026-2"
 
 permissions:
   contents: read
@@ -132,3 +134,40 @@ jobs:
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4
+
+  upload-itch:
+    name: Upload to itch.io
+    needs: export
+    runs-on: ubuntu-latest
+    # Skipped automatically when BUTLER_API_KEY is not configured.
+    if: ${{ secrets.BUTLER_API_KEY != '' }}
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: build-*
+          path: dist
+
+      - name: Install butler
+        run: |
+          curl -fsSL -o butler.zip "https://broth.itch.ovh/butler/linux-amd64/LATEST/archive/default"
+          unzip -q butler.zip butler
+          chmod +x butler
+          ./butler -V
+
+      - name: Push channels to itch.io
+        env:
+          BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
+        run: |
+          TARGET="$ITCH_USER/$ITCH_GAME"
+          VER="${GITHUB_SHA::7}"
+          web_dir="$(dirname "$(find dist/build-Web -name index.html | head -1)")"
+          win_dir="$(dirname "$(find dist/build-Windows -name '*.exe' | head -1)")"
+          lin_dir="$(dirname "$(find dist/build-Linux -name '*.x86_64' | head -1)")"
+          mac_dir="$(dirname "$(find dist/build-macOS -name '*.zip' | head -1)")"
+          and_dir="$(dirname "$(find dist/build-Android -name '*.apk' | head -1)")"
+          ./butler push "$web_dir" "$TARGET:web"     --userversion "$VER"
+          ./butler push "$win_dir" "$TARGET:windows" --userversion "$VER"
+          ./butler push "$lin_dir" "$TARGET:linux"   --userversion "$VER"
+          ./butler push "$mac_dir" "$TARGET:macos"   --userversion "$VER"
+          ./butler push "$and_dir" "$TARGET:android" --userversion "$VER"
