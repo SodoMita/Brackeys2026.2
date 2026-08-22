@@ -150,10 +150,13 @@ jobs:
 
       - name: Install butler
         run: |
-          curl -fsSL -o butler.zip "https://broth.itch.ovh/butler/linux-amd64/LATEST/archive/default"
-          unzip -q butler.zip butler
-          chmod +x butler
-          ./butler -V
+          # NOTE: broth.itch.ovh (the old butler host) no longer resolves;
+          # official binaries are published on GitHub instead.
+          curl -fsSL -o butler.zip "https://github.com/itchio/butler/releases/latest/download/butler-linux-amd64.zip"
+          unzip -q butler.zip
+          chmod +x linux-amd64/butler
+          echo "$PWD/linux-amd64" >> "$GITHUB_PATH"
+          linux-amd64/butler -V
 
       - name: Push channels to itch.io
         env:
@@ -166,8 +169,8 @@ jobs:
           lin_dir="$(dirname "$(find dist/build-Linux -name '*.x86_64' | head -1)")"
           mac_dir="$(dirname "$(find dist/build-macOS -name '*.zip' | head -1)")"
           and_dir="$(dirname "$(find dist/build-Android -name '*.apk' | head -1)")"
-          ./butler push "$web_dir" "$TARGET:web"     --userversion "$VER"
-          ./butler push "$win_dir" "$TARGET:windows" --userversion "$VER"
-          ./butler push "$lin_dir" "$TARGET:linux"   --userversion "$VER"
-          ./butler push "$mac_dir" "$TARGET:macos"   --userversion "$VER"
-          ./butler push "$and_dir" "$TARGET:android" --userversion "$VER"
+          butler push "$web_dir" "$TARGET:web"     --userversion "$VER"
+          butler push "$win_dir" "$TARGET:windows" --userversion "$VER"
+          butler push "$lin_dir" "$TARGET:linux"   --userversion "$VER"
+          butler push "$mac_dir" "$TARGET:macos"   --userversion "$VER"
+          butler push "$and_dir" "$TARGET:android" --userversion "$VER"
