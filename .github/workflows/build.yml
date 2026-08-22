@@ -177,22 +177,38 @@ jobs:
             <style>
               html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #05010f; }
               iframe { display: block; width: 100%; height: 100%; border: 0; }
+              #fallback { position: fixed; inset: 0; display: none; flex-direction: column; gap: 14px; align-items: center; justify-content: center; text-align: center; color: #8be9fd; font-family: monospace; font-size: 16px; padding: 24px; box-sizing: border-box; background: #05010f; }
+              #fallback a { color: #ff2fb3; }
+              #fallback button { color: #ff2fb3; background: none; border: 1px solid #ff2fb3; padding: 6px 14px; font: inherit; cursor: pointer; }
             </style>
           </head>
           <body>
-            <iframe src="https://sodomita.github.io/Brackeys2026.2/"
+            <iframe id="game" src="https://sodomita.github.io/Brackeys2026.2/"
                     title="Brackeys 2026.2"
                     allow="autoplay; fullscreen; gamepad; clipboard-write"
                     allowfullscreen></iframe>
+            <div id="fallback">
+              <div>The game host could not be reached (connection to GitHub Pages failed).</div>
+              <div><a href="https://sodomita.github.io/Brackeys2026.2/" target="_blank" rel="noopener">Open the game in a new tab ↗</a></div>
+              <button onclick="location.reload()">Retry</button>
+            </div>
+            <script>
+              fetch('https://sodomita.github.io/Brackeys2026.2/', { mode: 'no-cors', cache: 'no-store' }).catch(function () {
+                document.getElementById('game').style.display = 'none';
+                document.getElementById('fallback').style.display = 'flex';
+              });
+            </script>
           </body>
           </html>
           EOF
+          web_dir="$(dirname "$(find dist/build-Web -name index.html | head -1)")"
           win_dir="$(dirname "$(find dist/build-Windows -name '*.exe' | head -1)")"
           lin_dir="$(dirname "$(find dist/build-Linux -name '*.x86_64' | head -1)")"
           mac_dir="$(dirname "$(find dist/build-macOS -name '*.zip' | head -1)")"
           and_dir="$(dirname "$(find dist/build-Android -name '*.apk' | head -1)")"
-          butler push web-wrapper "$TARGET:web"     --userversion "$VER"
-          butler push "$win_dir"  "$TARGET:windows" --userversion "$VER"
-          butler push "$lin_dir"  "$TARGET:linux"   --userversion "$VER"
-          butler push "$mac_dir"  "$TARGET:macos"   --userversion "$VER"
-          butler push "$and_dir"  "$TARGET:android" --userversion "$VER"
+          butler push web-wrapper "$TARGET:web"         --userversion "$VER"
+          butler push "$web_dir"  "$TARGET:web-offline" --userversion "$VER"
+          butler push "$win_dir"  "$TARGET:windows"     --userversion "$VER"
+          butler push "$lin_dir"  "$TARGET:linux"       --userversion "$VER"
+          butler push "$mac_dir"  "$TARGET:macos"       --userversion "$VER"
+          butler push "$and_dir"  "$TARGET:android"     --userversion "$VER"
