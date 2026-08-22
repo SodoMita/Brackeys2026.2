@@ -139,8 +139,8 @@ jobs:
     name: Upload to itch.io
     needs: export
     runs-on: ubuntu-latest
-    # Skipped automatically when BUTLER_API_KEY is not configured.
-    if: ${{ secrets.BUTLER_API_KEY != '' }}
+    # Toggle with the ITCH_ENABLED repository variable.
+    if: ${{ vars.ITCH_ENABLED == 'true' }}
     steps:
       - name: Download build artifacts
         uses: actions/download-artifact@v4
