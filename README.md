@@ -66,13 +66,16 @@ godot --headless --path . --export-release "Web" build/web/index.html
 | Branch | What runs                                          |
 |--------|----------------------------------------------------|
 | `main` | **Tests only** (on push and on pull requests)      |
-| `build`| **Tests + full multi-platform build**, artifacts uploaded to the run |
+| `build`| **Tests + full multi-platform build**, artifacts uploaded, **Web build deployed to GitHub Pages** |
 
 - `.github/workflows/tests.yml` — installs the Godot binary, imports the
   project, runs the test suite. Triggers on `main` and `build` pushes + PRs.
 - `.github/workflows/build.yml` — installs Godot + export templates, generates
   an Android debug keystore, exports all five presets in parallel and uploads
-  each as an artifact. Triggers only on the `build` branch (or manual dispatch).
+  each as an artifact; the Web build is additionally deployed to
+  **https://sodomita.github.io/Brackeys2026.2/** via the official Pages actions.
+  Triggers only on the `build` branch (or manual dispatch).
+  (Pattern adapted from the community reference `abarichello/godot-ci`.)
 
 Ship a build by merging `main` into `build` and pushing.
 
