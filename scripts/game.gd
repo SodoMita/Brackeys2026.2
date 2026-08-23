@@ -2,7 +2,7 @@ extends Node3D
 ## STEEL KNIFE — mission 1: room/wave director, desert arena, scrap economy,
 ## companion + betrayal boss. Gameplay-first, story on top (Dialogic).
 
-enum State { MENU, PLAYING, BOSS, END, DEAD }
+enum State { MENU, PLAYING, BOSS, END, DEAD, PAUSED }
 
 const ROOM_W := 28.0
 const CORR_W := 8.0
@@ -28,6 +28,9 @@ var scrap := 0
 var style := 0.0
 var hitmarker_t := 0.0
 var hurt_flash: ColorRect
+var menus: Control
+var touch_ui: Control
+var _state_before_pause := State.PLAYING
 
 var hud_hp: Label
 var hud_rank: Label
@@ -68,7 +71,9 @@ func _ready() -> void:
 		var ts = load("res://scripts/touch_controls.gd").new()
 		add_child(ts)
 		ts.setup(player)
-	_show_menu()
+		touch_ui = ts
+		_set_touch_active(false)
+	_build_menus()
 
 
 # ------------------------------------------------------------- world
@@ -321,6 +326,7 @@ func _build_hud() -> void:
 	overlay.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	overlay.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	overlay.label_settings = _make_ls(14, Color(1.0, 0.75, 0.4))
+	overlay.visible = false
 	cl.add_child(overlay)
 	for t in terminals:
 		t.player_ref = player
@@ -328,9 +334,14 @@ func _build_hud() -> void:
 		t.purchase_requested.connect(_on_purchase)
 
 
-func _show_menu() -> void:
-	overlay.text = "S T E E L   K N I F E\n\nmission 1: clear the site with COLT.\nrooms lock when you cross the line. scrap buys upgrades.\n\nF parry · RMB coin · E shop · 1/2/3 weapons\n\nclick / tap / A to start"
-	overlay.visible = true
+func _build_menus() -> void:
+	menus = load("res://scripts/menus.gd").new()
+	cl.add_child(menus)
+	menus.start_pressed.connect(_start)
+	menus.resume_pressed.connect(_resume)
+	menus.quit_to_menu_pressed.connect(_quit_to_menu)
+	menus.quit_game_pressed.connect(func(): get_tree().quit())
+	menus.open_main()
 
 
 # ------------------------------------------------------------- audio
@@ -406,26 +417,84 @@ var _dtl_loader_added := false
 
 # ------------------------------------------------------------- flow
 func _unhandled_input(ev: InputEvent) -> void:
-	if state == State.PLAYING or state == State.BOSS:
-		return
-	var start := false
+	match state:
+		State.PLAYING, State.BOSS:
+			if _is_pause_press(ev):
+				_pause()
+		State.DEAD, State.END:
+			if _is_confirm(ev) or _is_pause_press(ev):
+				get_tree().reload_current_scene()
+		State.MENU:
+			# Buttons handle their own clicks; any other click/tap/A/START starts.
+			if menus != null and menus.settings_open:
+				return
+			if _is_confirm(ev):
+				_start()
+
+
+func _is_confirm(ev: InputEvent) -> bool:
 	if ev is InputEventMouseButton and ev.pressed:
-		start = true
-	elif ev is InputEventScreenTouch and ev.pressed:
-		start = true
-	elif ev is InputEventJoypadButton and ev.pressed \
+		return true
+	# While menus are open on touch devices mouse-from-touch emulation is on,
+	# so the emulated click above covers taps — don't double-fire raw touches.
+	if ev is InputEventScreenTouch and ev.pressed and not Input.is_emulating_mouse_from_touch():
+		return true
+	if ev is InputEventJoypadButton and ev.pressed \
 			and ev.button_index in [JOY_BUTTON_A, JOY_BUTTON_START]:
-		start = true
-	if start:
-		if state == State.MENU:
-			_start()
-		elif state in [State.DEAD, State.END]:
-			get_tree().reload_current_scene()
+		return true
+	return false
+
+
+func _is_pause_press(ev: InputEvent) -> bool:
+	if ev is InputEventKey and ev.pressed and not ev.echo \
+			and ev.keycode in [KEY_ESCAPE, KEY_P]:
+		return true
+	if ev is InputEventJoypadButton and ev.pressed \
+			and ev.button_index == JOY_BUTTON_START:
+		return true
+	return false
+
+
+func _pause() -> void:
+	if state != State.PLAYING and state != State.BOSS:
+		return
+	_state_before_pause = state
+	state = State.PAUSED
+	get_tree().paused = true
+	if DisplayServer.get_name() != "headless":
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	_set_touch_active(false)
+	menus.open_pause()
+
+
+func _resume() -> void:
+	if state != State.PAUSED:
+		return
+	state = _state_before_pause
+	get_tree().paused = false
+	if DisplayServer.get_name() != "headless":
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	menus.close_all()
+	_set_touch_active(true)
+
+
+func _quit_to_menu() -> void:
+	get_tree().paused = false
+	get_tree().reload_current_scene()
+
+
+func _set_touch_active(on: bool) -> void:
+	if touch_ui:
+		touch_ui.enabled = on
+		touch_ui.visible = on
 
 
 func _start() -> void:
 	state = State.PLAYING
 	overlay.visible = false
+	if menus:
+		menus.close_all()
+	_set_touch_active(true)
 	if DisplayServer.get_name() != "headless":
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	door_set(doors[0], true)
@@ -551,7 +620,8 @@ func _end_mission() -> void:
 	_say("res://dialogue/ending.dtl")
 	if DisplayServer.get_name() != "headless":
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-	overlay.text = "M I S S I O N   C O M P L E T E\n\nscrap banked: %d · final rank %s\n\nclick to replay" % [scrap, Cfg.rank_for_points(style)]
+	_set_touch_active(false)
+	overlay.text = "M I S S I O N   C O M P L E T E\n\nscrap banked: %d · final rank %s\n\nclick / tap / A to replay · ESC for menu" % [scrap, Cfg.rank_for_points(style)]
 	overlay.visible = true
 
 
@@ -559,7 +629,8 @@ func _on_player_died() -> void:
 	state = State.DEAD
 	if DisplayServer.get_name() != "headless":
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-	overlay.text = "Y O U   D I E D\n\nscrap %d · rank %s\n\nclick to retry" % [scrap, Cfg.rank_for_points(style)]
+	_set_touch_active(false)
+	overlay.text = "Y O U   D I E D\n\nscrap %d · rank %s\n\nclick / tap / A to retry · ESC for menu" % [scrap, Cfg.rank_for_points(style)]
 	overlay.visible = true
 
 
