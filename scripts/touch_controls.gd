@@ -13,12 +13,12 @@ var _stick_id := -1
 var _stick_anchor := Vector2.ZERO
 var _look_id := -1
 var _look_last := Vector2.ZERO
-var _knob: Control
-var _stick_base: Control
+var _knob: Panel
+var _stick_base: Panel
 var _touch_buttons := {}  # touch_index -> button_name
-var buttons := {}         # name -> {rect: Rect2, node: Control, anchor: Vector2, label: Label}
+var buttons := {}         # name -> {rect: Rect2, node: Control, anchor: Vector2, label: Label, base_color: Color}
 
-const STICK_R := 26.0
+const STICK_R := 85.0
 
 
 func _init() -> void:
@@ -30,19 +30,19 @@ func setup(p: CharacterBody3D) -> void:
 	player = p
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 
-	# Definitions scaled for 320x180 viewport
+	# Definitions scaled for 1280x720 canvas
 	var defs := {
 		# Bottom-right combat cluster
-		"fire": {"rect": Rect2(0, 0, 38, 38), "text": "FIRE", "anchor": Vector2(1, 1), "off": Vector2(-44, -44), "color": Color(0.95, 0.25, 0.15, 0.45)},
-		"jump": {"rect": Rect2(0, 0, 30, 30), "text": "JMP", "anchor": Vector2(1, 1), "off": Vector2(-80, -38), "color": Color(0.85, 0.45, 0.1, 0.35)},
-		"dash": {"rect": Rect2(0, 0, 30, 30), "text": "DSH", "anchor": Vector2(1, 1), "off": Vector2(-80, -74), "color": Color(0.85, 0.45, 0.1, 0.35)},
-		"slide": {"rect": Rect2(0, 0, 30, 26), "text": "SLD", "anchor": Vector2(1, 1), "off": Vector2(-44, -76), "color": Color(0.85, 0.45, 0.1, 0.35)},
-		"wpn": {"rect": Rect2(0, 0, 30, 24), "text": "WPN", "anchor": Vector2(1, 1), "off": Vector2(-44, -106), "color": Color(0.2, 0.6, 0.8, 0.35)},
+		"fire": {"rect": Rect2(0, 0, 130, 130), "text": "FIRE", "anchor": Vector2(1, 1), "off": Vector2(-160, -160), "color": Color(0.95, 0.25, 0.15, 0.45), "font_size": 22},
+		"jump": {"rect": Rect2(0, 0, 90, 90), "text": "JMP", "anchor": Vector2(1, 1), "off": Vector2(-280, -140), "color": Color(0.85, 0.45, 0.1, 0.35), "font_size": 18},
+		"dash": {"rect": Rect2(0, 0, 90, 90), "text": "DSH", "anchor": Vector2(1, 1), "off": Vector2(-280, -250), "color": Color(0.85, 0.45, 0.1, 0.35), "font_size": 18},
+		"slide": {"rect": Rect2(0, 0, 90, 80), "text": "SLD", "anchor": Vector2(1, 1), "off": Vector2(-160, -260), "color": Color(0.85, 0.45, 0.1, 0.35), "font_size": 18},
+		"wpn": {"rect": Rect2(0, 0, 90, 70), "text": "WPN", "anchor": Vector2(1, 1), "off": Vector2(-160, -350), "color": Color(0.2, 0.6, 0.8, 0.35), "font_size": 16},
 		# Bottom-left auxiliary cluster
-		"parry": {"rect": Rect2(0, 0, 28, 24), "text": "PRY", "anchor": Vector2(0, 1), "off": Vector2(6, -56), "color": Color(0.2, 0.85, 0.9, 0.35)},
-		"coin": {"rect": Rect2(0, 0, 28, 24), "text": "COIN", "anchor": Vector2(0, 1), "off": Vector2(38, -56), "color": Color(0.95, 0.8, 0.2, 0.35)},
+		"parry": {"rect": Rect2(0, 0, 90, 80), "text": "PRY", "anchor": Vector2(0, 1), "off": Vector2(32, -180), "color": Color(0.2, 0.85, 0.9, 0.35), "font_size": 18},
+		"coin": {"rect": Rect2(0, 0, 90, 80), "text": "COIN", "anchor": Vector2(0, 1), "off": Vector2(140, -180), "color": Color(0.95, 0.8, 0.2, 0.35), "font_size": 18},
 		# Top-right mobile pause button
-		"pause": {"rect": Rect2(0, 0, 24, 20), "text": "||", "anchor": Vector2(1, 0), "off": Vector2(-30, 6), "color": Color(0.85, 0.2, 0.25, 0.4)},
+		"pause": {"rect": Rect2(0, 0, 80, 60), "text": "||", "anchor": Vector2(1, 0), "off": Vector2(-110, 20), "color": Color(0.85, 0.2, 0.25, 0.4), "font_size": 24},
 	}
 
 	for btn_name in defs:
@@ -52,18 +52,18 @@ func setup(p: CharacterBody3D) -> void:
 		var sb := StyleBoxFlat.new()
 		sb.bg_color = d.color
 		sb.border_color = Color(1.0, 0.6, 0.2, 0.7) if btn_name != "pause" else Color(1.0, 0.3, 0.3, 0.8)
-		sb.set_border_width_all(1)
-		sb.set_corner_radius_all(2)
+		sb.set_border_width_all(2)
+		sb.set_corner_radius_all(4)
 		panel.add_theme_stylebox_override("panel", sb)
 		_anchor_rect(panel, d.anchor, d.off, d.rect.size)
 		add_child(panel)
 
 		var l := Label.new()
 		var ls := LabelSettings.new()
-		ls.font_size = 9 if btn_name != "pause" else 10
+		ls.font_size = d.font_size
 		ls.font_color = Color(1.0, 0.95, 0.9)
 		ls.outline_color = Color.BLACK
-		ls.outline_size = 2
+		ls.outline_size = 3
 		l.label_settings = ls
 		l.text = d.text
 		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -84,9 +84,9 @@ func setup(p: CharacterBody3D) -> void:
 	_stick_base = Panel.new()
 	_stick_base.size = Vector2(STICK_R * 2.0, STICK_R * 2.0)
 	var sb_base := StyleBoxFlat.new()
-	sb_base.bg_color = Color(0.1, 0.05, 0.02, 0.25)
-	sb_base.border_color = Color(0.3, 0.8, 1.0, 0.4)
-	sb_base.set_border_width_all(1)
+	sb_base.bg_color = Color(0.1, 0.05, 0.02, 0.3)
+	sb_base.border_color = Color(0.3, 0.8, 1.0, 0.5)
+	sb_base.set_border_width_all(2)
 	sb_base.set_corner_radius_all(int(STICK_R))
 	_stick_base.add_theme_stylebox_override("panel", sb_base)
 	_stick_base.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -94,12 +94,12 @@ func setup(p: CharacterBody3D) -> void:
 	add_child(_stick_base)
 
 	_knob = Panel.new()
-	_knob.size = Vector2(16, 16)
+	_knob.size = Vector2(54, 54)
 	var sb_knob := StyleBoxFlat.new()
-	sb_knob.bg_color = Color(0.2, 0.9, 1.0, 0.6)
+	sb_knob.bg_color = Color(0.2, 0.9, 1.0, 0.65)
 	sb_knob.border_color = Color(1.0, 1.0, 1.0, 0.9)
-	sb_knob.set_border_width_all(1)
-	sb_knob.set_corner_radius_all(8)
+	sb_knob.set_border_width_all(2)
+	sb_knob.set_corner_radius_all(27)
 	_knob.add_theme_stylebox_override("panel", sb_knob)
 	_knob.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_knob.visible = false
@@ -125,7 +125,7 @@ func _button_at(pos: Vector2) -> String:
 		var r: Rect2 = b.rect
 		var origin := Vector2(sz.x * anchor.x + r.position.x, sz.y * anchor.y + r.position.y)
 		var btn_rect := Rect2(origin, r.size)
-		if btn_rect.grow(4.0).has_point(pos):
+		if btn_rect.grow(10.0).has_point(pos):
 			return btn_name
 	return ""
 
@@ -187,7 +187,7 @@ func _input(ev: InputEvent) -> void:
 				_stick_anchor = ev.position
 				_stick_base.position = _stick_anchor - Vector2(STICK_R, STICK_R)
 				_stick_base.visible = true
-				_knob.position = _stick_anchor - Vector2(8, 8)
+				_knob.position = _stick_anchor - Vector2(27, 27)
 				_knob.visible = true
 				get_viewport().set_input_as_handled()
 			else:
@@ -219,7 +219,7 @@ func _input(ev: InputEvent) -> void:
 			var v: Vector2 = d.limit_length(STICK_R) / STICK_R
 			if player:
 				player.touch_move = Vector2(v.x, -v.y)
-			_knob.position = _stick_anchor + v * STICK_R - Vector2(8, 8)
+			_knob.position = _stick_anchor + v * STICK_R - Vector2(27, 27)
 			get_viewport().set_input_as_handled()
 		elif ev.index == _look_id:
 			if player:

@@ -66,7 +66,7 @@ static func _label(text: String, size: int, color: Color,
 	var ls := LabelSettings.new()
 	ls.font_size = size
 	ls.font_color = color
-	ls.outline_size = 3
+	ls.outline_size = 4
 	ls.outline_color = Color.BLACK
 	l.label_settings = ls
 	l.horizontal_alignment = align
@@ -78,20 +78,20 @@ static func _stylebox(bg: Color, border: Color) -> StyleBoxFlat:
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = bg
 	sb.border_color = border
-	sb.set_border_width_all(1)
-	sb.set_corner_radius_all(1)
-	sb.content_margin_left = 8.0
-	sb.content_margin_right = 8.0
-	sb.content_margin_top = 3.0
-	sb.content_margin_bottom = 3.0
+	sb.set_border_width_all(2)
+	sb.set_corner_radius_all(3)
+	sb.content_margin_left = 12.0
+	sb.content_margin_right = 12.0
+	sb.content_margin_top = 6.0
+	sb.content_margin_bottom = 6.0
 	return sb
 
 
-static func _button(text: String, width := 128) -> Button:
+static func _button(text: String, width := 220) -> Button:
 	var b := Button.new()
 	b.text = text
-	b.custom_minimum_size = Vector2(width, 18)
-	b.add_theme_font_size_override("font_size", 10)
+	b.custom_minimum_size = Vector2(width, 36)
+	b.add_theme_font_size_override("font_size", 15)
 	b.add_theme_color_override("font_color", PAPER)
 	b.add_theme_color_override("font_hover_color", Color.WHITE)
 	b.add_theme_color_override("font_pressed_color", CYAN)
@@ -118,14 +118,14 @@ func _build_main_panel() -> void:
 	var box := VBoxContainer.new()
 	_centered(box)
 	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	box.add_theme_constant_override("separation", 3)
+	box.add_theme_constant_override("separation", 8)
 	main_panel.add_child(box)
 
-	box.add_child(_label("STEEL KNIFE", 24, Color(1.0, 0.72, 0.35)))
-	box.add_child(_label("mission 1: clear the site with COLT", 8, MUTED))
+	box.add_child(_label("STEEL KNIFE", 48, Color(1.0, 0.72, 0.35)))
+	box.add_child(_label("mission 1: clear the site with COLT", 16, MUTED))
 
 	var gap := Control.new()
-	gap.custom_minimum_size = Vector2(0, 6)
+	gap.custom_minimum_size = Vector2(0, 16)
 	gap.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	box.add_child(gap)
 
@@ -143,30 +143,30 @@ func _build_main_panel() -> void:
 	box.add_child(btn_quit)
 
 	var gap2 := Control.new()
-	gap2.custom_minimum_size = Vector2(0, 6)
+	gap2.custom_minimum_size = Vector2(0, 16)
 	gap2.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	box.add_child(gap2)
 
 	var hints := _label(
 		"WASD move · SPACE jump · SHIFT dash · CTRL slide · ESC pause\n" +
 		"LMB fire · RMB coin · F parry · E shop · 1/2/3 weapons\n" +
-		"blood heals · parry the white eyes · shoot the coin", 7, MUTED)
+		"blood heals · parry the white eyes · shoot the coin", 13, MUTED)
 	hints.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	hints.custom_minimum_size = Vector2(300, 0)
+	hints.custom_minimum_size = Vector2(640, 0)
 	box.add_child(hints)
 
 
 func _value_label() -> Label:
-	var l := _label("", 8, CYAN, HORIZONTAL_ALIGNMENT_RIGHT)
-	l.custom_minimum_size = Vector2(42, 0)
+	var l := _label("", 14, CYAN, HORIZONTAL_ALIGNMENT_RIGHT)
+	l.custom_minimum_size = Vector2(64, 0)
 	return l
 
 
 func _add_row(box: VBoxContainer, text: String) -> HBoxContainer:
 	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 6)
-	var lbl := _label(text, 8, PAPER, HORIZONTAL_ALIGNMENT_LEFT)
-	lbl.custom_minimum_size = Vector2(86, 0)
+	row.add_theme_constant_override("separation", 12)
+	var lbl := _label(text, 14, PAPER, HORIZONTAL_ALIGNMENT_LEFT)
+	lbl.custom_minimum_size = Vector2(140, 0)
 	row.add_child(lbl)
 	box.add_child(row)
 	return row
@@ -177,7 +177,7 @@ static func _slider(minv: float, maxv: float, stepv: float) -> HSlider:
 	s.min_value = minv
 	s.max_value = maxv
 	s.step = stepv
-	s.custom_minimum_size = Vector2(120, 12)
+	s.custom_minimum_size = Vector2(240, 24)
 	s.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	s.focus_mode = Control.FOCUS_ALL
 	s.add_theme_stylebox_override("slider", _stylebox(Color(0.1, 0.02, 0.03, 0.9), Color(0.35, 0.06, 0.09)))
@@ -187,7 +187,7 @@ static func _slider(minv: float, maxv: float, stepv: float) -> HSlider:
 
 
 static func _toggle_button() -> Button:
-	var b := _button("OFF", 56)
+	var b := _button("OFF", 90)
 	b.toggle_mode = true
 	return b
 
@@ -211,9 +211,9 @@ func _build_settings_panel() -> void:
 	settings_panel.add_child(panel)
 
 	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 4)
+	box.add_theme_constant_override("separation", 10)
 	panel.add_child(box)
-	box.add_child(_label("SETTINGS", 13, Color(1.0, 0.62, 0.3)))
+	box.add_child(_label("SETTINGS", 22, Color(1.0, 0.62, 0.3)))
 
 	var dm := float(Settings.default_value("mouse_sensitivity"))
 	var ds := float(Settings.default_value("stick_look_speed"))
@@ -246,16 +246,16 @@ func _build_settings_panel() -> void:
 	r5.add_child(_fullscreen)
 
 	var actions := HBoxContainer.new()
-	actions.add_theme_constant_override("separation", 6)
+	actions.add_theme_constant_override("separation", 12)
 	box.add_child(actions)
-	btn_reset = _button("RESET DEFAULTS", 104)
+	btn_reset = _button("RESET DEFAULTS", 160)
 	btn_reset.pressed.connect(_reset_defaults)
 	actions.add_child(btn_reset)
 	var spacer := Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	actions.add_child(spacer)
-	btn_back = _button("BACK", 64)
+	btn_back = _button("BACK", 100)
 	btn_back.pressed.connect(close_settings)
 	actions.add_child(btn_back)
 

@@ -270,8 +270,8 @@ func _make_ls(size: int, color: Color) -> LabelSettings:
 	var ls := LabelSettings.new()
 	ls.font_size = size
 	ls.font_color = color
-	ls.outline_color = Color(0.0, 0.0, 0.0)
-	ls.outline_size = 3
+	ls.outline_color = Color.BLACK
+	ls.outline_size = 4
 	return ls
 
 
@@ -279,31 +279,31 @@ func _build_hud() -> void:
 	cl = CanvasLayer.new()
 	add_child(cl)
 	hud_hp = Label.new()
-	hud_hp.position = Vector2(8, 142)
-	hud_hp.label_settings = _make_ls(18, Color(1.0, 0.7, 0.3))
+	hud_hp.position = Vector2(32, 620)
+	hud_hp.label_settings = _make_ls(32, Color(1.0, 0.7, 0.3))
 	hud_hp.text = "%d" % int(Cfg.max_hp)
 	cl.add_child(hud_hp)
 	hud_rank = Label.new()
-	hud_rank.position = Vector2(256, 6)
-	hud_rank.label_settings = _make_ls(24, Color(0.7, 0.7, 0.7))
+	hud_rank.position = Vector2(1180, 16)
+	hud_rank.label_settings = _make_ls(42, Color(0.7, 0.7, 0.7))
 	hud_rank.text = "D"
 	cl.add_child(hud_rank)
 	hud_wave = Label.new()
-	hud_wave.position = Vector2(8, 8)
-	hud_wave.label_settings = _make_ls(11, Color(0.9, 0.8, 0.6))
+	hud_wave.position = Vector2(32, 24)
+	hud_wave.label_settings = _make_ls(20, Color(0.9, 0.8, 0.6))
 	hud_wave.text = "ROOM 1"
 	cl.add_child(hud_wave)
 	hud_scrap = Label.new()
-	hud_scrap.position = Vector2(120, 8)
-	hud_scrap.label_settings = _make_ls(11, Color(1.0, 0.85, 0.4))
+	hud_scrap.position = Vector2(580, 24)
+	hud_scrap.label_settings = _make_ls(20, Color(1.0, 0.85, 0.4))
 	hud_scrap.text = "SCRAP 0"
 	cl.add_child(hud_scrap)
 	hud_wpn = Label.new()
-	hud_wpn.position = Vector2(8, 162)
-	hud_wpn.label_settings = _make_ls(9, Color(0.8, 0.8, 0.8))
+	hud_wpn.position = Vector2(32, 664)
+	hud_wpn.label_settings = _make_ls(16, Color(0.8, 0.8, 0.8))
 	hud_wpn.text = "REVOLVER"
 	cl.add_child(hud_wpn)
-	for r in [Rect2(156, 84, 8, 2), Rect2(156, 94, 8, 2), Rect2(158, 82, 2, 6), Rect2(160, 92, 2, 6)]:
+	for r in [Rect2(626, 359, 10, 2), Rect2(644, 359, 10, 2), Rect2(639, 346, 2, 10), Rect2(639, 364, 2, 10)]:
 		var cr := ColorRect.new()
 		cr.color = Color(1, 1, 1, 0.9)
 		cr.position = r.position
@@ -320,7 +320,7 @@ func _build_hud() -> void:
 	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
 	overlay.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	overlay.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	overlay.label_settings = _make_ls(13, Color(1.0, 0.75, 0.4))
+	overlay.label_settings = _make_ls(24, Color(1.0, 0.75, 0.4))
 	overlay.visible = false
 	cl.add_child(overlay)
 	for t in terminals:
