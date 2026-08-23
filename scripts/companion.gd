@@ -6,6 +6,8 @@ signal shot
 
 var fire_cd := 0.0
 var hidden := false
+var shoot_t := 0.0
+var sprite: AnimatedSprite3D = null
 var player_ref: Node3D = null
 var enemy_pool: Node3D = null
 
@@ -18,27 +20,24 @@ func _init() -> void:
 	pc.shape = caps
 	pc.position = Vector3(0.0, 0.8, 0.0)
 	add_child(pc)
-	var body := MeshInstance3D.new()
-	var cm := CapsuleMesh.new()
-	cm.radius = 0.4
-	cm.height = 1.6
-	var bm := StandardMaterial3D.new()
-	bm.albedo_color = Color(0.75, 0.6, 0.35)
-	bm.roughness = 0.7
-	cm.material = bm
-	body.mesh = cm
-	body.position = Vector3(0.0, 0.8, 0.0)
-	add_child(body)
-	var visor := MeshInstance3D.new()
-	var vm := BoxMesh.new()
-	vm.size = Vector3(0.3, 0.08, 0.1)
-	var vmat := StandardMaterial3D.new()
-	vmat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	vmat.albedo_color = Color(0.2, 0.9, 1.0)
-	vm.material = vmat
-	visor.mesh = vm
-	visor.position = Vector3(0.0, 1.35, -0.35)
-	add_child(visor)
+
+
+func _ready() -> void:
+	sprite = SpriteLib.build("colt")
+	if sprite:
+		add_child(sprite)
+	else:
+		var body := MeshInstance3D.new()
+		var cm := CapsuleMesh.new()
+		cm.radius = 0.4
+		cm.height = 1.6
+		var bm := StandardMaterial3D.new()
+		bm.albedo_color = Color(0.75, 0.6, 0.35)
+		bm.roughness = 0.7
+		cm.material = bm
+		body.mesh = cm
+		body.position = Vector3(0.0, 0.8, 0.0)
+		add_child(body)
 
 
 func vanish() -> void:
@@ -79,5 +78,18 @@ func _physics_process(dt: float) -> void:
 				fire_cd = Cfg.companion_fire_cd
 				var dir := (best.global_position + Vector3(0, 1, 0) - global_position).normalized()
 				best.take_damage(Cfg.companion_damage, dir, 1.0)
+				shoot_t = 0.3
 				shot.emit()
+	if sprite and player_ref and is_instance_valid(player_ref):
+		sprite.flip_h = player_ref.global_position.x < global_position.x
+		if shoot_t > 0.0:
+			if sprite.animation != &"act":
+				sprite.play("act")
+		elif Vector2(velocity.x, velocity.z).length() > 0.5:
+			if sprite.animation != &"walk":
+				sprite.play("walk")
+		elif sprite.sprite_frames.has_animation("idle"):
+			if sprite.animation != &"idle":
+				sprite.play("idle")
+	shoot_t = maxf(shoot_t - dt, 0.0)
 	move_and_slide()
