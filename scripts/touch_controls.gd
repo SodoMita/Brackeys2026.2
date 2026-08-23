@@ -4,6 +4,9 @@ extends Control
 ## Writes straight into the player's aggregated input vars.
 
 var player: CharacterBody3D
+## Gameplay only — menus own the input while they're open (game.gd toggles
+## this with the run state; mouse-from-touch emulation is flipped then too).
+var enabled := true
 
 var _stick_id := -1
 var _stick_anchor := Vector2.ZERO
@@ -111,6 +114,8 @@ func _press(name: String, on: bool) -> void:
 
 
 func _input(ev: InputEvent) -> void:
+	if not enabled:
+		return
 	if ev is InputEventScreenTouch:
 		var btn := _button_at(ev.position)
 		if ev.pressed:

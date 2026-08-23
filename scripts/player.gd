@@ -169,6 +169,8 @@ func _unhandled_input(ev: InputEvent) -> void:
 
 
 func _apply_look(dyaw: float, dpitch: float) -> void:
+	if Cfg.invert_look:
+		dpitch = -dpitch
 	yaw += dyaw
 	pitch = clampf(pitch + dpitch, -1.45, 1.45)
 	rotation.y = yaw
