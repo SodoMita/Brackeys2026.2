@@ -81,11 +81,6 @@ func _init() -> void:
 	head.add_child(gun)
 
 
-func _is_dialogic_playing() -> bool:
-	var d := get_node_or_null("/root/Dialogic")
-	return d != null and d.current_timeline != null
-
-
 func request_dash() -> void:
 	_want_dash = true
 
@@ -166,8 +161,6 @@ func _unhandled_input(ev: InputEvent) -> void:
 			JOY_BUTTON_Y:
 				cycle_weapon()
 	elif ev is InputEventMouseButton and ev.pressed:
-		if _is_dialogic_playing():
-			return
 		match ev.button_index:
 			MOUSE_BUTTON_LEFT:
 				touch_fire_mouse = true
@@ -176,8 +169,6 @@ func _unhandled_input(ev: InputEvent) -> void:
 
 
 func _apply_look(dyaw: float, dpitch: float) -> void:
-	if Cfg.invert_look:
-		dpitch = -dpitch
 	yaw += dyaw
 	pitch = clampf(pitch + dpitch, -1.45, 1.45)
 	rotation.y = yaw
@@ -189,7 +180,8 @@ func _gather_move() -> Vector2:
 		return touch_move
 	var j := Vector2(Input.get_joy_axis(0, JOY_AXIS_LEFT_X), Input.get_joy_axis(0, JOY_AXIS_LEFT_Y))
 	if j.length() > STICK_DEAD:
-		return j.limit_length(1.0)
+		var jf := j.limit_length(1.0)
+		return Vector2(jf.x, -jf.y)  # stick up = forward
 	var ix := 0.0
 	var iy := 0.0
 	if Input.is_key_pressed(KEY_W) or Input.is_key_pressed(KEY_UP):
@@ -228,7 +220,8 @@ func _physics_process(dt: float) -> void:
 		_apply_look(-touch_look.x * 0.004, -touch_look.y * 0.004)
 		touch_look = Vector2.ZERO
 
-	var wish := (transform.basis * Vector3(_gather_move().x, 0.0, _gather_move().y)).normalized()
+	var m := _gather_move()
+	var wish := (transform.basis * Vector3(m.x, 0.0, -m.y)).normalized()
 	var grounded := is_on_floor()
 
 	# --- jump (hold-to-bhop, no fall damage anywhere)
@@ -284,9 +277,9 @@ func _physics_process(dt: float) -> void:
 	if coin_btn and not _prev_lt:
 		toss_coin()
 	_prev_lt = coin_btn
-	var firing := (touch_fire_mouse or touch_fire \
+	var firing := touch_fire_mouse or touch_fire \
 			or Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) \
-			or Input.get_joy_axis(0, JOY_AXIS_TRIGGER_RIGHT) > 0.4) and not _is_dialogic_playing()
+			or Input.get_joy_axis(0, JOY_AXIS_TRIGGER_RIGHT) > 0.4
 	if firing:
 		try_fire()
 
@@ -299,7 +292,7 @@ func horizontal_speed() -> float:
 
 
 func try_fire() -> void:
-	if fire_cd > 0.0 or _is_dialogic_playing():
+	if fire_cd > 0.0:
 		return
 	match weapon:
 		2:

@@ -1,5 +1,5 @@
 extends SceneTree
-## Automated headless playtest: boots the real game scene into the tree and
+## Automated headless playtest: boots the real scene into the tree and
 ## plays it frame by frame (movement, firing, triggers, coin, shop, parry).
 ## Usage: godot --headless --path . --script res://tests/playtest.gd
 
@@ -23,7 +23,7 @@ func check(cond: bool, msg: String) -> void:
 
 
 func _initialize() -> void:
-	scene = (load("res://scenes/game.tscn") as PackedScene).instantiate()
+	scene = (load("res://scenes/main.tscn") as PackedScene).instantiate()
 	root.add_child(scene)
 	cfg = root.get_node("Cfg")
 	print("== playtest queued ==")

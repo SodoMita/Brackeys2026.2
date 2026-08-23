@@ -131,9 +131,12 @@ func _unhandled_input(event:InputEvent) -> void:
 
 
 ## Input is used for all mouse based inputs.
+## If any DialogicInputNode is present this won't do anything (because that node handles MouseInput then).
 func _input(event:InputEvent) -> void:
 	if is_input_pressed(event):
-		if not (event is InputEventMouse or event is InputEventScreenTouch):
+		if not event is InputEventMouse:
+			return
+		if get_tree().get_nodes_in_group("dialogic_input").any(func(node):return node.is_visible_in_tree()):
 			return
 		input_was_mouse_input = true
 		handle_input()
@@ -142,29 +145,16 @@ func _input(event:InputEvent) -> void:
 ## Used to quickly check whether the event is the input action that is setup.
 func is_input_pressed(event: InputEvent, exact := false) -> bool:
 	var action: String = ProjectSettings.get_setting(_SETTING_INPUT_ACTION, _SETTING_INPUT_ACTION_DEFAULT)
-	if event is InputEventAction and event.action == action and event.is_pressed():
-		return true
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		return true
-	if event is InputEventScreenTouch and event.pressed:
-		return true
-	if event is InputEventKey and event.pressed and not event.echo:
-		if event.keycode in [KEY_SPACE, KEY_ENTER, KEY_KP_ENTER, KEY_X]:
-			return true
-	if event is InputEventJoypadButton and event.pressed:
-		if event.button_index in [JOY_BUTTON_A, JOY_BUTTON_START]:
-			return true
-	if InputMap.has_action(action) and Input.is_action_just_pressed(action, exact):
-		return true
-	return false
+	return (event is InputEventAction and event.action == action) or Input.is_action_just_pressed(action, exact)
 
 
 ## This is called from the `_gui_input` of the InputCatcher and DialogText nodes.
 ## Calls [method handle_input].
 func handle_node_gui_input(event:InputEvent) -> void:
-	if (event is InputEventMouseButton and event.pressed) or (event is InputEventScreenTouch and event.pressed):
-		input_was_mouse_input = true
-		handle_input()
+	if Input.is_action_just_pressed(ProjectSettings.get_setting(_SETTING_INPUT_ACTION, _SETTING_INPUT_ACTION_DEFAULT)):
+		if event is InputEventMouseButton and event.pressed:
+			input_was_mouse_input = true
+			handle_input()
 
 
 ## Returns true if a previous call to [method block_input] is still active.

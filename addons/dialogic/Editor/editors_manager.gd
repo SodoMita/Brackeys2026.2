@@ -189,7 +189,7 @@ func show_add_resource_dialog(accept_callable:Callable, filter:String = "*", tit
 
 func _on_add_resource_dialog_accepted(path:String, callable:Callable) -> void:
 	var file_name: String = path.get_file().trim_suffix("."+path.get_extension())
-	for i in ["#","&","+",";","(",")","!","*","\"","'","%", "$", ":",".",","]:
+	for i in ["#","&","+",";","(",")","!","*","*",""",""","%", "$", ":",".",","]:
 		file_name = file_name.replace(i, "")
 	callable.call(path.trim_suffix(path.get_file()).path_join(file_name)+"."+path.get_extension())
 
