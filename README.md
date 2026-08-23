@@ -6,7 +6,7 @@ export presets for five platforms, and GitHub Actions CI.
 ## Repository layout
 
 ```
-├── project.godot           # Engine config (GL Compatibility renderer, 320×180 viewport)
+├── project.godot           # Engine config (GL Compatibility renderer, 1280×720 viewport)
 ├── scenes/
 │   ├── main_menu.tscn      # Dedicated main menu scene (entry point)
 │   ├── game.tscn           # Gameplay scene (arena, waves, combat)
@@ -19,6 +19,7 @@ export presets for five platforms, and GitHub Actions CI.
 │   ├── player.gd           # FPS controller (keyboard+mouse / gamepad / touch)
 │   ├── enemy.gd            # Melee chaser AI & ranged spitter AI
 │   ├── touch_controls.gd   # Mobile FPS HUD & touch controls (joystick, actions, pause)
+│   ├── shop_terminal.gd    # In-game scrap upgrade shop terminal
 │   └── combat_logic.gd     # Pure combat math — unit-testable, no nodes
 ├── tests/
 │   ├── test_runner.gd      # Headless runner (SceneTree script, no addons)
@@ -92,11 +93,11 @@ Ship a build by merging `main` into `build` and pushing.
 
 ## The game: STEEL KNIFE (GDD in `docs/GDD_STEEL_KNIFE.md`)
 
-GDD-driven retro FPS (original assets, fully procedural), PSX-style 320×180
-upscaled rendering. Mission 1: three sealed rooms (7 waves) of hounds and
-bullet-hell spitters in a desert complex, scrap terminals between rooms,
-COLT the colleague at your side — until the plaza, and the betrayal boss.
-Blood heals, style decays, parry everything.
+GDD-driven retro FPS (original assets, fully procedural), 1280×720 rendering.
+Mission 1: three sealed rooms (7 waves) of hounds and bullet-hell spitters
+in a desert complex, scrap terminals between rooms, COLT the colleague at
+your side — until the plaza, and the betrayal boss. Blood heals, style decays,
+parry everything.
 
 | Input | Move | Look | Jump | Dash | Slide | Fire | Weapons | Pause |
 |---|---|---|---|---|---|---|---|---|

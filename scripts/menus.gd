@@ -1,6 +1,6 @@
 extends Control
 ## STEEL KNIFE — In-Game Pause Menu and Settings Panel, built
-## procedurally for the 320×180 pixel UI (matching the game aesthetic).
+## procedurally for the UI (matching the game aesthetic).
 ##
 ## Runs while the tree is paused (PROCESS_MODE_ALWAYS) so ESC/P/gamepad/touch
 ## navigate the pause menu; enables touch-mouse emulation while paused.
@@ -135,7 +135,7 @@ func _centered(container: Control) -> void:
 	container.grow_vertical = Control.GROW_DIRECTION_BOTH
 
 
-func _centered_vbox(parent: Control, sep: int = 4) -> VBoxContainer:
+func _centered_vbox(parent: Control, sep: int = 8) -> VBoxContainer:
 	var box := VBoxContainer.new()
 	_centered(box)
 	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -151,7 +151,7 @@ static func _label(text: String, size: int, color: Color,
 	var ls := LabelSettings.new()
 	ls.font_size = size
 	ls.font_color = color
-	ls.outline_size = 3
+	ls.outline_size = 4
 	ls.outline_color = Color.BLACK
 	l.label_settings = ls
 	l.horizontal_alignment = align
@@ -163,20 +163,20 @@ static func _stylebox(bg: Color, border: Color) -> StyleBoxFlat:
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = bg
 	sb.border_color = border
-	sb.set_border_width_all(1)
-	sb.set_corner_radius_all(1)
-	sb.content_margin_left = 8.0
-	sb.content_margin_right = 8.0
-	sb.content_margin_top = 3.0
-	sb.content_margin_bottom = 3.0
+	sb.set_border_width_all(2)
+	sb.set_corner_radius_all(3)
+	sb.content_margin_left = 12.0
+	sb.content_margin_right = 12.0
+	sb.content_margin_top = 6.0
+	sb.content_margin_bottom = 6.0
 	return sb
 
 
-static func _button(text: String, width := 128) -> Button:
+static func _button(text: String, width := 220) -> Button:
 	var b := Button.new()
 	b.text = text
-	b.custom_minimum_size = Vector2(width, 17)
-	b.add_theme_font_size_override("font_size", 10)
+	b.custom_minimum_size = Vector2(width, 36)
+	b.add_theme_font_size_override("font_size", 15)
 	b.add_theme_color_override("font_color", PAPER)
 	b.add_theme_color_override("font_hover_color", Color.WHITE)
 	b.add_theme_color_override("font_pressed_color", CYAN)
@@ -190,11 +190,11 @@ static func _button(text: String, width := 128) -> Button:
 
 func _build_main() -> void:
 	main_panel = _make_dim_panel()
-	var box := _centered_vbox(main_panel)
-	box.add_child(_label("STEEL KNIFE", 24, Color(1.0, 0.72, 0.35)))
-	box.add_child(_label("mission 1: clear the site with COLT", 8, MUTED))
+	var box := _centered_vbox(main_panel, 8)
+	box.add_child(_label("STEEL KNIFE", 48, Color(1.0, 0.72, 0.35)))
+	box.add_child(_label("mission 1: clear the site with COLT", 16, MUTED))
 	var gap := Control.new()
-	gap.custom_minimum_size = Vector2(0, 8)
+	gap.custom_minimum_size = Vector2(0, 14)
 	gap.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	box.add_child(gap)
 	btn_start = _button("START")
@@ -211,10 +211,10 @@ func _build_main() -> void:
 
 func _build_pause() -> void:
 	pause_panel = _make_dim_panel()
-	var box := _centered_vbox(pause_panel)
-	box.add_child(_label("PAUSED", 16, Color(1.0, 0.72, 0.35)))
+	var box := _centered_vbox(pause_panel, 8)
+	box.add_child(_label("PAUSED", 32, Color(1.0, 0.72, 0.35)))
 	var gap := Control.new()
-	gap.custom_minimum_size = Vector2(0, 6)
+	gap.custom_minimum_size = Vector2(0, 12)
 	gap.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	box.add_child(gap)
 	btn_resume = _button("RESUME")
@@ -232,16 +232,16 @@ func _build_pause() -> void:
 
 
 func _value_label() -> Label:
-	var l := _label("", 8, CYAN, HORIZONTAL_ALIGNMENT_RIGHT)
-	l.custom_minimum_size = Vector2(42, 0)
+	var l := _label("", 14, CYAN, HORIZONTAL_ALIGNMENT_RIGHT)
+	l.custom_minimum_size = Vector2(64, 0)
 	return l
 
 
 func _add_row(box: VBoxContainer, text: String) -> HBoxContainer:
 	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 6)
-	var lbl := _label(text, 8, PAPER, HORIZONTAL_ALIGNMENT_LEFT)
-	lbl.custom_minimum_size = Vector2(86, 0)
+	row.add_theme_constant_override("separation", 12)
+	var lbl := _label(text, 14, PAPER, HORIZONTAL_ALIGNMENT_LEFT)
+	lbl.custom_minimum_size = Vector2(140, 0)
 	row.add_child(lbl)
 	box.add_child(row)
 	return row
@@ -252,7 +252,7 @@ static func _slider(minv: float, maxv: float, stepv: float) -> HSlider:
 	s.min_value = minv
 	s.max_value = maxv
 	s.step = stepv
-	s.custom_minimum_size = Vector2(120, 12)
+	s.custom_minimum_size = Vector2(240, 24)
 	s.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	s.focus_mode = Control.FOCUS_ALL
 	s.add_theme_stylebox_override("slider", _stylebox(Color(0.1, 0.02, 0.03, 0.9), Color(0.35, 0.06, 0.09)))
@@ -262,7 +262,7 @@ static func _slider(minv: float, maxv: float, stepv: float) -> HSlider:
 
 
 static func _toggle_button() -> Button:
-	var b := _button("OFF", 56)
+	var b := _button("OFF", 90)
 	b.toggle_mode = true
 	return b
 
@@ -274,9 +274,9 @@ func _build_settings() -> void:
 	_centered(panel)
 	settings_panel.add_child(panel)
 	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 4)
+	box.add_theme_constant_override("separation", 10)
 	panel.add_child(box)
-	box.add_child(_label("SETTINGS", 13, Color(1.0, 0.62, 0.3)))
+	box.add_child(_label("SETTINGS", 22, Color(1.0, 0.62, 0.3)))
 
 	var dm := float(Settings.default_value("mouse_sensitivity"))
 	var ds := float(Settings.default_value("stick_look_speed"))
@@ -309,16 +309,16 @@ func _build_settings() -> void:
 	r5.add_child(_fullscreen)
 
 	var actions := HBoxContainer.new()
-	actions.add_theme_constant_override("separation", 6)
+	actions.add_theme_constant_override("separation", 12)
 	box.add_child(actions)
-	var reset := _button("RESET DEFAULTS", 104)
+	var reset := _button("RESET DEFAULTS", 160)
 	reset.pressed.connect(func(): _reset_defaults())
 	actions.add_child(reset)
 	var spacer := Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	actions.add_child(spacer)
-	btn_back = _button("BACK", 64)
+	btn_back = _button("BACK", 100)
 	btn_back.pressed.connect(func(): _close_settings())
 	actions.add_child(btn_back)
 

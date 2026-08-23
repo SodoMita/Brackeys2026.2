@@ -93,10 +93,37 @@ extends Node
 @export var intro_timeline: Resource = null  # assign a DialogicTimeline in the inspector
 
 
+func _init() -> void:
+	_ensure_dialogic_input_action()
+
+
 func _ready() -> void:
+	_ensure_dialogic_input_action()
 	# Player settings are captured/applied as soon as the autoload is up,
 	# before the main scene builds anything.
 	Settings.apply_saved()
+
+
+func _ensure_dialogic_input_action() -> void:
+	if not InputMap.has_action("dialogic_default_action"):
+		InputMap.add_action("dialogic_default_action", 0.5)
+		var k_enter := InputEventKey.new()
+		k_enter.keycode = KEY_ENTER
+		InputMap.action_add_event("dialogic_default_action", k_enter)
+		var k_space := InputEventKey.new()
+		k_space.keycode = KEY_SPACE
+		InputMap.action_add_event("dialogic_default_action", k_space)
+		var k_x := InputEventKey.new()
+		k_x.keycode = KEY_X
+		InputMap.action_add_event("dialogic_default_action", k_x)
+		var m_left := InputEventMouseButton.new()
+		m_left.button_index = MOUSE_BUTTON_LEFT
+		m_left.pressed = true
+		InputMap.action_add_event("dialogic_default_action", m_left)
+		var j_a := InputEventJoypadButton.new()
+		j_a.button_index = JOY_BUTTON_A
+		j_a.pressed = true
+		InputMap.action_add_event("dialogic_default_action", j_a)
 
 
 func heal_on_damage(current_hp: float, damage: float) -> float:
