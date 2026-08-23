@@ -1,5 +1,5 @@
 extends TestBase
-## Integration tests: Main Menu scene, Game scene, Pause Menu, Mobile Pause button.
+## Integration tests: Main Menu scene, Game scene, Pause Menu, Mobile Pause button, Dialogic input.
 
 
 func _boot_game() -> Node3D:
@@ -76,6 +76,10 @@ func test_mobile_pause_button() -> void:
 	assert_eq(scene.state, scene.State.PLAYING, "game resumed")
 	assert_false(scene.get_tree().paused, "tree unpaused")
 	scene.free()
+
+
+func test_dialogic_input_action_registered() -> void:
+	assert_true(InputMap.has_action("dialogic_default_action"), "dialogic_default_action exists in InputMap")
 
 
 func test_wave_scaling() -> void:
