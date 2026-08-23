@@ -212,7 +212,7 @@ grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("1_bpydr")
 box_panel = "res://addons/dialogic/Modules/DefaultLayoutParts/Layer_VN_Textbox/vn_textbox_default_panel.tres"
-box_size = Vector2(550, 150)
+box_size = Vector2(700, 140)
 name_label_box_panel = "res://addons/dialogic/Modules/DefaultLayoutParts/Layer_VN_Textbox/vn_textbox_name_label_panel.tres"
 name_label_box_modulate = Color(0, 0, 0, 1)
 

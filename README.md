@@ -6,21 +6,28 @@ export presets for five platforms, and GitHub Actions CI.
 ## Repository layout
 
 ```
-├── project.godot           # Engine config (GL Compatibility renderer, 1280×720)
-├── scenes/main.tscn        # Main scene
+├── project.godot           # Engine config (GL Compatibility renderer, 1280×720 viewport)
+├── scenes/
+│   ├── main_menu.tscn      # Dedicated main menu scene (entry point)
+│   ├── game.tscn           # Gameplay scene (arena, waves, combat)
+│   └── main.tscn           # Main game scene alias
 ├── scripts/
-│   ├── game.gd             # Root: arena, waves, HUD, style meter, audio
-│   ├── menus.gd            # Main menu, pause menu & settings panel (procedural)
+│   ├── main_menu.gd        # Main menu controller (START / SETTINGS / QUIT)
+│   ├── game.gd             # Game scene root: arena, waves, HUD, style meter, audio
+│   ├── menus.gd            # In-game pause menu & settings panel
 │   ├── settings.gd         # Player settings: live apply + user://settings.cfg
 │   ├── player.gd           # FPS controller (keyboard+mouse / gamepad / touch)
-│   ├── enemy.gd            # Melee chaser AI
-│   ├── touch_controls.gd   # Virtual stick + on-screen buttons (touch devices)
+│   ├── enemy.gd            # Melee chaser AI & ranged spitter AI
+│   ├── touch_controls.gd   # Mobile FPS HUD & touch controls (joystick, actions, pause)
+│   ├── shop_terminal.gd    # In-game scrap upgrade shop terminal
 │   └── combat_logic.gd     # Pure combat math — unit-testable, no nodes
 ├── tests/
 │   ├── test_runner.gd      # Headless runner (SceneTree script, no addons)
 │   ├── test_base.gd        # Assertion helpers
-│   ├── test_game_logic.gd  # Unit tests
-│   └── test_scene.gd       # Scene integration tests
+│   ├── test_combat.gd      # Unit tests for combat logic
+│   ├── test_settings.gd    # Settings persistence and live apply tests
+│   ├── test_scene.gd       # Scene integration tests (menu, game, pause, mobile button)
+│   └── playtest.gd         # Automated headless gameplay playthrough test
 ├── assets/                 # Art/audio go here
 ├── addons/                 # Third-party addons go here
 ├── export_presets.cfg      # Web / Windows / Linux / macOS / Android
@@ -86,35 +93,40 @@ Ship a build by merging `main` into `build` and pushing.
 
 ## The game: STEEL KNIFE (GDD in `docs/GDD_STEEL_KNIFE.md`)
 
-GDD-driven retro FPS (original assets, fully procedural), PSX-style 320×180
-upscaled rendering. Mission 1: three sealed rooms (7 waves) of hounds and
-bullet-hell spitters in a desert complex, scrap terminals between rooms,
-COLT the colleague at your side — until the plaza, and the betrayal boss.
-Blood heals, style decays, parry everything.
+GDD-driven retro FPS (original assets, fully procedural), 1280×720 rendering.
+Mission 1: three sealed rooms (7 waves) of hounds and bullet-hell spitters
+in a desert complex, scrap terminals between rooms, COLT the colleague at
+your side — until the plaza, and the betrayal boss. Blood heals, style decays,
+parry everything.
 
-| Input | Move | Look | Jump | Dash | Slide | Fire | Weapons |
-|---|---|---|---|---|---|---|---|
-| Keyboard+mouse | WASD | mouse | SPACE | SHIFT | CTRL/C | LMB | 1 / 2 |
-| Gamepad | left stick | right stick | A | LB | RB | RT | d-pad / Y |
-| Touch | left stick | right drag | JMP | DSH | SLD | FIRE | WPN |
+| Input | Move | Look | Jump | Dash | Slide | Fire | Weapons | Pause |
+|---|---|---|---|---|---|---|---|---|
+| Keyboard+mouse | WASD | mouse | SPACE | SHIFT | CTRL/C | LMB | 1 / 2 / 3 | ESC / P |
+| Gamepad | left stick | right stick | A | LB | RB | RT | d-pad / Y | START |
+| Touch | left stick | right drag | JMP | DSH | SLD | FIRE | WPN / PRY / COIN | `||` button |
 
-Touch controls appear automatically on touch devices (virtual stick + button
-cluster); gamepad and keyboard work everywhere, including web exports.
+Touch controls appear automatically on touch devices (virtual stick + action buttons + mobile pause button); gamepad and keyboard work everywhere, including web exports.
 
-## Menus & settings
+## Menus, Pause & Mobile Support
 
-- **Main menu** — START / SETTINGS / QUIT GAME (quit is hidden on web).
-  Clicking anywhere, tapping, or pressing gamepad A/START also starts.
-- **Pause menu** — ESC / P / gamepad START pauses (tree-paused): RESUME /
-  SETTINGS / QUIT TO MENU.
-- **Settings** — mouse sensitivity & stick speed (×0.2–×3 of the designer
+- **Separate Main Menu Scene (`scenes/main_menu.tscn`)** — Clean standalone
+  scene that loads the game (`scenes/game.tscn`). Offers START, SETTINGS,
+  and QUIT GAME (quit is hidden on web). Clicking anywhere, tapping, or
+  pressing gamepad A/START also starts the game.
+- **In-Game Pause Menu (`scripts/menus.gd`)** — Pauses the game tree during
+  play. Features RESUME, SETTINGS, RETRY MISSION, and QUIT TO MENU (returns to
+  the main menu scene).
+- **Mobile Pause Button** — Dedicated on-screen `||` button on mobile and
+  touchscreen devices to open the pause menu and return to the main menu at
+  any point.
+- **Settings** — Mouse sensitivity & stick speed (×0.2–×3 of designer
   defaults), invert look, master volume, fullscreen (desktop only; hidden on
   web), RESET DEFAULTS / BACK. Everything applies live and persists to
-  `user://settings.cfg`; designed defaults are captured from the Cfg autoload
-  on boot, so inspector tuning stays authoritative.
-- Menus are fully gamepad- (d-pad + A) and touch-navigable: mouse-from-touch
-  emulation is flipped on only while a menu is open — gameplay keeps reading
-  raw touches.
+  `user://settings.cfg`.
+- **Mobile FPS HUD & Touch Controls** — Dynamic movement joystick on the left,
+  drag look on the right, responsive action buttons for FIRE, JMP, DSH, SLD,
+  WPN, PRY, COIN, and PAUSE, plus retro HUD displaying health, style rank, wave,
+  scrap counter, weapon slot, and hitmarkers.
 
 ## Art: DOOM-style billboard sprites
 
@@ -144,11 +156,6 @@ Assign any other timeline via `Cfg.intro_timeline` in the inspector.
 Note: the Dialogic 2 alpha never registers its `.dtl` runtime loader, so
 `game.gd` wires up the addon's own `DialogicTimelineFormatLoader` class,
 and `*.dtl` is added to the export include filters.
-
-## History
-
-The original multi-purpose template (procedural runner example) is preserved
-under the git tag `template`.
 
 ## Jam checklist
 
