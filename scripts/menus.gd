@@ -102,9 +102,9 @@ func close_all() -> void:
 func _unhandled_input(ev: InputEvent) -> void:
 	if not visible:
 		return
-	var back := ev is InputEventKey and ev.pressed and not ev.echo \
+	var back: bool = ev is InputEventKey and ev.pressed and not ev.echo \
 			and ev.keycode == KEY_ESCAPE
-	var joy := ev as InputEventJoypadButton
+	var joy: InputEventJoypadButton = ev as InputEventJoypadButton
 	if joy == null or not joy.pressed:
 		joy = null
 	if settings_open:

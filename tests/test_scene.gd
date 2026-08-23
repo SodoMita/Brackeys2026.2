@@ -75,8 +75,11 @@ func test_main_menu_and_settings_flow() -> void:
 
 
 func test_pause_resume_cycle() -> void:
-	var scene := _boot()
+	# Enter the tree properly (engine-driven _ready, once) so pause can
+	# actually flip SceneTree.paused.
+	var scene: Node3D = (load("res://scenes/main.tscn") as PackedScene).instantiate()
 	runner.root.add_child(scene)
+	assert_eq(scene.state, scene.State.MENU, "boots into menu")
 	scene._start()
 	scene._pause()
 	assert_eq(scene.state, scene.State.PAUSED, "pause state")
