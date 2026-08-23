@@ -1,13 +1,69 @@
-# Godot 4
+# ================================
+# Godot 4.x ignores
+# ================================
 .godot/
+~*.dll
+*.tmp
+
+# ================================
+# Godot-specific generated files
+# ================================
+.import/
+export.cfg
+export_credentials.cfg
 *.translation
 
-# Local builds
+# ================================
+# Mono / C# specific ignores
+# ================================
+.mono/
+data_*/
+mono_crash.*.json
+
+# ================================
+# Local builds & artifacts
+# ================================
 build/
+bin/
+*.apk
+*.aab
+*.pck
+*.log
+logs/
 
-# Local editor state
-editor_settings-4.tres
+# ================================
+# Local editor state & settings
+# ================================
+editor_settings-*.tres
+*.autosave
 
-# OS cruft
+# ================================
+# DCC / 3D Tool backups
+# ================================
+*.blend1
+*.blend2
+*.blend3
+*.blend4
+*.blend5
+*.import.bak
+
+# ================================
+# Python tooling
+# ================================
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# ================================
+# IDEs & OS files
+# ================================
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
 .DS_Store
 Thumbs.db
+ehthumbs.db
+Desktop.ini
