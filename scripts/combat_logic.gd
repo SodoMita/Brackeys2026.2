@@ -1,52 +1,51 @@
 class_name CombatLogic
 extends RefCounted
-## Pure combat math for the FPS: blood-healing, style scoring, ranks.
-## No nodes, no RNG — fully unit-testable.
-
-const MAX_HP := 100.0
-const HEAL_FACTOR := 0.8
-
-## Dealing damage restores health (blood mechanic).
-static func heal_on_damage(current_hp: float, damage: float) -> float:
-	return clampf(current_hp + damage * HEAL_FACTOR, 0.0, MAX_HP)
+## Pure combat math for the FPS: blood-healing, style scoring, ranks, parry.
+## No nodes, no RNG — fully unit-testable. All tuning is passed in
+## (the Cfg autoload owns the designer-editable values).
 
 
-## Style points awarded per action.
-static func style_points(action: String) -> float:
-	match action:
-		"hit":
-			return 5.0
-		"headshot":
-			return 12.0
-		"airshot":
-			return 10.0
-		"slide_kill":
-			return 15.0
-		"kill":
-			return 20.0
-		"dash_kill":
-			return 8.0
-		_:
-			return 0.0
+static func heal_on_damage(current_hp: float, damage: float,
+		heal_factor: float, max_hp: float) -> float:
+	return clampf(current_hp + damage * heal_factor, 0.0, max_hp)
 
 
-const RANKS := ["D", "C", "B", "A", "S", "SS", "SSS"]
-const RANK_THRESHOLDS := [0.0, 40.0, 100.0, 180.0, 280.0, 400.0, 550.0]
+const RANKS_DEFAULT := ["D", "C", "B", "A", "S", "SS", "SSS"]
+const THRESHOLDS_DEFAULT := [0.0, 40.0, 100.0, 180.0, 280.0, 400.0, 550.0]
 
 ## Style rank letter for an accumulated score.
-static func rank_for_points(points: float) -> String:
-	var rank := RANKS[0]
-	for i in RANK_THRESHOLDS.size():
-		if points >= RANK_THRESHOLDS[i]:
-			rank = RANKS[i]
+static func rank_for_points(points: float,
+		thresholds: Array = THRESHOLDS_DEFAULT,
+		ranks: Array = RANKS_DEFAULT) -> String:
+	var rank := String(ranks[0])
+	for i in mini(thresholds.size(), ranks.size()):
+		if points >= thresholds[i]:
+			rank = String(ranks[i])
 	return rank
 
 
 ## Points lost per second — higher ranks decay faster.
-static func decay_rate(points: float) -> float:
-	return 6.0 + maxf(points, 0.0) * 0.04
+static func decay_rate(points: float, base: float = 6.0, scale: float = 0.04) -> float:
+	return base + maxf(points, 0.0) * scale
 
 
-## Getting hurt halves your style, ULTRAKILL-style.
+## Getting hurt halves your style.
 static func on_hurt(points: float) -> float:
 	return points * 0.5
+
+
+## A parry pressed `age` seconds ago is still inside the active window.
+static func parry_active(age: float, active_window: float) -> bool:
+	return age >= 0.0 and age <= active_window
+
+
+## Ricochet picks the `count` nearest living enemies.
+static func _pos(n: Node3D) -> Vector3:
+	return n.global_position if n.is_inside_tree() else n.position
+
+
+static func nearest_targets(from: Vector3, candidates: Array, count: int) -> Array:
+	var sorted := candidates.duplicate()
+	sorted.sort_custom(func(a, b):
+		return _pos(a).distance_squared_to(from) < _pos(b).distance_squared_to(from))
+	return sorted.slice(0, mini(count, sorted.size()))

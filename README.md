@@ -96,6 +96,24 @@ ULTRAKILL-inspired retro FPS (original name/assets, fully procedural), PSX-style
 Touch controls appear automatically on touch devices (virtual stick + button
 cluster); gamepad and keyboard work everywhere, including web exports.
 
+## Designer tuning
+
+All gameplay values are `@export`ed on the **Cfg** autoload
+(`scripts/game_config.tscn`): movement, health, parry window/cooldown,
+weapon damage/cooldowns, coin toss & ricochet, style table & rank
+thresholds, enemy stats & wave scaling, dialogue timeline. Open the scene
+and edit in the inspector — no code changes needed.
+
+## Dialogue
+
+[Dialogic 2](https://github.com/dialogic-godot/dialogic) is vendored in
+`addons/dialogic` (official repo, plugin enabled, `Dialogic` autoload).
+A sample timeline lives at `dialogue/intro.dtl`; it plays at round start.
+Assign any other timeline via `Cfg.intro_timeline` in the inspector.
+Note: the Dialogic 2 alpha never registers its `.dtl` runtime loader, so
+`game.gd` wires up the addon's own `DialogicTimelineFormatLoader` class,
+and `*.dtl` is added to the export include filters.
+
 ## History
 
 The original multi-purpose template (procedural runner example) is preserved

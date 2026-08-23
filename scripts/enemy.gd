@@ -1,17 +1,21 @@
 extends CharacterBody3D
-## "Hound": melee chaser. All visuals built in the constructor so the
-## node is usable without entering the tree (headless tests).
+## "Hound": melee chaser with a telegraphed strike (parry-able).
 
 signal died(pos: Vector3)
+signal windup
 signal attacked
 
-var hp := 60.0
+var hp: float
 var speed := 7.5
 var atk_cd := 0.0
+var windup_t := -1.0
+var stagger_t := 0.0
 var target: Node3D
+var eyes: Array = []
 
 
 func _init() -> void:
+	hp = Cfg.enemy_hp
 	var body := MeshInstance3D.new()
 	var cm := CapsuleMesh.new()
 	cm.radius = 0.45
@@ -26,7 +30,6 @@ func _init() -> void:
 	body.mesh = cm
 	body.position = Vector3(0.0, 0.75, 0.0)
 	add_child(body)
-	# glowing eyes
 	for sx in [-0.16, 0.16]:
 		var eye := MeshInstance3D.new()
 		var em := SphereMesh.new()
@@ -41,6 +44,12 @@ func _init() -> void:
 		eye.mesh = em
 		eye.position = Vector3(sx, 1.25, -0.38)
 		add_child(eye)
+		eyes.append(eye)
+
+
+func stagger(t: float) -> void:
+	stagger_t = maxf(stagger_t, t)
+	windup_t = -1.0
 
 
 func take_damage(d: float, dir: Vector3, knock: float) -> void:
@@ -51,20 +60,44 @@ func take_damage(d: float, dir: Vector3, knock: float) -> void:
 		queue_free()
 
 
+func _set_telegraph(on: bool) -> void:
+	var col := Color(1.0, 1.0, 1.0) if on else Color(1.0, 0.9, 0.3)
+	for e in eyes:
+		(e.mesh as SphereMesh).material.set("albedo_color", col)
+
+
 func _physics_process(dt: float) -> void:
-	velocity.y -= 22.0 * dt
+	velocity.y -= Cfg.gravity * dt
 	atk_cd = maxf(atk_cd - dt, 0.0)
+	if stagger_t > 0.0:
+		stagger_t -= dt
+		velocity.x = move_toward(velocity.x, 0.0, 30.0 * dt)
+		velocity.z = move_toward(velocity.z, 0.0, 30.0 * dt)
+		move_and_slide()
+		return
 	if target and is_instance_valid(target):
 		var to := target.global_position - global_position
 		to.y = 0.0
 		var d := to.length()
-		if d > 1.7:
+		if windup_t >= 0.0:
+			# telegraphed strike in progress: stand still, then hit
+			windup_t -= dt
+			velocity.x = 0.0
+			velocity.z = 0.0
+			if windup_t <= 0.0:
+				windup_t = -1.0
+				_set_telegraph(false)
+				if d < Cfg.enemy_attack_range + 0.6:
+					attacked.emit()
+				atk_cd = Cfg.enemy_strike_cooldown
+		elif d > Cfg.enemy_attack_range:
 			var dir := to.normalized()
 			velocity.x = move_toward(velocity.x, dir.x * speed, 50.0 * dt)
 			velocity.z = move_toward(velocity.z, dir.z * speed, 50.0 * dt)
 			if d > 0.01:
 				look_at(global_position + dir, Vector3.UP)
 		elif atk_cd <= 0.0:
-			atk_cd = 1.0
-			attacked.emit()
+			windup_t = Cfg.enemy_windup
+			_set_telegraph(true)
+			windup.emit()
 	move_and_slide()
