@@ -462,6 +462,9 @@ func _spawn_wave() -> void:
 
 func _spawn_enemy(ranged: bool, at := Vector3.ZERO, boss := false) -> CharacterBody3D:
 	var e: CharacterBody3D = load("res://scripts/enemy.gd").new()
+	e.kind = "boss" if boss else ("spitter" if ranged else "hound")
+	if boss:
+		e.modulate = Color(1.6, 0.5, 0.5)
 	if at == Vector3.ZERO:
 		var b := _room_bounds()
 		for _t in 12:

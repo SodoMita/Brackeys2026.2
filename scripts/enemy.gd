@@ -13,6 +13,8 @@ var windup_t := -1.0
 var stagger_t := 0.0
 var target: Node3D
 var ranged := false
+var kind := "hound"
+var sprite: AnimatedSprite3D = null
 var eyes: Array = []
 
 
@@ -25,35 +27,43 @@ func _init() -> void:
 	pc.shape = caps
 	pc.position = Vector3(0.0, 0.75, 0.0)
 	add_child(pc)
-	var body := MeshInstance3D.new()
-	var cm := CapsuleMesh.new()
-	cm.radius = 0.45
-	cm.height = 1.5
-	var bm := StandardMaterial3D.new()
-	bm.albedo_color = Color(0.35, 0.03, 0.05)
-	bm.roughness = 0.6
-	bm.emission_enabled = true
-	bm.emission = Color(0.8, 0.05, 0.1)
-	bm.emission_energy_multiplier = 0.35
-	cm.material = bm
-	body.mesh = cm
-	body.position = Vector3(0.0, 0.75, 0.0)
-	add_child(body)
-	for sx in [-0.16, 0.16]:
-		var eye := MeshInstance3D.new()
-		var em := SphereMesh.new()
-		em.radius = 0.06
-		em.height = 0.12
-		em.radial_segments = 8
-		em.rings = 4
-		var emat := StandardMaterial3D.new()
-		emat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-		emat.albedo_color = Color(1.0, 0.9, 0.3)
-		em.material = emat
-		eye.mesh = em
-		eye.position = Vector3(sx, 1.25, -0.38)
-		add_child(eye)
-		eyes.append(eye)
+
+
+func _ready() -> void:
+	sprite = SpriteLib.build(kind)
+	if sprite:
+		add_child(sprite)
+	else:
+		# fallback: solid capsule with eyes (frames not present)
+		var body := MeshInstance3D.new()
+		var cm := CapsuleMesh.new()
+		cm.radius = 0.45
+		cm.height = 1.5
+		var bm := StandardMaterial3D.new()
+		bm.albedo_color = Color(0.35, 0.03, 0.05)
+		bm.roughness = 0.6
+		bm.emission_enabled = true
+		bm.emission = Color(0.8, 0.05, 0.1)
+		bm.emission_energy_multiplier = 0.35
+		cm.material = bm
+		body.mesh = cm
+		body.position = Vector3(0.0, 0.75, 0.0)
+		add_child(body)
+		for sx in [-0.16, 0.16]:
+			var eye := MeshInstance3D.new()
+			var em := SphereMesh.new()
+			em.radius = 0.06
+			em.height = 0.12
+			em.radial_segments = 8
+			em.rings = 4
+			var emat := StandardMaterial3D.new()
+			emat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+			emat.albedo_color = Color(1.0, 0.9, 0.3)
+			em.material = emat
+			eye.mesh = em
+			eye.position = Vector3(sx, 1.25, -0.38)
+			add_child(eye)
+			eyes.append(eye)
 
 
 func stagger(t: float) -> void:
@@ -70,6 +80,9 @@ func take_damage(d: float, dir: Vector3, knock: float) -> void:
 
 
 func _set_telegraph(on: bool) -> void:
+	if sprite:
+		sprite.modulate = Color(3.0, 3.0, 3.0) if on else Color(1, 1, 1)
+		return
 	var col := Color(1.0, 1.0, 1.0) if on else Color(1.0, 0.9, 0.3)
 	for e in eyes:
 		(e.mesh as SphereMesh).material.set("albedo_color", col)
@@ -89,21 +102,16 @@ func _physics_process(dt: float) -> void:
 		to.y = 0.0
 		var d := to.length()
 		if windup_t >= 0.0:
-			# telegraphed strike in progress: stand still, then hit
 			windup_t -= dt
 			velocity.x = 0.0
 			velocity.z = 0.0
 			if windup_t <= 0.0:
 				windup_t = -1.0
 				_set_telegraph(false)
-				if ranged:
-					volley.emit((target.global_position - global_position).normalized(), global_position + Vector3(0, 1.2, 0))
-					atk_cd = Cfg.spitter_cd
-				elif d < Cfg.enemy_attack_range + 0.6:
+				if d < Cfg.enemy_attack_range + 0.6:
 					attacked.emit()
-					atk_cd = Cfg.enemy_strike_cooldown
+				atk_cd = Cfg.enemy_strike_cooldown
 		elif ranged:
-			# keep mid range and strafe
 			var dir := to.normalized()
 			var want := 13.0
 			var move := 0.0
@@ -129,4 +137,16 @@ func _physics_process(dt: float) -> void:
 			windup_t = Cfg.enemy_windup
 			_set_telegraph(true)
 			windup.emit()
+	if sprite and target and is_instance_valid(target):
+		sprite.flip_h = target.global_position.x < global_position.x
+		if windup_t >= 0.0 and sprite.sprite_frames.has_animation("act"):
+			if sprite.animation != &"act":
+				sprite.play("act")
+		elif horizontal_speed_v() > 0.5:
+			if sprite.animation != &"walk":
+				sprite.play("walk")
 	move_and_slide()
+
+
+func horizontal_speed_v() -> float:
+	return Vector2(velocity.x, velocity.z).length()

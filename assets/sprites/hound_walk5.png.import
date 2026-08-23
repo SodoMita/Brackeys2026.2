@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bodr1o5mt27rn"
-path="res://.godot/imported/SystemLootScreenshot.png-11c6b488c5562295010a0bcd85796f7d.ctex"
+uid="uid://ba0nklwukjgn1"
+path="res://.godot/imported/hound_walk5.png-aa7c79ef6480a807821165c6ddefa319.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/images/SystemLootScreenshot.png"
-dest_files=["res://.godot/imported/SystemLootScreenshot.png-11c6b488c5562295010a0bcd85796f7d.ctex"]
+source_file="res://assets/sprites/hound_walk5.png"
+dest_files=["res://.godot/imported/hound_walk5.png-aa7c79ef6480a807821165c6ddefa319.ctex"]
 
 [params]
 
