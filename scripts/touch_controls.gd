@@ -1,106 +1,60 @@
 extends Control
-## Virtual touchscreen controls / Mobile FPS HUD controls:
-## Left-side dynamic joystick (move), right-side drag (look),
-## on-screen buttons: FIRE / JUMP / DASH / SLIDE / WPN / PARRY / COIN,
-## and a dedicated PAUSE button for mobile navigation.
-
-signal pause_pressed
+## Virtual touchscreen controls: left-side dynamic stick (move),
+## right-side drag (look), on-screen FIRE / JUMP / DASH / SLIDE / WPN.
+## Writes straight into the player's aggregated input vars.
 
 var player: CharacterBody3D
-var enabled := true
 
 var _stick_id := -1
 var _stick_anchor := Vector2.ZERO
 var _look_id := -1
 var _look_last := Vector2.ZERO
-var _knob: Panel
-var _stick_base: Panel
-var _touch_buttons := {}  # touch_index -> button_name
-var buttons := {}         # name -> {rect: Rect2, node: Control, anchor: Vector2, label: Label, base_color: Color}
+var _knob: ColorRect
+var buttons := {}  # name -> {rect, label}
 
-const STICK_R := 85.0
+const STICK_R := 70.0
 
 
 func _init() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	set_anchors_preset(Control.PRESET_FULL_RECT)
 
 
 func setup(p: CharacterBody3D) -> void:
 	player = p
 	set_anchors_preset(Control.PRESET_FULL_RECT)
-
-	# Definitions scaled for 1280x720 canvas
+	# buttons (bottom-right cluster)
 	var defs := {
-		# Bottom-right combat cluster
-		"fire": {"rect": Rect2(0, 0, 130, 130), "text": "FIRE", "anchor": Vector2(1, 1), "off": Vector2(-160, -160), "color": Color(0.95, 0.25, 0.15, 0.45), "font_size": 22},
-		"jump": {"rect": Rect2(0, 0, 90, 90), "text": "JMP", "anchor": Vector2(1, 1), "off": Vector2(-280, -140), "color": Color(0.85, 0.45, 0.1, 0.35), "font_size": 18},
-		"dash": {"rect": Rect2(0, 0, 90, 90), "text": "DSH", "anchor": Vector2(1, 1), "off": Vector2(-280, -250), "color": Color(0.85, 0.45, 0.1, 0.35), "font_size": 18},
-		"slide": {"rect": Rect2(0, 0, 90, 80), "text": "SLD", "anchor": Vector2(1, 1), "off": Vector2(-160, -260), "color": Color(0.85, 0.45, 0.1, 0.35), "font_size": 18},
-		"wpn": {"rect": Rect2(0, 0, 90, 70), "text": "WPN", "anchor": Vector2(1, 1), "off": Vector2(-160, -350), "color": Color(0.2, 0.6, 0.8, 0.35), "font_size": 16},
-		# Bottom-left auxiliary cluster
-		"parry": {"rect": Rect2(0, 0, 90, 80), "text": "PRY", "anchor": Vector2(0, 1), "off": Vector2(32, -180), "color": Color(0.2, 0.85, 0.9, 0.35), "font_size": 18},
-		"coin": {"rect": Rect2(0, 0, 90, 80), "text": "COIN", "anchor": Vector2(0, 1), "off": Vector2(140, -180), "color": Color(0.95, 0.8, 0.2, 0.35), "font_size": 18},
-		# Top-right mobile pause button
-		"pause": {"rect": Rect2(0, 0, 80, 60), "text": "||", "anchor": Vector2(1, 0), "off": Vector2(-110, 20), "color": Color(0.85, 0.2, 0.25, 0.4), "font_size": 24},
+		"fire": {"rect": Rect2(0, 0, 110, 110), "text": "FIRE", "anchor": Vector2(1, 1), "off": Vector2(-130, -130)},
+		"jump": {"rect": Rect2(0, 0, 74, 74), "text": "JMP", "anchor": Vector2(1, 1), "off": Vector2(-250, -160)},
+		"dash": {"rect": Rect2(0, 0, 74, 74), "text": "DSH", "anchor": Vector2(1, 1), "off": Vector2(-250, -60)},
+		"slide": {"rect": Rect2(0, 0, 74, 74), "text": "SLD", "anchor": Vector2(1, 1), "off": Vector2(-40, -260)},
+		"wpn": {"rect": Rect2(0, 0, 64, 44), "text": "WPN", "anchor": Vector2(1, 1), "off": Vector2(-40, -330)},
+		"parry": {"rect": Rect2(0, 0, 74, 74), "text": "PRY", "anchor": Vector2(0, 1), "off": Vector2(40, -90)},
+		"coin": {"rect": Rect2(0, 0, 74, 74), "text": "COIN", "anchor": Vector2(0, 1), "off": Vector2(40, -190)},
 	}
-
-	for btn_name in defs:
-		var d: Dictionary = defs[btn_name]
-		var panel := PanelContainer.new()
-		panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		var sb := StyleBoxFlat.new()
-		sb.bg_color = d.color
-		sb.border_color = Color(1.0, 0.6, 0.2, 0.7) if btn_name != "pause" else Color(1.0, 0.3, 0.3, 0.8)
-		sb.set_border_width_all(2)
-		sb.set_corner_radius_all(4)
-		panel.add_theme_stylebox_override("panel", sb)
-		_anchor_rect(panel, d.anchor, d.off, d.rect.size)
-		add_child(panel)
-
+	for name in defs:
+		var d: Dictionary = defs[name]
+		var r := ColorRect.new()
+		r.size = d.rect.size
+		r.color = Color(1.0, 0.2, 0.3, 0.22)
+		_anchor_rect(r, d.anchor, d.off, d.rect.size)
+		r.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(r)
 		var l := Label.new()
 		var ls := LabelSettings.new()
-		ls.font_size = d.font_size
-		ls.font_color = Color(1.0, 0.95, 0.9)
-		ls.outline_color = Color.BLACK
-		ls.outline_size = 3
+		ls.font_size = 12
+		ls.font_color = Color(1, 1, 1, 0.8)
 		l.label_settings = ls
 		l.text = d.text
+		_anchor_rect(l, d.anchor, d.off, d.rect.size)
 		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		l.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		l.set_anchors_preset(Control.PRESET_FULL_RECT)
-		panel.add_child(l)
-
-		buttons[btn_name] = {
-			"rect": Rect2(d.off, d.rect.size),
-			"node": panel,
-			"anchor": d.anchor,
-			"label": l,
-			"base_color": d.color,
-		}
-
-	# Dynamic joystick base and knob
-	_stick_base = Panel.new()
-	_stick_base.size = Vector2(STICK_R * 2.0, STICK_R * 2.0)
-	var sb_base := StyleBoxFlat.new()
-	sb_base.bg_color = Color(0.1, 0.05, 0.02, 0.3)
-	sb_base.border_color = Color(0.3, 0.8, 1.0, 0.5)
-	sb_base.set_border_width_all(2)
-	sb_base.set_corner_radius_all(int(STICK_R))
-	_stick_base.add_theme_stylebox_override("panel", sb_base)
-	_stick_base.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_stick_base.visible = false
-	add_child(_stick_base)
-
-	_knob = Panel.new()
-	_knob.size = Vector2(54, 54)
-	var sb_knob := StyleBoxFlat.new()
-	sb_knob.bg_color = Color(0.2, 0.9, 1.0, 0.65)
-	sb_knob.border_color = Color(1.0, 1.0, 1.0, 0.9)
-	sb_knob.set_border_width_all(2)
-	sb_knob.set_corner_radius_all(27)
-	_knob.add_theme_stylebox_override("panel", sb_knob)
+		add_child(l)
+		buttons[name] = {"rect": Rect2(d.off, d.rect.size), "node": r, "anchor": d.anchor}
+	_knob = ColorRect.new()
+	_knob.size = Vector2(26, 26)
+	_knob.color = Color(0.2, 0.9, 1.0, 0.35)
 	_knob.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_knob.visible = false
 	add_child(_knob)
@@ -119,109 +73,44 @@ func _anchor_rect(c: Control, anchor: Vector2, off: Vector2, size: Vector2) -> v
 
 func _button_at(pos: Vector2) -> String:
 	var sz := get_viewport().get_visible_rect().size
-	for btn_name in buttons:
-		var b: Dictionary = buttons[btn_name]
+	for name in buttons:
+		var b: Dictionary = buttons[name]
 		var anchor: Vector2 = b.anchor
 		var r: Rect2 = b.rect
 		var origin := Vector2(sz.x * anchor.x + r.position.x, sz.y * anchor.y + r.position.y)
-		var btn_rect := Rect2(origin, r.size)
-		if btn_rect.grow(10.0).has_point(pos):
-			return btn_name
+		if Rect2(origin, r.size).grow(8.0).has_point(pos):
+			return name
 	return ""
 
 
-func trigger_button(btn_name: String, pressed: bool = true) -> void:
-	_press(btn_name, pressed)
-
-
-func _press(btn_name: String, on: bool) -> void:
-	match btn_name:
-		"pause":
-			if on:
-				pause_pressed.emit()
+func _press(name: String, on: bool) -> void:
+	if player == null:
+		return
+	match name:
 		"fire":
-			if player:
-				player.touch_fire = on
+			player.touch_fire = on
 		"jump":
-			if player:
-				player.touch_jump = on
+			player.touch_jump = on
 		"slide":
-			if player:
-				player.touch_slide = on
+			player.touch_slide = on
 		"dash":
-			if on and player:
+			if on:
 				player.request_dash()
 		"wpn":
-			if on and player:
+			if on:
 				player.cycle_weapon()
 		"parry":
-			if on and player:
+			if on:
 				player.request_parry()
 		"coin":
-			if on and player:
+			if on:
 				player.toss_coin()
-
-	if btn_name in buttons:
-		var panel: PanelContainer = buttons[btn_name].node
-		var sb: StyleBoxFlat = panel.get_theme_stylebox("panel")
-		if sb:
-			var base_c: Color = buttons[btn_name].base_color
-			sb.bg_color = Color(0.3, 0.9, 1.0, 0.7) if on else base_c
+	if name in buttons:
+		var c: ColorRect = buttons[name].node
+		c.color.a = 0.45 if on else 0.22
 
 
 func _input(ev: InputEvent) -> void:
-	if not enabled:
-		return
-
-	if ev is InputEventScreenTouch:
-		if ev.pressed:
-			var btn := _button_at(ev.position)
-			if btn != "":
-				_touch_buttons[ev.index] = btn
-				_press(btn, true)
-				get_viewport().set_input_as_handled()
-				return
-
-			if ev.position.x < get_viewport().get_visible_rect().size.x * 0.45:
-				_stick_id = ev.index
-				_stick_anchor = ev.position
-				_stick_base.position = _stick_anchor - Vector2(STICK_R, STICK_R)
-				_stick_base.visible = true
-				_knob.position = _stick_anchor - Vector2(27, 27)
-				_knob.visible = true
-				get_viewport().set_input_as_handled()
-			else:
-				_look_id = ev.index
-				_look_last = ev.position
-				get_viewport().set_input_as_handled()
-		else:
-			if ev.index in _touch_buttons:
-				var btn: String = _touch_buttons[ev.index]
-				_press(btn, false)
-				_touch_buttons.erase(ev.index)
-				get_viewport().set_input_as_handled()
-
-			if ev.index == _stick_id:
-				_stick_id = -1
-				if player:
-					player.touch_move = Vector2.ZERO
-				_knob.visible = false
-				_stick_base.visible = false
-				get_viewport().set_input_as_handled()
-
-			if ev.index == _look_id:
-				_look_id = -1
-				get_viewport().set_input_as_handled()
-
-	elif ev is InputEventScreenDrag:
-		if ev.index == _stick_id:
-			var d: Vector2 = ev.position - _stick_anchor
-			var v: Vector2 = d.limit_length(STICK_R) / STICK_R
-			if player:
-				player.touch_move = Vector2(v.x, -v.y)
-			_knob.position = _stick_anchor + v * STICK_R - Vector2(27, 27)
-			get_viewport().set_input_as_handled()
-		elif ev.index == _look_id:
-			if player:
-				player.touch_look += ev.relative
-			get_viewport().set_input_as_handled()
+	# movement stick and look are handled by the Thumbstick Plugin
+	# (scripts/mobile_controls.gd); this node only owns action buttons.
+	return
