@@ -44,9 +44,8 @@ func _init() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	visible = false
 	process_mode = Node.PROCESS_MODE_ALWAYS
-
-
-func _ready() -> void:
+	# Build eagerly (not in _ready) so the menus are fully usable even when
+	# the scene is instantiated outside the tree (headless tests do that).
 	_build_main()
 	_build_pause()
 	_build_settings()
