@@ -81,6 +81,11 @@ func _init() -> void:
 	head.add_child(gun)
 
 
+func _is_dialogic_playing() -> bool:
+	var d := get_node_or_null("/root/Dialogic")
+	return d != null and d.current_timeline != null
+
+
 func request_dash() -> void:
 	_want_dash = true
 
@@ -161,6 +166,8 @@ func _unhandled_input(ev: InputEvent) -> void:
 			JOY_BUTTON_Y:
 				cycle_weapon()
 	elif ev is InputEventMouseButton and ev.pressed:
+		if _is_dialogic_playing():
+			return
 		match ev.button_index:
 			MOUSE_BUTTON_LEFT:
 				touch_fire_mouse = true
@@ -277,9 +284,9 @@ func _physics_process(dt: float) -> void:
 	if coin_btn and not _prev_lt:
 		toss_coin()
 	_prev_lt = coin_btn
-	var firing := touch_fire_mouse or touch_fire \
+	var firing := (touch_fire_mouse or touch_fire \
 			or Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) \
-			or Input.get_joy_axis(0, JOY_AXIS_TRIGGER_RIGHT) > 0.4
+			or Input.get_joy_axis(0, JOY_AXIS_TRIGGER_RIGHT) > 0.4) and not _is_dialogic_playing()
 	if firing:
 		try_fire()
 
@@ -292,7 +299,7 @@ func horizontal_speed() -> float:
 
 
 func try_fire() -> void:
-	if fire_cd > 0.0:
+	if fire_cd > 0.0 or _is_dialogic_playing():
 		return
 	match weapon:
 		2:

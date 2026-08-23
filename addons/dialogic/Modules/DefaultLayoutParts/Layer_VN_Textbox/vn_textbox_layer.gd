@@ -29,8 +29,8 @@ enum AnimationsNewText {NONE, WIGGLE}
 
 @export_subgroup("Alignment & Size")
 @export var text_alignment: Alignments= Alignments.LEFT
-@export var text_use_global_size: bool = true
-@export var text_size: int = 15
+@export var text_use_global_size: bool = false
+@export var text_size: int = 18
 
 @export_subgroup("Color")
 @export var text_use_global_color: bool = true
@@ -54,8 +54,8 @@ enum AnimationsNewText {NONE, WIGGLE}
 @export var box_color_custom: Color = Color.BLACK
 
 @export_subgroup("Size & Position")
-@export var box_size: Vector2 = Vector2(550, 110)
-@export var box_margin_bottom: int = 15
+@export var box_size: Vector2 = Vector2(700, 140)
+@export var box_margin_bottom: int = 25
 
 @export_subgroup("Animation")
 @export var box_animation_in: AnimationsIn = AnimationsIn.FADE_UP
@@ -73,8 +73,8 @@ enum AnimationsNewText {NONE, WIGGLE}
 @export_subgroup('Font')
 @export var name_label_use_global_font: bool = true
 @export_file('*.ttf', '*.tres') var name_label_font: String = ""
-@export var name_label_use_global_font_size: bool = true
-@export var name_label_custom_font_size: int = 15
+@export var name_label_use_global_font_size: bool = false
+@export var name_label_custom_font_size: int = 18
 
 @export_subgroup('Box')
 @export_file("*.tres") var name_label_box_panel: String = this_folder.path_join("vn_textbox_name_label_panel.tres")
