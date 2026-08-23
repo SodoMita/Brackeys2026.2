@@ -39,3 +39,6 @@ jobs:
 
       - name: Run tests
         run: ./godot --headless --path . --script res://tests/test_runner.gd
+
+      - name: Run playtest (boots the game, plays frames headless)
+        run: ./godot --headless --path . --script res://tests/playtest.gd

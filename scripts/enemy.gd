@@ -18,6 +18,13 @@ var eyes: Array = []
 
 func _init() -> void:
 	hp = Cfg.enemy_hp
+	var pc := CollisionShape3D.new()
+	var caps := CapsuleShape3D.new()
+	caps.radius = 0.45
+	caps.height = 1.5
+	pc.shape = caps
+	pc.position = Vector3(0.0, 0.75, 0.0)
+	add_child(pc)
 	var body := MeshInstance3D.new()
 	var cm := CapsuleMesh.new()
 	cm.radius = 0.45

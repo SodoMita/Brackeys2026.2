@@ -49,6 +49,13 @@ var touch_slide := false
 
 func _init() -> void:
 	hp = Cfg.max_hp
+	var pc := CollisionShape3D.new()
+	var caps := CapsuleShape3D.new()
+	caps.radius = 0.4
+	caps.height = 1.6
+	pc.shape = caps
+	pc.position = Vector3(0.0, 0.8, 0.0)
+	add_child(pc)
 	head = Node3D.new()
 	head.name = "Head"
 	add_child(head)
@@ -96,6 +103,7 @@ func toss_coin() -> void:
 	if coin and is_instance_valid(coin):
 		return
 	coin = RigidBody3D.new()
+	var cmi := MeshInstance3D.new()
 	var cm := CylinderMesh.new()
 	cm.top_radius = 0.12
 	cm.bottom_radius = 0.12
@@ -104,7 +112,8 @@ func toss_coin() -> void:
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	mat.albedo_color = Color(1.0, 0.85, 0.3)
 	cm.material = mat
-	coin.mesh = cm
+	cmi.mesh = cm
+	coin.add_child(cmi)
 	var cs := CollisionShape3D.new()
 	var ss := SphereShape3D.new()
 	ss.radius = 0.15

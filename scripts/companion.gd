@@ -11,6 +11,13 @@ var enemy_pool: Node3D = null
 
 
 func _init() -> void:
+	var pc := CollisionShape3D.new()
+	var caps := CapsuleShape3D.new()
+	caps.radius = 0.4
+	caps.height = 1.6
+	pc.shape = caps
+	pc.position = Vector3(0.0, 0.8, 0.0)
+	add_child(pc)
 	var body := MeshInstance3D.new()
 	var cm := CapsuleMesh.new()
 	cm.radius = 0.4
