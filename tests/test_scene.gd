@@ -50,3 +50,48 @@ func test_input_sources_do_not_crash_headless() -> void:
 	scene._start()
 	scene._process(0.016)
 	scene.free()
+
+
+func test_main_menu_and_settings_flow() -> void:
+	var scene := _boot()
+	assert_true(scene.menus != null, "menus built")
+	assert_true(scene.menus.main_panel.visible, "boots showing the main menu")
+	assert_false(scene.menus.settings_panel.visible, "settings hidden at boot")
+	scene.menus.open_settings(scene.menus.main_panel)
+	assert_true(scene.menus.settings_open, "settings opens over the main menu")
+	assert_true(scene.menus.settings_panel.visible, "settings panel visible")
+	scene.menus._close_settings()
+	assert_false(scene.menus.settings_open, "settings closes back to the main menu")
+	assert_true(scene.menus.main_panel.visible, "main menu restored")
+	scene.menus.btn_start.pressed.emit()
+	assert_eq(scene.state, scene.State.PLAYING, "START button starts the run")
+	assert_false(scene.menus.visible, "menus hidden during play")
+	scene.free()
+
+
+func test_pause_resume_cycle() -> void:
+	var scene := _boot()
+	runner.root.add_child(scene)
+	scene._start()
+	scene._pause()
+	assert_eq(scene.state, scene.State.PAUSED, "pause state")
+	assert_true(scene.get_tree().paused, "tree paused under the pause menu")
+	assert_true(scene.menus.pause_panel.visible, "pause panel shown")
+	scene.menus.btn_resume.pressed.emit()
+	assert_eq(scene.state, scene.State.PLAYING, "resume returns to playing")
+	assert_false(scene.get_tree().paused, "tree unpaused on resume")
+	assert_false(scene.menus.visible, "menus hidden after resume")
+	scene.free()
+
+
+func test_invert_look_flips_pitch() -> void:
+	var scene := _boot()
+	var old := Cfg.invert_look
+	Cfg.invert_look = false
+	scene.player._apply_look(0.0, 0.5)
+	assert_near(scene.player.pitch, 0.5, 0.001, "look pitch normally adds")
+	Cfg.invert_look = true
+	scene.player._apply_look(0.0, 0.5)
+	assert_near(scene.player.pitch, 0.0, 0.001, "inverted look flips pitch")
+	Cfg.invert_look = old
+	scene.free()

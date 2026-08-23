@@ -1,7 +1,7 @@
 extends Node3D
 ## CRIMSON VELOCITY — root: arena, waves, HUD, style meter, audio, dialogue.
 
-enum State { MENU, PLAYING, DEAD }
+enum State { MENU, PLAYING, DEAD, PAUSED }
 
 const ARENA := 44.0
 
@@ -14,6 +14,9 @@ var wave := 0
 var style := 0.0
 var hitmarker_t := 0.0
 var hurt_flash: ColorRect
+var hud_layer: CanvasLayer
+var menus: Control
+var touch_ui: Control
 
 var hud_hp: Label
 var hud_rank: Label
@@ -49,7 +52,9 @@ func _ready() -> void:
 		var ts = load("res://scripts/touch_controls.gd").new()
 		add_child(ts)
 		ts.setup(player)
-	_show_menu()
+		touch_ui = ts
+		_set_touch_active(false)
+	_build_menus()
 
 
 # ------------------------------------------------------------ world
@@ -185,8 +190,9 @@ func _make_ls(size: int, color: Color) -> LabelSettings:
 
 
 func _build_hud() -> void:
-	var cl := CanvasLayer.new()
-	add_child(cl)
+	hud_layer = CanvasLayer.new()
+	add_child(hud_layer)
+	var cl := hud_layer
 	hud_hp = Label.new()
 	hud_hp.position = Vector2(8, 128)
 	hud_hp.label_settings = _make_ls(20, Color(1.0, 0.25, 0.3))
@@ -220,12 +226,18 @@ func _build_hud() -> void:
 	overlay.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	overlay.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	overlay.label_settings = _make_ls(14, Color(1.0, 0.3, 0.35))
+	overlay.visible = false
 	cl.add_child(overlay)
 
 
-func _show_menu() -> void:
-	overlay.text = "C R I M S O N   V E L O C I T Y\n\nKEYBOARD: WASD · SPACE jump · SHIFT dash · CTRL slide · LMB fire · RMB coin · F parry\nGAMEPAD: sticks · A jump · LB dash · RB slide · RT fire · LT coin · X parry\nTOUCH: left stick · right drag · on-screen buttons\n\ndamage heals you. parry the white eyes. shoot the coin.\n\nclick / tap / A to start"
-	overlay.visible = true
+func _build_menus() -> void:
+	menus = load("res://scripts/menus.gd").new()
+	hud_layer.add_child(menus)
+	menus.start_pressed.connect(_start)
+	menus.resume_pressed.connect(_resume)
+	menus.quit_to_menu_pressed.connect(_quit_to_menu)
+	menus.quit_game_pressed.connect(func(): get_tree().quit())
+	menus.open_main()
 
 
 # ------------------------------------------------------------ audio
@@ -285,26 +297,83 @@ func _play(p: AudioStreamPlayer) -> void:
 
 # ------------------------------------------------------------ flow
 func _unhandled_input(ev: InputEvent) -> void:
-	if state == State.PLAYING:
-		return
-	var start := false
+	match state:
+		State.PLAYING:
+			if _is_pause_press(ev):
+				_pause()
+		State.DEAD:
+			if _is_confirm(ev) or _is_pause_press(ev):
+				get_tree().reload_current_scene()
+		State.MENU:
+			# Buttons handle their own clicks; any other click/tap/A/START starts.
+			if menus != null and menus.settings_open:
+				return
+			if _is_confirm(ev):
+				_start()
+
+
+func _is_confirm(ev: InputEvent) -> bool:
 	if ev is InputEventMouseButton and ev.pressed:
-		start = true
-	elif ev is InputEventScreenTouch and ev.pressed:
-		start = true
-	elif ev is InputEventJoypadButton and ev.pressed \
+		return true
+	# While menus are open on touch devices mouse-from-touch emulation is on,
+	# so the emulated click above covers taps — don't double-fire raw touches.
+	if ev is InputEventScreenTouch and ev.pressed and not Input.is_emulating_mouse_from_touch():
+		return true
+	if ev is InputEventJoypadButton and ev.pressed \
 			and ev.button_index in [JOY_BUTTON_A, JOY_BUTTON_START]:
-		start = true
-	if start:
-		if state == State.MENU:
-			_start()
-		elif state == State.DEAD:
-			get_tree().reload_current_scene()
+		return true
+	return false
+
+
+func _is_pause_press(ev: InputEvent) -> bool:
+	if ev is InputEventKey and ev.pressed and not ev.echo \
+			and ev.keycode in [KEY_ESCAPE, KEY_P]:
+		return true
+	if ev is InputEventJoypadButton and ev.pressed \
+			and ev.button_index == JOY_BUTTON_START:
+		return true
+	return false
+
+
+func _pause() -> void:
+	if state != State.PLAYING:
+		return
+	state = State.PAUSED
+	get_tree().paused = true
+	if DisplayServer.get_name() != "headless":
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	_set_touch_active(false)
+	menus.open_pause()
+
+
+func _resume() -> void:
+	if state != State.PAUSED:
+		return
+	state = State.PLAYING
+	get_tree().paused = false
+	if DisplayServer.get_name() != "headless":
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	menus.close_all()
+	_set_touch_active(true)
+
+
+func _quit_to_menu() -> void:
+	get_tree().paused = false
+	get_tree().reload_current_scene()
+
+
+func _set_touch_active(on: bool) -> void:
+	if touch_ui:
+		touch_ui.enabled = on
+		touch_ui.visible = on
 
 
 func _start() -> void:
 	state = State.PLAYING
 	overlay.visible = false
+	if menus:
+		menus.close_all()
+	_set_touch_active(true)
 	if DisplayServer.get_name() != "headless":
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	_try_intro_dialogue()
@@ -334,7 +403,8 @@ func _on_player_died() -> void:
 	state = State.DEAD
 	if DisplayServer.get_name() != "headless":
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-	overlay.text = "Y O U   D I E D\n\nwave %d · rank %s\n\nclick to retry" % [wave, Cfg.rank_for_points(style)]
+	_set_touch_active(false)
+	overlay.text = "Y O U   D I E D\n\nwave %d · rank %s\n\nclick / tap / A to retry · ESC for menu" % [wave, Cfg.rank_for_points(style)]
 	overlay.visible = true
 
 
