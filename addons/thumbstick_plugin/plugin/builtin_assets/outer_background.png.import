@@ -2,27 +2,27 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://k03hhyefatqk"
-path="res://.godot/imported/colt_walk3.png-c8077ffc2a64363ec0396556a144de28.ctex"
+uid="uid://c1mcwfteyrsiy"
+path="res://.godot/imported/outer_background.png-2c6fb7e6468f6f786ab87a6b6eee1dd4.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/sprites/colt_walk3.png"
-dest_files=["res://.godot/imported/colt_walk3.png-c8077ffc2a64363ec0396556a144de28.ctex"]
+source_file="res://addons/thumbstick_plugin/plugin/builtin_assets/outer_background.png"
+dest_files=["res://.godot/imported/outer_background.png-2c6fb7e6468f6f786ab87a6b6eee1dd4.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.7
+compress/lossy_quality=0.45
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0
-compress/channel_pack=0
+compress/channel_pack=1
 mipmaps/generate=false
 mipmaps/limit=-1
 roughness/mode=0

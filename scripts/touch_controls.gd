@@ -4,9 +4,6 @@ extends Control
 ## Writes straight into the player's aggregated input vars.
 
 var player: CharacterBody3D
-## Gameplay only — menus own the input while they're open (game.gd toggles
-## this with the run state; mouse-from-touch emulation is flipped then too).
-var enabled := true
 
 var _stick_id := -1
 var _stick_anchor := Vector2.ZERO
@@ -114,40 +111,6 @@ func _press(name: String, on: bool) -> void:
 
 
 func _input(ev: InputEvent) -> void:
-	if not enabled:
-		return
-	if ev is InputEventScreenTouch:
-		var btn := _button_at(ev.position)
-		if ev.pressed:
-			if btn != "":
-				_press(btn, true)
-				get_viewport().set_input_as_handled()
-				return
-			if ev.position.x < get_viewport().get_visible_rect().size.x * 0.45:
-				_stick_id = ev.index
-				_stick_anchor = ev.position
-				_knob.visible = true
-				get_viewport().set_input_as_handled()
-			else:
-				_look_id = ev.index
-				_look_last = ev.position
-				get_viewport().set_input_as_handled()
-		else:
-			if btn != "":
-				_press(btn, false)
-			if ev.index == _stick_id:
-				_stick_id = -1
-				player.touch_move = Vector2.ZERO
-				_knob.visible = false
-			if ev.index == _look_id:
-				_look_id = -1
-	elif ev is InputEventScreenDrag:
-		if ev.index == _stick_id:
-			var d: Vector2 = ev.position - _stick_anchor
-			var v: Vector2 = d.limit_length(STICK_R) / STICK_R
-			player.touch_move = Vector2(v.x, -v.y)
-			_knob.position = _stick_anchor + v * STICK_R - Vector2(13, 13)
-			get_viewport().set_input_as_handled()
-		elif ev.index == _look_id:
-			player.touch_look += ev.relative
-			get_viewport().set_input_as_handled()
+	# movement stick and look are handled by the Thumbstick Plugin
+	# (scripts/mobile_controls.gd); this node only owns action buttons.
+	return

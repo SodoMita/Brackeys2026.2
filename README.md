@@ -10,8 +10,6 @@ export presets for five platforms, and GitHub Actions CI.
 ├── scenes/main.tscn        # Main scene
 ├── scripts/
 │   ├── game.gd             # Root: arena, waves, HUD, style meter, audio
-│   ├── menus.gd            # Main menu, pause menu & settings panel (procedural)
-│   ├── settings.gd         # Player settings: live apply + user://settings.cfg
 │   ├── player.gd           # FPS controller (keyboard+mouse / gamepad / touch)
 │   ├── enemy.gd            # Melee chaser AI
 │   ├── touch_controls.gd   # Virtual stick + on-screen buttons (touch devices)
@@ -100,21 +98,6 @@ Blood heals, style decays, parry everything.
 
 Touch controls appear automatically on touch devices (virtual stick + button
 cluster); gamepad and keyboard work everywhere, including web exports.
-
-## Menus & settings
-
-- **Main menu** — START / SETTINGS / QUIT GAME (quit is hidden on web).
-  Clicking anywhere, tapping, or pressing gamepad A/START also starts.
-- **Pause menu** — ESC / P / gamepad START pauses (tree-paused): RESUME /
-  SETTINGS / QUIT TO MENU.
-- **Settings** — mouse sensitivity & stick speed (×0.2–×3 of the designer
-  defaults), invert look, master volume, fullscreen (desktop only; hidden on
-  web), RESET DEFAULTS / BACK. Everything applies live and persists to
-  `user://settings.cfg`; designed defaults are captured from the Cfg autoload
-  on boot, so inspector tuning stays authoritative.
-- Menus are fully gamepad- (d-pad + A) and touch-navigable: mouse-from-touch
-  emulation is flipped on only while a menu is open — gameplay keeps reading
-  raw touches.
 
 ## Art: DOOM-style billboard sprites
 

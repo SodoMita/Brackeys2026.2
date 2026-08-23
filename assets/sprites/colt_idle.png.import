@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://k03hhyefatqk"
-path="res://.godot/imported/colt_walk3.png-c8077ffc2a64363ec0396556a144de28.ctex"
+uid="uid://b148u6yuhb2v8"
+path="res://.godot/imported/colt_idle.png-dd3a7fcdd30e6716fb34cccd88143996.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/sprites/colt_walk3.png"
-dest_files=["res://.godot/imported/colt_walk3.png-c8077ffc2a64363ec0396556a144de28.ctex"]
+source_file="res://assets/sprites/colt_idle.png"
+dest_files=["res://.godot/imported/colt_idle.png-dd3a7fcdd30e6716fb34cccd88143996.ctex"]
 
 [params]
 

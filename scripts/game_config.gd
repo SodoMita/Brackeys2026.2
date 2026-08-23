@@ -15,7 +15,6 @@ extends Node
 @export var slide_max_speed := 17.0
 @export var mouse_sensitivity := 0.0026
 @export var stick_look_speed := 2.6
-@export var invert_look := false
 
 @export_group("Health")
 @export var max_hp := 100.0
@@ -91,12 +90,6 @@ extends Node
 
 @export_group("Dialogue")
 @export var intro_timeline: Resource = null  # assign a DialogicTimeline in the inspector
-
-
-func _ready() -> void:
-	# Player settings are captured/applied as soon as the autoload is up,
-	# before the main scene builds anything.
-	Settings.apply_saved()
 
 
 func heal_on_damage(current_hp: float, damage: float) -> float:
