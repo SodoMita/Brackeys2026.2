@@ -203,6 +203,11 @@ func _make_trigger(z: float, width: float, cb: Callable) -> void:
 
 
 func _build_level() -> void:
+	var sb := StaticBody3D.new()
+	var fcs := CollisionShape3D.new()
+	fcs.shape = WorldBoundaryShape3D.new()
+	sb.add_child(fcs)
+	add_child(sb)
 	_segment(6.0, -28.0, ROOM_W)          # room 1
 	_segment(-28.0, -36.0, CORR_W)        # corridor 1
 	_segment(-36.0, -64.0, ROOM_W)        # room 2
@@ -526,6 +531,9 @@ func _spawn_wave() -> void:
 
 func _spawn_enemy(ranged: bool, at := Vector3.ZERO, boss := false) -> CharacterBody3D:
 	var e: CharacterBody3D = load("res://scripts/enemy.gd").new()
+	e.kind = "boss" if boss else ("spitter" if ranged else "hound")
+	if boss:
+		e.modulate = Color(1.6, 0.5, 0.5)
 	if at == Vector3.ZERO:
 		var b := _room_bounds()
 		for _t in 12:

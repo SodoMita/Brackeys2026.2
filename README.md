@@ -116,6 +116,17 @@ cluster); gamepad and keyboard work everywhere, including web exports.
   emulation is flipped on only while a menu is open — gameplay keeps reading
   raw touches.
 
+## Art: DOOM-style billboard sprites
+
+Characters are 2D sprites in a gritty Road-of-the-Dead flash style
+(cyborg partner, mutant/bot enemies), generated as 5-frame walk-cycle
+sheets, sliced by `tools/slice_sheet.py` (connected components, any
+layout), matted to transparency by `tools/make_sprites.py` using the
+difference-matte triangulation from github.com/SodoMita/Seirin, and
+rendered in-game as billboarded `AnimatedSprite3D`s (`sprite_lib.gd`).
+Player stays fully 3D first-person. Missing frames fall back to solid
+capsules so the game always runs.
+
 ## Designer tuning
 
 All gameplay values are `@export`ed on the **Cfg** autoload
