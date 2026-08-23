@@ -35,9 +35,9 @@ extends DialogicLayoutLayer
 
 @export_group('Sounds')
 @export_range(-80, 24, 0.01) var sounds_volume: float = -10
-@export_file("*.wav", "*.ogg", "*.mp3") var sounds_pressed: String = "res://addons/dialogic/Example Assets/sound-effects/typing1.wav"
-@export_file("*.wav", "*.ogg", "*.mp3") var sounds_hover: String = "res://addons/dialogic/Example Assets/sound-effects/typing2.wav"
-@export_file("*.wav", "*.ogg", "*.mp3") var sounds_focus: String = "res://addons/dialogic/Example Assets/sound-effects/typing4.wav"
+@export_file("*.wav", "*.ogg", "*.mp3") var sounds_pressed: String = ""
+@export_file("*.wav", "*.ogg", "*.mp3") var sounds_hover: String = ""
+@export_file("*.wav", "*.ogg", "*.mp3") var sounds_focus: String = ""
 
 @export_group('Choices')
 @export_subgroup('Behavior')
@@ -138,6 +138,9 @@ func _apply_export_overrides() -> void:
 	# apply sound settings
 	var button_sound: DialogicNode_ButtonSound = get_button_sound()
 	button_sound.volume_db = sounds_volume
-	button_sound.sound_pressed = load(sounds_pressed)
-	button_sound.sound_hover = load(sounds_hover)
-	button_sound.sound_focus = load(sounds_focus)
+	if not sounds_pressed.is_empty():
+		button_sound.sound_pressed = load(sounds_pressed)
+	if not sounds_hover.is_empty():
+		button_sound.sound_hover = load(sounds_hover)
+	if not sounds_focus.is_empty():
+		button_sound.sound_focus = load(sounds_focus)
