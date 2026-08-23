@@ -82,10 +82,13 @@ godot --headless --path . --export-release "Web" build/web/index.html
 
 Ship a build by merging `main` into `build` and pushing.
 
-## The game: CRIMSON VELOCITY
+## The game: STEEL KNIFE (GDD in `docs/GDD_STEEL_KNIFE.md`)
 
-ULTRAKILL-inspired retro FPS (original name/assets, fully procedural), PSX-style
-320×180 upscaled rendering. Blood heals, style decays, waves escalate.
+GDD-driven retro FPS (original assets, fully procedural), PSX-style 320×180
+upscaled rendering. Mission 1: three sealed rooms (7 waves) of hounds and
+bullet-hell spitters in a desert complex, scrap terminals between rooms,
+COLT the colleague at your side — until the plaza, and the betrayal boss.
+Blood heals, style decays, parry everything.
 
 | Input | Move | Look | Jump | Dash | Slide | Fire | Weapons |
 |---|---|---|---|---|---|---|---|
