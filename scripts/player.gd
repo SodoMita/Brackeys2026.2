@@ -35,6 +35,9 @@ var parry_cd := 0.0
 var coin: RigidBody3D = null
 var coin_age := 0.0
 var touch_fire_mouse := false
+var damage_mult := 1.0
+var weapons := [true, true, false]
+var disabled := false
 
 # aggregated touch input
 var touch_move := Vector2.ZERO
@@ -109,7 +112,7 @@ func toss_coin() -> void:
 	cs.shape = ss
 	coin.set_meta("coin", true)
 	coin.position = cam.global_position + (-cam.global_transform.basis.z) * 0.5
-	var vel := -cam.global_transform.basis.z * Cfg.coin_toss_velocity
+	var vel: Vector3 = -cam.global_transform.basis.z * float(Cfg.coin_toss_velocity)
 	vel.y += Cfg.coin_toss_velocity * 0.6
 	coin.linear_velocity = vel
 	coin.angular_velocity = Vector3(20.0, 5.0, 20.0)
@@ -133,6 +136,9 @@ func _unhandled_input(ev: InputEvent) -> void:
 				weapon = 0
 			KEY_2:
 				weapon = 1
+			KEY_3:
+				if weapons[2]:
+					weapon = 2
 	elif ev is InputEventJoypadButton and ev.pressed:
 		match ev.button_index:
 			JOY_BUTTON_LEFT_SHOULDER:
@@ -182,7 +188,7 @@ func _gather_move() -> Vector2:
 
 
 func _physics_process(dt: float) -> void:
-	if dead:
+	if dead or disabled:
 		return
 	dash_cd = maxf(dash_cd - dt, 0.0)
 	parry_cd = maxf(parry_cd - dt, 0.0)
@@ -242,8 +248,8 @@ func _physics_process(dt: float) -> void:
 
 	# --- horizontal accel (quake-style), slide keeps momentum
 	if not sliding:
-		var target := wish * Cfg.walk_speed
-		var accel := Cfg.accel_ground if grounded else Cfg.accel_air
+		var target: Vector3 = wish * float(Cfg.walk_speed)
+		var accel: float = float(Cfg.accel_ground) if grounded else float(Cfg.accel_air)
 		velocity.x = move_toward(velocity.x, target.x, accel * dt)
 		velocity.z = move_toward(velocity.z, target.z, accel * dt)
 		if grounded and wish.length() < 0.1:
@@ -279,10 +285,26 @@ func horizontal_speed() -> float:
 func try_fire() -> void:
 	if fire_cd > 0.0:
 		return
-	fire_cd = Cfg.revolver_cooldown if weapon == 0 else Cfg.shotgun_cooldown
-	var pellets := 1 if weapon == 0 else Cfg.shotgun_pellets
-	var spread := 0.0 if weapon == 0 else Cfg.shotgun_spread
-	var damage := Cfg.revolver_damage if weapon == 0 else Cfg.shotgun_damage
+	match weapon:
+		2:
+			fire_cd = Cfg.nailgun_cooldown
+		1:
+			fire_cd = Cfg.shotgun_cooldown
+		_:
+			fire_cd = Cfg.revolver_cooldown
+	var pellets: int = 1 if weapon == 0 else int(Cfg.shotgun_pellets)
+	var spread: float = 0.0 if weapon == 0 else float(Cfg.shotgun_spread)
+	var damage: float
+	match weapon:
+		1:
+			damage = Cfg.shotgun_damage
+		2:
+			damage = Cfg.nailgun_damage
+		_:
+			damage = Cfg.revolver_damage
+	damage *= damage_mult
+	pellets = 1 if weapon == 2 else pellets
+	spread = 0.015 if weapon == 2 else spread
 	for _i in pellets:
 		var dir := -cam.global_transform.basis.z
 		dir += cam.global_transform.basis.x * randf_range(-spread, spread)

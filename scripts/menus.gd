@@ -1,5 +1,5 @@
 extends Control
-## CRIMSON VELOCITY — main menu, pause menu and settings panel, built
+## STEEL KNIFE — main menu, pause menu and settings panel, built
 ## procedurally for the 320×180 pixel UI (same style as the HUD in game.gd).
 ## Emits requests; game.gd owns the state machine and wires these signals.
 ##
@@ -12,11 +12,11 @@ signal resume_pressed
 signal quit_to_menu_pressed
 signal quit_game_pressed
 
-const ACCENT := Color(1.0, 0.16, 0.22)
+const ACCENT := Color(1.0, 0.62, 0.2)
 const CYAN := Color(0.4, 0.95, 1.0)
 const PAPER := Color(0.92, 0.86, 0.85)
 const MUTED := Color(0.66, 0.56, 0.56)
-const DIM := Color(0.02, 0.0, 0.01, 0.6)
+const DIM := Color(0.05, 0.03, 0.01, 0.62)
 
 var main_panel: Control
 var pause_panel: Control
@@ -196,8 +196,8 @@ static func _button(text: String, width := 128) -> Button:
 func _build_main() -> void:
 	main_panel = _make_dim_panel()
 	var box := _centered_vbox(main_panel)
-	box.add_child(_label("CRIMSON VELOCITY", 22, Color(1.0, 0.3, 0.32)))
-	box.add_child(_label("blood heals · speed is power · style is everything", 7, MUTED))
+	box.add_child(_label("STEEL KNIFE", 24, Color(1.0, 0.72, 0.35)))
+	box.add_child(_label("mission 1: clear the site with COLT", 8, MUTED))
 	var gap := Control.new()
 	gap.custom_minimum_size = Vector2(0, 10)
 	gap.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -217,10 +217,10 @@ func _build_main() -> void:
 	gap2.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	box.add_child(gap2)
 	var hints := _label(
-		"WASD move · SPACE jump · SHIFT dash · CTRL slide\n" +
-		"LMB fire · RMB coin · F parry · 1/2 weapons · ESC pause\n" +
-		"gamepad: sticks · A jump · LB dash · RB slide · RT fire · X parry\n" +
-		"parry the white eyes · shoot the coin", 7, MUTED)
+		"WASD move · SPACE jump · SHIFT dash · CTRL slide · ESC pause\n" +
+		"LMB fire · RMB coin · F parry · E shop · 1/2/3 weapons\n" +
+		"rooms lock when you cross the line · scrap buys upgrades\n" +
+		"blood heals · parry the white eyes · shoot the coin", 7, MUTED)
 	hints.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	hints.custom_minimum_size = Vector2(300, 0)
 	box.add_child(hints)
@@ -229,7 +229,7 @@ func _build_main() -> void:
 func _build_pause() -> void:
 	pause_panel = _make_dim_panel()
 	var box := _centered_vbox(pause_panel)
-	box.add_child(_label("PAUSED", 16, Color(1.0, 0.3, 0.32)))
+	box.add_child(_label("PAUSED", 16, Color(1.0, 0.72, 0.35)))
 	var gap := Control.new()
 	gap.custom_minimum_size = Vector2(0, 8)
 	gap.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -290,7 +290,7 @@ func _build_settings() -> void:
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 4)
 	panel.add_child(box)
-	box.add_child(_label("SETTINGS", 13, Color(1.0, 0.4, 0.42)))
+	box.add_child(_label("SETTINGS", 13, Color(1.0, 0.62, 0.3)))
 
 	var dm := float(Settings.default_value("mouse_sensitivity"))
 	var ds := float(Settings.default_value("stick_look_speed"))

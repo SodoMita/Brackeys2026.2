@@ -106,7 +106,7 @@ enum AnimationsNewText {NONE, WIGGLE}
 @export_subgroup('Typing Sounds')
 @export var typing_sounds_enabled: bool = true
 @export var typing_sounds_mode: DialogicNode_TypeSounds.Modes = DialogicNode_TypeSounds.Modes.INTERRUPT
-@export_dir var typing_sounds_sounds_folder: String = "res://addons/dialogic/Example Assets/sound-effects/"
+@export_dir var typing_sounds_sounds_folder: String = ""
 @export_file("*.wav", "*.ogg", "*.mp3") var typing_sounds_end_sound: String = ""
 @export_range(1, 999, 1) var typing_sounds_every_nths_character: int = 1
 @export_range(0.01, 4, 0.01) var typing_sounds_pitch: float = 1.0

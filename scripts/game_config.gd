@@ -63,6 +63,32 @@ extends Node
 @export var enemy_attack_range := 1.7
 @export var enemy_strike_cooldown := 1.0
 
+@export_group("Bullet hell & spitters")
+@export var spitter_cd := 2.4
+@export var spitter_volley := 3
+@export var spitter_spread := 0.22
+@export var projectile_speed := 12.0
+@export var projectile_damage := 10.0
+@export var projectile_radius := 0.18
+
+@export_group("Scrap & shop")
+@export var scrap_hound := 10
+@export var scrap_spitter := 15
+@export var scrap_boss := 100
+@export var nailgun_cost := 60
+@export var plating_cost := 40
+@export var overclock_cost := 50
+@export var plating_hp := 25.0
+@export var overclock_mult := 1.15
+@export var nailgun_damage := 8.0
+@export var nailgun_cooldown := 0.09
+
+@export_group("Companion & boss")
+@export var companion_fire_cd := 1.2
+@export var companion_damage := 6.0
+@export var boss_hp := 400.0
+@export var boss_speed := 9.0
+
 @export_group("Dialogue")
 @export var intro_timeline: Resource = null  # assign a DialogicTimeline in the inspector
 

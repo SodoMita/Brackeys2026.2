@@ -4,6 +4,7 @@ extends CharacterBody3D
 signal died(pos: Vector3)
 signal windup
 signal attacked
+signal volley(dir: Vector3, origin: Vector3)
 
 var hp: float
 var speed := 7.5
@@ -11,6 +12,7 @@ var atk_cd := 0.0
 var windup_t := -1.0
 var stagger_t := 0.0
 var target: Node3D
+var ranged := false
 var eyes: Array = []
 
 
@@ -87,9 +89,29 @@ func _physics_process(dt: float) -> void:
 			if windup_t <= 0.0:
 				windup_t = -1.0
 				_set_telegraph(false)
-				if d < Cfg.enemy_attack_range + 0.6:
+				if ranged:
+					volley.emit((target.global_position - global_position).normalized(), global_position + Vector3(0, 1.2, 0))
+					atk_cd = Cfg.spitter_cd
+				elif d < Cfg.enemy_attack_range + 0.6:
 					attacked.emit()
-				atk_cd = Cfg.enemy_strike_cooldown
+					atk_cd = Cfg.enemy_strike_cooldown
+		elif ranged:
+			# keep mid range and strafe
+			var dir := to.normalized()
+			var want := 13.0
+			var move := 0.0
+			if d > want + 3.0:
+				move = 1.0
+			elif d < want - 4.0:
+				move = -1.0
+			velocity.x = move_toward(velocity.x, dir.x * speed * move, 50.0 * dt)
+			velocity.z = move_toward(velocity.z, dir.z * speed * move, 50.0 * dt)
+			if d > 0.01:
+				look_at(global_position + dir, Vector3.UP)
+			if atk_cd <= 0.0:
+				windup_t = Cfg.enemy_windup
+				_set_telegraph(true)
+				windup.emit()
 		elif d > Cfg.enemy_attack_range:
 			var dir := to.normalized()
 			velocity.x = move_toward(velocity.x, dir.x * speed, 50.0 * dt)
