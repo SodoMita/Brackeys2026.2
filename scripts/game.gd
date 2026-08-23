@@ -420,12 +420,21 @@ func _say(path: String) -> void:
 var _dtl_loader_added := false
 
 
+func _is_dialogic_active() -> bool:
+	var d := get_node_or_null("/root/Dialogic")
+	return d != null and d.current_timeline != null
+
+
 # ------------------------------------------------------------- flow
 func _unhandled_input(ev: InputEvent) -> void:
 	match state:
 		State.PLAYING, State.BOSS:
 			if _is_pause_press(ev):
 				_pause()
+			elif _is_dialogic_active() and _is_confirm(ev):
+				var d := get_node_or_null("/root/Dialogic")
+				if d and d.has_subsystem("Inputs"):
+					d.Inputs.handle_input()
 		State.DEAD, State.END:
 			if _is_pause_press(ev):
 				_quit_to_menu()
