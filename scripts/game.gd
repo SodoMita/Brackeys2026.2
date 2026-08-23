@@ -1,5 +1,5 @@
 extends Node3D
-## CRIMSON VELOCITY — root scene: arena, waves, HUD, style meter, audio.
+## CRIMSON VELOCITY — root: arena, waves, HUD, style meter, audio, dialogue.
 
 enum State { MENU, PLAYING, DEAD }
 
@@ -12,7 +12,6 @@ var debris_root: Node3D
 var debris: Array = []
 var wave := 0
 var style := 0.0
-var time_alive := 0.0
 var hitmarker_t := 0.0
 var hurt_flash: ColorRect
 
@@ -30,6 +29,9 @@ var sfx_die: AudioStreamPlayer
 var sfx_hurt: AudioStreamPlayer
 var sfx_dash: AudioStreamPlayer
 var sfx_slide: AudioStreamPlayer
+var sfx_parry: AudioStreamPlayer
+var sfx_coin: AudioStreamPlayer
+var sfx_windup: AudioStreamPlayer
 
 
 func _ready() -> void:
@@ -95,7 +97,6 @@ func _build_arena() -> void:
 	pm.material = floor_mat
 	floor.mesh = pm
 	add_child(floor)
-	# static body so nothing falls through
 	var sb := StaticBody3D.new()
 	var shape := CollisionShape3D.new()
 	shape.shape = WorldBoundaryShape3D.new()
@@ -125,7 +126,6 @@ func _build_arena() -> void:
 		w.rotation.y = ang
 		add_child(w)
 
-	# pillars + platforms for verticality
 	var pillar_mat := StandardMaterial3D.new()
 	pillar_mat.albedo_color = Color(0.2, 0.05, 0.07)
 	for p in [Vector3(-10, 0, -10), Vector3(10, 0, 10), Vector3(-10, 0, 10), Vector3(10, 0, -10)]:
@@ -165,10 +165,13 @@ func _build_player() -> void:
 	player = ps.new()
 	player.position = Vector3(0.0, 0.0, 8.0)
 	add_child(player)
+	player.enemy_pool = enemies
 	player.fired.connect(_on_fired)
 	player.player_died.connect(_on_player_died)
 	player.dashed.connect(func(): _play(sfx_dash))
 	player.slid.connect(func(): _play(sfx_slide))
+	player.parried.connect(func(): _play(sfx_parry))
+	player.coin_tossed.connect(func(): _play(sfx_coin))
 
 
 # ------------------------------------------------------------ HUD
@@ -187,7 +190,7 @@ func _build_hud() -> void:
 	hud_hp = Label.new()
 	hud_hp.position = Vector2(8, 128)
 	hud_hp.label_settings = _make_ls(20, Color(1.0, 0.25, 0.3))
-	hud_hp.text = "100"
+	hud_hp.text = "%d" % int(Cfg.max_hp)
 	cl.add_child(hud_hp)
 	hud_rank = Label.new()
 	hud_rank.position = Vector2(272, 8)
@@ -221,7 +224,7 @@ func _build_hud() -> void:
 
 
 func _show_menu() -> void:
-	overlay.text = "C R I M S O N   V E L O C I T Y\n\nKEYBOARD: WASD · SPACE jump · SHIFT dash · CTRL slide · LMB fire · 1/2 weapons\nGAMEPAD: sticks move/look · A jump · LB dash · RB slide · RT fire\nTOUCH: left stick move · right drag look · on-screen buttons\n\ndamage heals you. style is everything.\n\nclick / tap / A to start"
+	overlay.text = "C R I M S O N   V E L O C I T Y\n\nKEYBOARD: WASD · SPACE jump · SHIFT dash · CTRL slide · LMB fire · RMB coin · F parry\nGAMEPAD: sticks · A jump · LB dash · RB slide · RT fire · LT coin · X parry\nTOUCH: left stick · right drag · on-screen buttons\n\ndamage heals you. parry the white eyes. shoot the coin.\n\nclick / tap / A to start"
 	overlay.visible = true
 
 
@@ -270,6 +273,9 @@ func _build_audio() -> void:
 	sfx_hurt = _make_p(_tone(140.0, 0.3, 0.7, "sine", 50.0), -4.0)
 	sfx_dash = _make_p(_tone(300.0, 0.12, 0.3, "sine", 700.0), -10.0)
 	sfx_slide = _make_p(_tone(600.0, 0.2, 0.25, "noise"), -14.0)
+	sfx_parry = _make_p(_tone(700.0, 0.18, 0.6, "sine", 1400.0), -5.0)
+	sfx_coin = _make_p(_tone(1600.0, 0.08, 0.3, "sine", 2200.0), -10.0)
+	sfx_windup = _make_p(_tone(220.0, 0.3, 0.4, "square", 110.0), -9.0)
 
 
 func _play(p: AudioStreamPlayer) -> void:
@@ -301,70 +307,108 @@ func _start() -> void:
 	overlay.visible = false
 	if DisplayServer.get_name() != "headless":
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	_try_intro_dialogue()
 	_next_wave()
+
+
+var _dtl_loader_added := false
+
+
+func _try_intro_dialogue() -> void:
+	var d := get_node_or_null("/root/Dialogic")
+	if d == null or DisplayServer.get_name() == "headless":
+		return
+	# Dialogic 2 alpha ships the .dtl loader but never registers it at
+	# runtime; wire up the addon's own loader class here.
+	if not _dtl_loader_added:
+		_dtl_loader_added = true
+		ResourceLoader.add_resource_format_loader(DialogicTimelineFormatLoader.new())
+	var tl: Resource = Cfg.intro_timeline
+	if tl == null and ResourceLoader.exists("res://dialogue/intro.dtl"):
+		tl = load("res://dialogue/intro.dtl")
+	if tl:
+		d.start(tl)
 
 
 func _on_player_died() -> void:
 	state = State.DEAD
 	if DisplayServer.get_name() != "headless":
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-	overlay.text = "Y O U   D I E D\n\nwave %d · rank %s\n\nclick to retry" % [wave, CombatLogic.rank_for_points(style)]
+	overlay.text = "Y O U   D I E D\n\nwave %d · rank %s\n\nclick to retry" % [wave, Cfg.rank_for_points(style)]
 	overlay.visible = true
 
 
 func _next_wave() -> void:
 	wave += 1
 	hud_wave.text = "WAVE %d" % wave
-	for i in 2 + wave:
+	for i in Cfg.wave_base_count + wave:
 		var es := load("res://scripts/enemy.gd")
 		var e: CharacterBody3D = es.new()
 		var ang := randf_range(0.0, TAU)
 		var r := randf_range(12.0, ARENA / 2.0 - 3.0)
 		e.position = Vector3(cos(ang) * r, 0.0, sin(ang) * r)
 		e.target = player
-		e.speed = 6.5 + wave * 0.5
+		e.speed = Cfg.enemy_speed + wave * Cfg.enemy_speed_per_wave
 		e.died.connect(_on_enemy_died)
-		e.attacked.connect(_on_attacked)
+		e.attacked.connect(_on_attacked.bind(e))
+		e.windup.connect(func(): _play(sfx_windup))
 		enemies.add_child(e)
 
 
-func _on_fired(enemy: Node3D, headshot: bool, airborne: bool, damage: float) -> void:
+func _on_fired(enemy: Node3D, headshot: bool, airborne: bool, damage: float, ricochet: bool) -> void:
 	if state != State.PLAYING:
 		return
 	var dir := (enemy.global_position - player.global_position).normalized()
 	enemy.take_damage(damage, dir, 4.0)
-	player.hp = CombatLogic.heal_on_damage(player.hp, damage)
+	player.hp = CombatLogic.heal_on_damage(player.hp, damage, Cfg.heal_factor, Cfg.max_hp)
 	hud_hp.text = "%d" % int(player.hp)
-	var pts := CombatLogic.style_points("hit")
+	var pts := Cfg.style_hit
 	if headshot:
-		pts += CombatLogic.style_points("headshot")
+		pts += Cfg.style_headshot
 	if airborne:
-		pts += CombatLogic.style_points("airshot")
+		pts += Cfg.style_airshot
+	if ricochet:
+		pts += Cfg.style_ricochet
 	style += pts
 	hitmarker_t = 0.08
-	_play(sfx_head if headshot else sfx_hit)
+	if ricochet:
+		_play(sfx_boom)
+	else:
+		_play(sfx_head if headshot else sfx_hit)
 
 
 func _on_enemy_died(pos: Vector3) -> void:
 	_play(sfx_die)
-	style += CombatLogic.style_points("kill")
+	style += Cfg.style_kill
 	if player.sliding:
-		style += CombatLogic.style_points("slide_kill")
+		style += Cfg.style_slide_kill
 	_spawn_gibs(pos)
 	if enemies.get_child_count() == 0:
 		_next_wave()
 
 
-func _on_attacked() -> void:
+func _on_attacked(e: Node3D) -> void:
 	if state != State.PLAYING:
 		return
-	player.take_damage(12.0)
-	style = CombatLogic.on_hurt(style)
-	hud_hp.text = "%d" % int(maxf(player.hp, 0.0))
-	hurt_flash.color = Color(1.0, 0.0, 0.1, 0.45)
-	var tw := create_tween()
-	tw.tween_property(hurt_flash, "color", Color(1.0, 0.0, 0.1, 0.0), 0.4)
-	_play(sfx_hurt)
+	if player.is_parry_active():
+		# PARRY: no damage, heal bonus, stagger the attacker, big style
+		player.hp = CombatLogic.heal_on_damage(player.hp, Cfg.parry_heal_bonus, 1.0, Cfg.max_hp)
+		hud_hp.text = "%d" % int(player.hp)
+		style += Cfg.style_parry
+		if e and is_instance_valid(e) and e.has_method("stagger"):
+			e.stagger(Cfg.parry_stagger)
+		player.parried.emit()
+		hurt_flash.color = Color(0.3, 1.0, 1.0, 0.35)
+		var tw := create_tween()
+		tw.tween_property(hurt_flash, "color", Color(0.3, 1.0, 1.0, 0.0), 0.35)
+	else:
+		player.take_damage(Cfg.enemy_damage)
+		style = CombatLogic.on_hurt(style)
+		hud_hp.text = "%d" % int(maxf(player.hp, 0.0))
+		hurt_flash.color = Color(1.0, 0.0, 0.1, 0.45)
+		var tw := create_tween()
+		tw.tween_property(hurt_flash, "color", Color(1.0, 0.0, 0.1, 0.0), 0.4)
+		_play(sfx_hurt)
 
 
 func _spawn_gibs(at: Vector3) -> void:
@@ -387,13 +431,12 @@ func _spawn_gibs(at: Vector3) -> void:
 
 # ------------------------------------------------------------ loop
 func _process(dt: float) -> void:
-	time_alive += dt
 	hitmarker_t = maxf(hitmarker_t - dt, 0.0)
 	for c in crosshair:
 		c.visible = hitmarker_t > 0.0
 	if state == State.PLAYING:
-		style = maxf(style - CombatLogic.decay_rate(style) * dt, 0.0)
-		var rank := CombatLogic.rank_for_points(style)
+		style = maxf(style - Cfg.decay_rate(style) * dt, 0.0)
+		var rank := Cfg.rank_for_points(style)
 		hud_rank.text = rank
 		var col := Color(0.7, 0.7, 0.7)
 		match rank:
@@ -413,7 +456,7 @@ func _process(dt: float) -> void:
 				d.node.queue_free()
 			debris.remove_at(i)
 		else:
-			d.vel.y -= 24.0 * dt
+			d.vel.y -= Cfg.gravity * dt
 			d.node.position += d.vel * dt
 			var s := clampf(d.life, 0.0, 1.0)
 			d.node.scale = Vector3(s, s, s)

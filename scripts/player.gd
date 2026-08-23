@@ -1,25 +1,14 @@
 extends CharacterBody3D
-## Fast FPS controller: run, jump (no fall damage), dash, slide.
-## Input sources: keyboard+mouse, gamepad, touchscreen (virtual controls).
-## Firing is hitscan; results reported via signals.
+## Fast FPS controller: run, jump (no fall damage), dash, slide, parry,
+## coin toss + ricochet. Inputs: keyboard+mouse, gamepad, touchscreen.
 
-signal fired(enemy: Node3D, headshot: bool, airborne: bool, damage: float)
+signal fired(enemy: Node3D, headshot: bool, airborne: bool, damage: float, ricochet: bool)
 signal dashed
 signal slid
+signal parried
+signal coin_tossed
 signal player_died
 
-const WALK := 10.0
-const GRAVITY := 22.0
-const JUMP_V := 9.5
-const ACCEL_GROUND := 90.0
-const ACCEL_AIR := 40.0
-const FRICTION := 10.0
-const DASH_SPEED := 24.0
-const DASH_TIME := 0.18
-const DASH_CD := 0.9
-const SLIDE_MAX := 17.0
-const MOUSE_SENS := 0.0026
-const STICK_LOOK := 2.6
 const STICK_DEAD := 0.15
 
 var yaw := 0.0
@@ -27,8 +16,9 @@ var pitch := 0.0
 var head: Node3D
 var cam: Camera3D
 var muzzle: OmniLight3D
-var hp := CombatLogic.MAX_HP
+var hp: float
 var dead := false
+var enemy_pool: Node3D = null
 
 var dash_cd := 0.0
 var dash_t := 0.0
@@ -36,19 +26,26 @@ var sliding := false
 var fire_cd := 0.0
 var weapon := 0  # 0 = revolver, 1 = shotgun
 var _want_dash := false
-var _prev_joy_dash := false
-var _prev_joy_wpn_l := false
-var _prev_joy_wpn_r := false
 
-# --- aggregated input written by keyboard/gamepad polling and touch events
+# parry
+var parry_age := -1.0   # <0 when not pressed
+var parry_cd := 0.0
+
+# coin
+var coin: RigidBody3D = null
+var coin_age := 0.0
+var touch_fire_mouse := false
+
+# aggregated touch input
 var touch_move := Vector2.ZERO
-var touch_look := Vector2.ZERO  # accumulated pixels, consumed per frame
+var touch_look := Vector2.ZERO
 var touch_fire := false
 var touch_jump := false
 var touch_slide := false
 
 
 func _init() -> void:
+	hp = Cfg.max_hp
 	head = Node3D.new()
 	head.name = "Head"
 	add_child(head)
@@ -78,19 +75,60 @@ func request_dash() -> void:
 	_want_dash = true
 
 
+func request_parry() -> void:
+	if parry_cd <= 0.0:
+		parry_age = 0.0
+		parry_cd = Cfg.parry_cooldown
+
+
+func is_parry_active() -> bool:
+	return CombatLogic.parry_active(parry_age, Cfg.parry_active_window)
+
+
 func cycle_weapon() -> void:
 	weapon = 0 if weapon == 1 else 1
+
+
+func toss_coin() -> void:
+	if coin and is_instance_valid(coin):
+		return
+	coin = RigidBody3D.new()
+	var cm := CylinderMesh.new()
+	cm.top_radius = 0.12
+	cm.bottom_radius = 0.12
+	cm.height = 0.03
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.albedo_color = Color(1.0, 0.85, 0.3)
+	cm.material = mat
+	coin.mesh = cm
+	var cs := CollisionShape3D.new()
+	var ss := SphereShape3D.new()
+	ss.radius = 0.15
+	coin.add_child(cs)
+	cs.shape = ss
+	coin.set_meta("coin", true)
+	coin.position = cam.global_position + (-cam.global_transform.basis.z) * 0.5
+	var vel := -cam.global_transform.basis.z * Cfg.coin_toss_velocity
+	vel.y += Cfg.coin_toss_velocity * 0.6
+	coin.linear_velocity = vel
+	coin.angular_velocity = Vector3(20.0, 5.0, 20.0)
+	add_child(coin)
+	coin_age = 0.0
+	coin_tossed.emit()
 
 
 func _unhandled_input(ev: InputEvent) -> void:
 	if dead:
 		return
 	if ev is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-		_apply_look(-ev.relative.x * MOUSE_SENS, -ev.relative.y * MOUSE_SENS)
+		_apply_look(-ev.relative.x * Cfg.mouse_sensitivity, -ev.relative.y * Cfg.mouse_sensitivity)
 	elif ev is InputEventKey and ev.pressed and not ev.echo:
 		match ev.keycode:
 			KEY_SHIFT:
 				_want_dash = true
+			KEY_F, KEY_V:
+				request_parry()
 			KEY_1:
 				weapon = 0
 			KEY_2:
@@ -99,6 +137,8 @@ func _unhandled_input(ev: InputEvent) -> void:
 		match ev.button_index:
 			JOY_BUTTON_LEFT_SHOULDER:
 				_want_dash = true
+			JOY_BUTTON_X:
+				request_parry()
 			JOY_BUTTON_DPAD_LEFT:
 				weapon = 0
 			JOY_BUTTON_DPAD_RIGHT:
@@ -106,11 +146,11 @@ func _unhandled_input(ev: InputEvent) -> void:
 			JOY_BUTTON_Y:
 				cycle_weapon()
 	elif ev is InputEventMouseButton and ev.pressed:
-		if ev.button_index == MOUSE_BUTTON_LEFT:
-			touch_fire_mouse = true
-
-
-var touch_fire_mouse := false
+		match ev.button_index:
+			MOUSE_BUTTON_LEFT:
+				touch_fire_mouse = true
+			MOUSE_BUTTON_RIGHT:
+				toss_coin()
 
 
 func _apply_look(dyaw: float, dpitch: float) -> void:
@@ -121,12 +161,9 @@ func _apply_look(dyaw: float, dpitch: float) -> void:
 
 
 func _gather_move() -> Vector2:
-	# touchscreen > gamepad > keyboard
 	if touch_move.length() > 0.05:
 		return touch_move
-	var jx := Input.get_joy_axis(0, JOY_AXIS_LEFT_X)
-	var jy := Input.get_joy_axis(0, JOY_AXIS_LEFT_Y)
-	var j := Vector2(jx, jy)
+	var j := Vector2(Input.get_joy_axis(0, JOY_AXIS_LEFT_X), Input.get_joy_axis(0, JOY_AXIS_LEFT_Y))
 	if j.length() > STICK_DEAD:
 		return j.limit_length(1.0)
 	var ix := 0.0
@@ -146,14 +183,23 @@ func _physics_process(dt: float) -> void:
 	if dead:
 		return
 	dash_cd = maxf(dash_cd - dt, 0.0)
+	parry_cd = maxf(parry_cd - dt, 0.0)
+	if parry_age >= 0.0:
+		parry_age += dt
+		if parry_age > Cfg.parry_active_window * 2.0:
+			parry_age = -1.0
 	fire_cd = maxf(fire_cd - dt, 0.0)
 	muzzle.light_energy = maxf(muzzle.light_energy - dt * 120.0, 0.0)
+	if coin and is_instance_valid(coin):
+		coin_age += dt
+		if coin_age > Cfg.coin_lifetime:
+			coin.queue_free()
+			coin = null
 
 	# --- look: gamepad right stick + accumulated touch deltas
-	var lx := Input.get_joy_axis(0, JOY_AXIS_RIGHT_X)
-	var ly := Input.get_joy_axis(0, JOY_AXIS_RIGHT_Y)
-	if Vector2(lx, ly).length() > STICK_DEAD:
-		_apply_look(-lx * STICK_LOOK * dt, -ly * STICK_LOOK * dt)
+	var rs := Vector2(Input.get_joy_axis(0, JOY_AXIS_RIGHT_X), Input.get_joy_axis(0, JOY_AXIS_RIGHT_Y))
+	if rs.length() > STICK_DEAD:
+		_apply_look(-rs.x * Cfg.stick_look_speed * dt, -rs.y * Cfg.stick_look_speed * dt)
 	if touch_look.length() > 0.0:
 		_apply_look(-touch_look.x * 0.004, -touch_look.y * 0.004)
 		touch_look = Vector2.ZERO
@@ -164,7 +210,7 @@ func _physics_process(dt: float) -> void:
 	# --- jump (hold-to-bhop, no fall damage anywhere)
 	var jump := Input.is_key_pressed(KEY_SPACE) or Input.is_joy_button_pressed(0, JOY_BUTTON_A) or touch_jump
 	if grounded and jump:
-		velocity.y = JUMP_V
+		velocity.y = Cfg.jump_velocity
 
 	# --- slide
 	var want_slide := Input.is_key_pressed(KEY_CTRL) or Input.is_key_pressed(KEY_C) \
@@ -180,41 +226,48 @@ func _physics_process(dt: float) -> void:
 	if dash_t > 0.0:
 		dash_t -= dt
 	else:
-		velocity.y -= GRAVITY * dt
+		velocity.y -= Cfg.gravity * dt
 	if _want_dash:
 		_want_dash = false
 		if dash_cd <= 0.0:
 			var dir := wish if wish.length() > 0.1 else -transform.basis.z
-			velocity.x = dir.x * DASH_SPEED
-			velocity.z = dir.z * DASH_SPEED
+			velocity.x = dir.x * Cfg.dash_speed
+			velocity.z = dir.z * Cfg.dash_speed
 			velocity.y = maxf(velocity.y, 0.0)
-			dash_t = DASH_TIME
-			dash_cd = DASH_CD
+			dash_t = Cfg.dash_time
+			dash_cd = Cfg.dash_cooldown
 			dashed.emit()
 
 	# --- horizontal accel (quake-style), slide keeps momentum
 	if not sliding:
-		var target := wish * WALK
-		var accel := ACCEL_GROUND if grounded else ACCEL_AIR
+		var target := wish * Cfg.walk_speed
+		var accel := Cfg.accel_ground if grounded else Cfg.accel_air
 		velocity.x = move_toward(velocity.x, target.x, accel * dt)
 		velocity.z = move_toward(velocity.z, target.z, accel * dt)
 		if grounded and wish.length() < 0.1:
-			velocity.x = move_toward(velocity.x, 0.0, FRICTION * WALK * dt)
-			velocity.z = move_toward(velocity.z, 0.0, FRICTION * WALK * dt)
+			velocity.x = move_toward(velocity.x, 0.0, Cfg.friction * Cfg.walk_speed * dt)
+			velocity.z = move_toward(velocity.z, 0.0, Cfg.friction * Cfg.walk_speed * dt)
 	else:
 		var sp := horizontal_speed()
-		if sp > SLIDE_MAX or wish.length() < 0.1:
+		if sp > Cfg.slide_max_speed or wish.length() < 0.1:
 			velocity.x = move_toward(velocity.x, velocity.x * 0.98, 4.0 * dt)
 			velocity.z = move_toward(velocity.z, velocity.z * 0.98, 4.0 * dt)
 
 	move_and_slide()
 
 	# --- fire
+	var coin_btn := Input.get_joy_axis(0, JOY_AXIS_TRIGGER_LEFT) > 0.4
+	if coin_btn and not _prev_lt:
+		toss_coin()
+	_prev_lt = coin_btn
 	var firing := touch_fire_mouse or touch_fire \
 			or Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) \
 			or Input.get_joy_axis(0, JOY_AXIS_TRIGGER_RIGHT) > 0.4
 	if firing:
 		try_fire()
+
+
+var _prev_lt := false
 
 
 func horizontal_speed() -> float:
@@ -224,10 +277,10 @@ func horizontal_speed() -> float:
 func try_fire() -> void:
 	if fire_cd > 0.0:
 		return
-	fire_cd = 0.26 if weapon == 0 else 0.75
-	var pellets := 1 if weapon == 0 else 7
-	var spread := 0.0 if weapon == 0 else 0.055
-	var damage := 34.0 if weapon == 0 else 12.0
+	fire_cd = Cfg.revolver_cooldown if weapon == 0 else Cfg.shotgun_cooldown
+	var pellets := 1 if weapon == 0 else Cfg.shotgun_pellets
+	var spread := 0.0 if weapon == 0 else Cfg.shotgun_spread
+	var damage := Cfg.revolver_damage if weapon == 0 else Cfg.shotgun_damage
 	for _i in pellets:
 		var dir := -cam.global_transform.basis.z
 		dir += cam.global_transform.basis.x * randf_range(-spread, spread)
@@ -238,10 +291,36 @@ func try_fire() -> void:
 		var q := PhysicsRayQueryParameters3D.create(from, from + dir * 150.0)
 		q.exclude = [get_rid()]
 		var hit := space.intersect_ray(q)
-		if hit and hit.collider.has_method("take_damage"):
+		if not hit:
+			continue
+		if hit.collider.has_meta("coin"):
+			_ricochet(damage)
+			return
+		if hit.collider.has_method("take_damage"):
 			var headshot: bool = hit.position.y > hit.collider.global_position.y + 0.55
-			fired.emit(hit.collider, headshot, not is_on_floor(), damage)
+			fired.emit(hit.collider, headshot, not is_on_floor(), damage, false)
 	muzzle.light_energy = 7.0
+
+
+func _ricochet(base_damage: float) -> void:
+	if coin and is_instance_valid(coin):
+		coin.queue_free()
+		coin = null
+	var targets := CombatLogic.nearest_targets(global_position,
+			_get_enemies(), Cfg.ricochet_targets)
+	for e in targets:
+		if is_instance_valid(e):
+			fired.emit(e, false, not is_on_floor(), base_damage * Cfg.ricochet_damage_mult, true)
+	muzzle.light_energy = 9.0
+
+
+func _get_enemies() -> Array:
+	var out: Array = []
+	if enemy_pool:
+		for c in enemy_pool.get_children():
+			if c.has_method("take_damage"):
+				out.append(c)
+	return out
 
 
 func take_damage(d: float) -> void:
