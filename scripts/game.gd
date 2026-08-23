@@ -2,7 +2,7 @@ extends Node3D
 ## STEEL KNIFE — mission 1: room/wave director, desert arena, scrap economy,
 ## companion + betrayal boss. Gameplay-first, story on top (Dialogic).
 
-enum State { MENU, PLAYING, BOSS, END, DEAD, PAUSED }
+enum State { PLAYING, BOSS, END, DEAD, PAUSED, MENU }
 
 const ROOM_W := 28.0
 const CORR_W := 8.0
@@ -10,7 +10,7 @@ const ROOMS := [Vector2(0.0, -28.0), Vector2(-36.0, -64.0), Vector2(-72.0, -100.
 const DOOR_Z := [-28.0, -36.0, -64.0, -72.0, -100.0]
 const ROOM_WAVES := [2, 2, 3]
 
-var state: int = State.MENU
+var state: int = State.PLAYING
 var player: CharacterBody3D
 var companion: CharacterBody3D
 var enemies: Node3D
@@ -66,14 +66,9 @@ func _ready() -> void:
 	_build_companion()
 	_build_hud()
 	_build_audio()
-	if DisplayServer.is_touchscreen_available():
-		Input.set_emulate_mouse_from_touch(false)
-		var ts = load("res://scripts/touch_controls.gd").new()
-		add_child(ts)
-		ts.setup(player)
-		touch_ui = ts
-		_set_touch_active(false)
+	_build_touch_controls()
 	_build_menus()
+	_start()
 
 
 # ------------------------------------------------------------- world
@@ -270,7 +265,7 @@ func _build_companion() -> void:
 	companion.shot.connect(func(): _play(sfx_shot))
 
 
-# ------------------------------------------------------------- HUD
+# ------------------------------------------------------------- HUD & Mobile Controls
 func _make_ls(size: int, color: Color) -> LabelSettings:
 	var ls := LabelSettings.new()
 	ls.font_size = size
@@ -284,27 +279,27 @@ func _build_hud() -> void:
 	cl = CanvasLayer.new()
 	add_child(cl)
 	hud_hp = Label.new()
-	hud_hp.position = Vector2(8, 128)
-	hud_hp.label_settings = _make_ls(20, Color(1.0, 0.7, 0.3))
+	hud_hp.position = Vector2(8, 142)
+	hud_hp.label_settings = _make_ls(18, Color(1.0, 0.7, 0.3))
 	hud_hp.text = "%d" % int(Cfg.max_hp)
 	cl.add_child(hud_hp)
 	hud_rank = Label.new()
-	hud_rank.position = Vector2(272, 8)
-	hud_rank.label_settings = _make_ls(26, Color(0.7, 0.7, 0.7))
+	hud_rank.position = Vector2(256, 6)
+	hud_rank.label_settings = _make_ls(24, Color(0.7, 0.7, 0.7))
 	hud_rank.text = "D"
 	cl.add_child(hud_rank)
 	hud_wave = Label.new()
 	hud_wave.position = Vector2(8, 8)
-	hud_wave.label_settings = _make_ls(12, Color(0.9, 0.8, 0.6))
+	hud_wave.label_settings = _make_ls(11, Color(0.9, 0.8, 0.6))
 	hud_wave.text = "ROOM 1"
 	cl.add_child(hud_wave)
 	hud_scrap = Label.new()
-	hud_scrap.position = Vector2(130, 8)
-	hud_scrap.label_settings = _make_ls(12, Color(1.0, 0.85, 0.4))
+	hud_scrap.position = Vector2(120, 8)
+	hud_scrap.label_settings = _make_ls(11, Color(1.0, 0.85, 0.4))
 	hud_scrap.text = "SCRAP 0"
 	cl.add_child(hud_scrap)
 	hud_wpn = Label.new()
-	hud_wpn.position = Vector2(8, 152)
+	hud_wpn.position = Vector2(8, 162)
 	hud_wpn.label_settings = _make_ls(9, Color(0.8, 0.8, 0.8))
 	hud_wpn.text = "REVOLVER"
 	cl.add_child(hud_wpn)
@@ -325,7 +320,7 @@ func _build_hud() -> void:
 	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
 	overlay.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	overlay.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	overlay.label_settings = _make_ls(14, Color(1.0, 0.75, 0.4))
+	overlay.label_settings = _make_ls(13, Color(1.0, 0.75, 0.4))
 	overlay.visible = false
 	cl.add_child(overlay)
 	for t in terminals:
@@ -334,14 +329,24 @@ func _build_hud() -> void:
 		t.purchase_requested.connect(_on_purchase)
 
 
+func _build_touch_controls() -> void:
+	var ts = load("res://scripts/touch_controls.gd").new()
+	cl.add_child(ts)
+	ts.setup(player)
+	ts.pause_pressed.connect(_pause)
+	touch_ui = ts
+	var is_touch := DisplayServer.is_touchscreen_available() or OS.has_feature("mobile")
+	_set_touch_active(is_touch)
+
+
 func _build_menus() -> void:
 	menus = load("res://scripts/menus.gd").new()
 	cl.add_child(menus)
-	menus.start_pressed.connect(_start)
 	menus.resume_pressed.connect(_resume)
+	menus.restart_pressed.connect(_restart_game)
 	menus.quit_to_menu_pressed.connect(_quit_to_menu)
 	menus.quit_game_pressed.connect(func(): get_tree().quit())
-	menus.open_main()
+	menus.close_all()
 
 
 # ------------------------------------------------------------- audio
@@ -422,25 +427,22 @@ func _unhandled_input(ev: InputEvent) -> void:
 			if _is_pause_press(ev):
 				_pause()
 		State.DEAD, State.END:
-			if _is_confirm(ev) or _is_pause_press(ev):
-				get_tree().reload_current_scene()
-		State.MENU:
-			# Buttons handle their own clicks; any other click/tap/A/START starts.
-			if menus != null and menus.settings_open:
-				return
-			if _is_confirm(ev):
-				_start()
+			if _is_pause_press(ev):
+				_quit_to_menu()
+			elif _is_confirm(ev):
+				_restart_game()
 
 
 func _is_confirm(ev: InputEvent) -> bool:
 	if ev is InputEventMouseButton and ev.pressed:
 		return true
-	# While menus are open on touch devices mouse-from-touch emulation is on,
-	# so the emulated click above covers taps — don't double-fire raw touches.
 	if ev is InputEventScreenTouch and ev.pressed and not Input.is_emulating_mouse_from_touch():
 		return true
 	if ev is InputEventJoypadButton and ev.pressed \
 			and ev.button_index in [JOY_BUTTON_A, JOY_BUTTON_START]:
+		return true
+	if ev is InputEventKey and ev.pressed and not ev.echo \
+			and ev.keycode in [KEY_SPACE, KEY_ENTER, KEY_KP_ENTER]:
 		return true
 	return false
 
@@ -464,7 +466,8 @@ func _pause() -> void:
 	if DisplayServer.get_name() != "headless":
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	_set_touch_active(false)
-	menus.open_pause()
+	if menus:
+		menus.open_pause()
 
 
 func _resume() -> void:
@@ -474,11 +477,20 @@ func _resume() -> void:
 	get_tree().paused = false
 	if DisplayServer.get_name() != "headless":
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-	menus.close_all()
-	_set_touch_active(true)
+	if menus:
+		menus.close_all()
+	var is_touch := DisplayServer.is_touchscreen_available() or OS.has_feature("mobile")
+	_set_touch_active(is_touch)
 
 
 func _quit_to_menu() -> void:
+	get_tree().paused = false
+	if DisplayServer.get_name() != "headless":
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
+
+
+func _restart_game() -> void:
 	get_tree().paused = false
 	get_tree().reload_current_scene()
 
@@ -494,7 +506,8 @@ func _start() -> void:
 	overlay.visible = false
 	if menus:
 		menus.close_all()
-	_set_touch_active(true)
+	var is_touch := DisplayServer.is_touchscreen_available() or OS.has_feature("mobile")
+	_set_touch_active(is_touch)
 	if DisplayServer.get_name() != "headless":
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	door_set(doors[0], true)
@@ -519,7 +532,6 @@ func _room_bounds() -> Vector2:
 
 
 func _spawn_wave() -> void:
-	var b := _room_bounds()
 	var hounds := 3 + room + wave_in_room
 	var spitters := 1 + wave_in_room if room + wave_in_room >= 2 else 0
 	for i in hounds:
@@ -621,7 +633,7 @@ func _end_mission() -> void:
 	if DisplayServer.get_name() != "headless":
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	_set_touch_active(false)
-	overlay.text = "M I S S I O N   C O M P L E T E\n\nscrap banked: %d · final rank %s\n\nclick / tap / A to replay · ESC for menu" % [scrap, Cfg.rank_for_points(style)]
+	overlay.text = "M I S S I O N   C O M P L E T E\n\nscrap banked: %d · final rank %s\n\nclick / tap / SPACE to replay · ESC for menu" % [scrap, Cfg.rank_for_points(style)]
 	overlay.visible = true
 
 
@@ -630,7 +642,7 @@ func _on_player_died() -> void:
 	if DisplayServer.get_name() != "headless":
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	_set_touch_active(false)
-	overlay.text = "Y O U   D I E D\n\nscrap %d · rank %s\n\nclick / tap / A to retry · ESC for menu" % [scrap, Cfg.rank_for_points(style)]
+	overlay.text = "Y O U   D I E D\n\nscrap %d · rank %s\n\nclick / tap / SPACE to retry · ESC for menu" % [scrap, Cfg.rank_for_points(style)]
 	overlay.visible = true
 
 
