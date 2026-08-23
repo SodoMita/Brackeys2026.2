@@ -196,8 +196,6 @@ func _unhandled_input(ev: InputEvent) -> void:
 
 
 func _apply_look(dyaw: float, dpitch: float) -> void:
-	if Cfg.invert_look:
-		dpitch = -dpitch
 	yaw += dyaw
 	pitch = clampf(pitch + dpitch, -1.45, 1.45)
 	rotation.y = yaw
@@ -209,7 +207,8 @@ func _gather_move() -> Vector2:
 		return touch_move
 	var j := Vector2(Input.get_joy_axis(0, JOY_AXIS_LEFT_X), Input.get_joy_axis(0, JOY_AXIS_LEFT_Y))
 	if j.length() > STICK_DEAD:
-		return j.limit_length(1.0)
+		var jf := j.limit_length(1.0)
+		return Vector2(jf.x, -jf.y)  # stick up = forward
 	var ix := 0.0
 	var iy := 0.0
 	if Input.is_key_pressed(KEY_W) or Input.is_key_pressed(KEY_UP):
@@ -248,7 +247,8 @@ func _physics_process(dt: float) -> void:
 		_apply_look(-touch_look.x * 0.004, -touch_look.y * 0.004)
 		touch_look = Vector2.ZERO
 
-	var wish := (transform.basis * Vector3(_gather_move().x, 0.0, _gather_move().y)).normalized()
+	var m := _gather_move()
+	var wish := (transform.basis * Vector3(m.x, 0.0, -m.y)).normalized()
 	var grounded := is_on_floor()
 
 	# --- jump (hold-to-bhop, no fall damage anywhere)

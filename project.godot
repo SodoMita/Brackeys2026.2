@@ -35,7 +35,7 @@ window/stretch/mode="viewport"
 
 [editor_plugins]
 
-enabled=PackedStringArray("dialogic")
+enabled=PackedStringArray("dialogic", "thumbstick_plugin")
 
 [input_devices]
 
