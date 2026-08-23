@@ -32,23 +32,19 @@ func _init() -> void:
 func setup_ui(cl: CanvasLayer) -> void:
 	prompt = Label.new()
 	var ls := LabelSettings.new()
-	ls.font_size = 18
+	ls.font_size = 10
 	ls.font_color = Color(1.0, 0.8, 0.4)
-	ls.outline_color = Color.BLACK
-	ls.outline_size = 3
 	prompt.label_settings = ls
-	prompt.position = Vector2(560, 400)
+	prompt.position = Vector2(120, 100)
 	prompt.text = "E — SHOP"
 	prompt.visible = false
 	cl.add_child(prompt)
 	panel = Label.new()
 	var ls2 := LabelSettings.new()
-	ls2.font_size = 16
+	ls2.font_size = 9
 	ls2.font_color = Color(1.0, 0.9, 0.7)
-	ls2.outline_color = Color.BLACK
-	ls2.outline_size = 3
 	panel.label_settings = ls2
-	panel.position = Vector2(420, 180)
+	panel.position = Vector2(90, 40)
 	panel.visible = false
 	cl.add_child(panel)
 
