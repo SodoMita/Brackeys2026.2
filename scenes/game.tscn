@@ -14,9 +14,9 @@ script = ExtResource("1_game")
 [node name="Enemies" type="Node3D" parent="."]
 
 [node name="Player" parent="." instance=ExtResource("3_player")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -4)
+position = Vector3(0, 0, -4)
 
 [node name="Companion" parent="." instance=ExtResource("4_comp")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0, -2)
+position = Vector3(2, 0, -2)
 
 [node name="HUD" parent="." instance=ExtResource("5_hud")]
