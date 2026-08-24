@@ -11,7 +11,7 @@ func _get_portrait_scene_presets() -> Array[Dictionary]:
 			"author":"Cake for Dialogic",
 			"type": "Preset",
 			"icon":"",
-			"preview_image":[this_folder.path_join("layered_portrait_thumbnail.png")],
+			"preview_image":[this_folder.path_join("layered_portrait_thumbnail.webp")],
 			"documentation":"https://docs.dialogic.pro/layered-portraits.html",
 		},
 	]

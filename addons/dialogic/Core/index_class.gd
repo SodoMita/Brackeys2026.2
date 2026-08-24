@@ -129,7 +129,9 @@ func scan_for_layout_parts() -> Array[Dictionary]:
 			continue
 		var config := ConfigFile.new()
 		config.load(this_folder.path_join(dir_name).path_join('part_config.cfg'))
-		var default_image_path: String = this_folder.path_join(dir_name).path_join('preview.png')
+		var default_image_path: String = this_folder.path_join(dir_name).path_join('preview.webp')
+		if not ResourceLoader.exists(default_image_path):
+			default_image_path = this_folder.path_join(dir_name).path_join('preview.png')
 		style_list.append(
 			{
 				'type': config.get_value('style', 'type', 'Unknown type'),
