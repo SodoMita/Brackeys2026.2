@@ -1,6 +1,7 @@
 extends StaticBody3D
 ## Scrap terminal. E to open, 1/2/3 to buy, E to close.
 ## Scene-friendly: mesh/collision can be provided by .tscn, fallback created if missing.
+## _init creates fallback for headless tests.
 
 signal purchase_requested(item: int)
 
@@ -11,7 +12,25 @@ var panel: Label
 
 
 func _init() -> void:
-	pass
+	var mi := MeshInstance3D.new()
+	mi.name = "Mesh"
+	var bm := BoxMesh.new()
+	bm.size = Vector3(0.8, 1.4, 0.4)
+	var m := StandardMaterial3D.new()
+	m.albedo_color = Color(0.1, 0.08, 0.06)
+	m.emission_enabled = true
+	m.emission = Color(1.0, 0.6, 0.1)
+	m.emission_energy_multiplier = 0.8
+	bm.material = m
+	mi.mesh = bm
+	mi.position = Vector3(0.0, 0.7, 0.0)
+	add_child(mi)
+	var cs := CollisionShape3D.new()
+	cs.name = "CollisionShape3D"
+	var bs := BoxShape3D.new()
+	bs.size = Vector3(0.8, 1.4, 0.4)
+	add_child(cs)
+	cs.shape = bs
 
 
 func _ready() -> void:
@@ -19,6 +38,19 @@ func _ready() -> void:
 
 
 func _ensure_nodes() -> void:
+	var meshes: Array = []
+	var shapes: Array = []
+	for child in get_children():
+		if child is MeshInstance3D:
+			meshes.append(child)
+		if child is CollisionShape3D:
+			shapes.append(child)
+	if meshes.size() > 1:
+		for i in range(meshes.size() - 1):
+			meshes[i].queue_free()
+	if shapes.size() > 1:
+		for i in range(shapes.size() - 1):
+			shapes[i].queue_free()
 	var has_mesh := false
 	var has_shape := false
 	for child in get_children():

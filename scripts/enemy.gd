@@ -2,6 +2,7 @@ extends CharacterBody3D
 ## "Hound": melee chaser with a telegraphed strike (parry-able).
 ## Now uses SpriteActor with front/back views (Seirin triangulation).
 ## Scene-friendly: works both procedurally and from .tscn.
+## _init creates fallback collision so headless tests pass.
 
 signal died(pos: Vector3)
 signal windup
@@ -25,8 +26,15 @@ var eyes: Array = []
 
 
 func _init() -> void:
-	# hp/speed will be set in _ready from Cfg or exports
-	pass
+	hp = Cfg.enemy_hp if Cfg and "enemy_hp" in Cfg else 60.0
+	var pc := CollisionShape3D.new()
+	pc.name = "CollisionShape3D"
+	var caps := CapsuleShape3D.new()
+	caps.radius = 0.45
+	caps.height = 1.5
+	pc.shape = caps
+	pc.position = Vector3(0.0, 0.75, 0.0)
+	add_child(pc)
 
 
 func _ready() -> void:
@@ -62,6 +70,13 @@ func _ready() -> void:
 
 
 func _ensure_collision() -> void:
+	var cols: Array = []
+	for c in get_children():
+		if c is CollisionShape3D:
+			cols.append(c)
+	if cols.size() > 1:
+		for i in range(cols.size() - 1):
+			cols[i].queue_free()
 	var col := get_node_or_null("CollisionShape3D") as CollisionShape3D
 	if col == null:
 		col = CollisionShape3D.new()
@@ -78,8 +93,12 @@ func _ensure_visuals() -> void:
 	# If scene already has a SpriteActor or AnimatedSprite3D, keep it
 	for child in get_children():
 		if child is SpriteActor or child is AnimatedSprite3D:
-			sprite = child
-			return
+			if sprite == null:
+				sprite = child
+			# If more than one visual, keep first
+			continue
+	if sprite != null:
+		return
 	# Try to build from SpriteLib
 	var actor = SpriteLib.build_actor(kind)
 	if actor:

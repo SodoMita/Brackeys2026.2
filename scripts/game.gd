@@ -21,6 +21,11 @@ var debris: Array = []
 
 var room := 0
 var wave_in_room := 0
+var wave: int:
+	get:
+		return wave_in_room + 1
+	set(value):
+		wave_in_room = value - 1
 var alive := 0
 var wave_delay := -1.0
 var boss_delay := -1.0
