@@ -98,20 +98,14 @@ func test_all_scenes_in_scenes_dir_load() -> void:
 	# Discover all .tscn in res://scenes and res://scenes/enemies to avoid missing any
 	var dirs := ["res://scenes", "res://scenes/enemies"]
 	for dir_path in dirs:
-		var dir = DirAccess.open(dir_path)
-		if dir == null:
-			continue
-		dir.list_dir_begin()
-		var fname = dir.get_next()
-		while fname != "":
+		var files = DirAccess.get_files_at(dir_path)
+		for fname in files:
 			if fname.ends_with(".tscn"):
 				var full_path = dir_path.path_join(fname)
 				if not ResourceLoader.exists(full_path):
 					assert_true(false, "DirAccess found but ResourceLoader missing: %s" % full_path)
 				else:
 					var res = load(full_path)
-					assert_true(res != null, "Failed to load %s - parse error? Check Color() needs 4 args, Transform3D needs correct format" % full_path)
+					assert_true(res != null, "Failed to load %s - parse error? Check Color() needs 4 args, Transform3D needs correct format, load_steps, missing SubResource" % full_path)
 					if res != null:
 						assert_true(res is PackedScene, "%s should be PackedScene" % full_path)
-			fname = dir.get_next()
-		dir.list_dir_end()

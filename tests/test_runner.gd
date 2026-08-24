@@ -60,18 +60,11 @@ func _quick_scene_check() -> void:
 
 func _collect_tests() -> Array:
 	var out: Array = []
-	var dir := DirAccess.open(TEST_DIR)
-	if dir == null:
-		push_error("Cannot open test directory: %s" % TEST_DIR)
-		return out
-	dir.list_dir_begin()
-	var f := dir.get_next()
-	while f != "":
+	var files = DirAccess.get_files_at(TEST_DIR)
+	for f in files:
 		if f.begins_with("test_") and f.ends_with(".gd") \
 				and not f in ["test_runner.gd", "test_base.gd"]:
 			out.append(f)
-		f = dir.get_next()
-	dir.list_dir_end()
 	out.sort()
 	return out
 
