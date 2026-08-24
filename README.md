@@ -149,3 +149,4 @@ under the git tag `template`.
 - [ ] Keep gameplay math in pure classes like `combat_logic.gd` so it stays testable.
 - [ ] Swap `icon.svg` (and set an Android launcher icon in the preset when you have one).
 - [ ] Update `package/unique_name` and `application/identifier`.
+# test
