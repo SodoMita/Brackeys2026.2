@@ -3,6 +3,7 @@ extends CharacterBody3D
 ## (Until he doesn't.)
 ## Now with SpriteActor front/back (Seirin triangulation)
 ## Scene-friendly: works from .tscn or procedurally.
+## _init creates fallback collision for headless tests.
 
 signal shot
 
@@ -15,7 +16,14 @@ var enemy_pool: Node3D = null
 
 
 func _init() -> void:
-	pass
+	var pc := CollisionShape3D.new()
+	pc.name = "CollisionShape3D"
+	var caps := CapsuleShape3D.new()
+	caps.radius = 0.4
+	caps.height = 1.6
+	pc.shape = caps
+	pc.position = Vector3(0.0, 0.8, 0.0)
+	add_child(pc)
 
 
 func _ready() -> void:
@@ -24,6 +32,13 @@ func _ready() -> void:
 
 
 func _ensure_collision() -> void:
+	var cols: Array = []
+	for c in get_children():
+		if c is CollisionShape3D:
+			cols.append(c)
+	if cols.size() > 1:
+		for i in range(cols.size() - 1):
+			cols[i].queue_free()
 	var col := get_node_or_null("CollisionShape3D") as CollisionShape3D
 	if col == null:
 		col = CollisionShape3D.new()
@@ -40,8 +55,11 @@ func _ensure_visuals() -> void:
 	# Reuse existing sprite if scene provides one
 	for child in get_children():
 		if child is SpriteActor or child is AnimatedSprite3D:
-			sprite = child
-			return
+			if sprite == null:
+				sprite = child
+			continue
+	if sprite != null:
+		return
 	var actor = SpriteLib.build_actor("colt")
 	if actor:
 		sprite = actor

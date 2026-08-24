@@ -3,6 +3,7 @@ extends CharacterBody3D
 ## coin toss + ricochet. Inputs: keyboard+mouse, gamepad, touchscreen.
 ## Now supports being instanced from a .tscn (editor-editable).
 ## If child nodes exist in the scene, they are reused; otherwise created procedurally.
+## _init creates fallback nodes so headless tests work without _ready.
 
 signal fired(enemy: Node3D, headshot: bool, airborne: bool, damage: float, ricochet: bool)
 signal dashed
@@ -57,36 +58,91 @@ var _prev_lt := false
 
 
 func _init() -> void:
-	# Keep minimal: hp init from Cfg if available, else default.
-	if Engine.has_singleton("Cfg") or (is_instance_valid(Cfg) if has_node("/root/Cfg") else false):
-		pass
-	# Don't create nodes here — scene may provide them.
-	# hp will be set in _ready from Cfg.
+	# Create fallback nodes in _init so tests that call _ready manually or don't enter tree still have them.
+	# If scene provides nodes, _ensure_nodes in _ready will dedupe.
+	hp = Cfg.max_hp if Cfg and "max_hp" in Cfg else 100.0
+	var pc := CollisionShape3D.new()
+	pc.name = "CollisionShape3D"
+	var caps := CapsuleShape3D.new()
+	caps.radius = 0.4
+	caps.height = 1.6
+	pc.shape = caps
+	pc.position = Vector3(0.0, 0.8, 0.0)
+	add_child(pc)
+	head = Node3D.new()
+	head.name = "Head"
+	head.position = Vector3(0.0, 1.6, 0.0)
+	add_child(head)
+	cam = Camera3D.new()
+	cam.name = "Camera3D"
+	cam.fov = 90.0
+	cam.far = 200.0
+	head.add_child(cam)
+	muzzle = OmniLight3D.new()
+	muzzle.name = "MuzzleLight"
+	muzzle.light_color = Color(1.0, 0.75, 0.35)
+	muzzle.light_energy = 0.0
+	muzzle.omni_range = 7.0
+	muzzle.position = Vector3(0.3, -0.25, -0.9)
+	head.add_child(muzzle)
+	var gun := MeshInstance3D.new()
+	gun.name = "GunMesh"
+	var gb := BoxMesh.new()
+	gb.size = Vector3(0.07, 0.11, 0.55)
+	var gm := StandardMaterial3D.new()
+	gm.albedo_color = Color(0.12, 0.12, 0.16)
+	gb.material = gm
+	gun.mesh = gb
+	gun.position = Vector3(0.28, -0.24, -0.55)
+	head.add_child(gun)
 
 
 func _ready() -> void:
 	_ensure_nodes()
-	hp = Cfg.max_hp if Cfg and "max_hp" in Cfg else 100.0
+	hp = Cfg.max_hp if Cfg and "max_hp" in Cfg else hp
 
 
 func _ensure_nodes() -> void:
+	# Dedupe: if scene provides a node with same name but different instance, keep scene one.
 	# CollisionShape3D
-	var col := get_node_or_null("CollisionShape3D") as CollisionShape3D
-	if col == null:
-		col = CollisionShape3D.new()
-		col.name = "CollisionShape3D"
-		var caps := CapsuleShape3D.new()
-		caps.radius = 0.4
-		caps.height = 1.6
-		col.shape = caps
-		col.position = Vector3(0.0, 0.8, 0.0)
-		add_child(col)
+	var existing_col := get_node_or_null("CollisionShape3D") as CollisionShape3D
+	# If we have multiple CollisionShape3D (fallback + scene), keep first scene-provided? Simplify: if more than 1, remove fallback.
+	var cols: Array = []
+	for c in get_children():
+		if c is CollisionShape3D:
+			cols.append(c)
+	if cols.size() > 1:
+		# Keep the one that is not the _init fallback? Heuristic: keep last (scene) and remove earlier
+		# Our _init nodes are added first, scene nodes added after _init, so scene nodes are later in child list
+		for i in range(cols.size() - 1):
+			var to_remove = cols[i]
+			if is_instance_valid(to_remove):
+				to_remove.queue_free()
 
-	# Head
-	if head_path != NodePath():
-		head = get_node_or_null(head_path) as Node3D
-	else:
+	# Head dedupe
+	var heads: Array = []
+	for c in get_children():
+		if c is Node3D and c.name == "Head":
+			heads.append(c)
+	if heads.size() > 1:
+		# Keep the last one (scene), remove earlier fallback heads
+		for i in range(heads.size() - 1):
+			var h = heads[i]
+			if is_instance_valid(h):
+				h.queue_free()
+		# Update head reference to the remaining one
 		head = get_node_or_null("Head") as Node3D
+
+	# Resolve references via paths or names
+	if head_path != NodePath():
+		var np_head = get_node_or_null(head_path) as Node3D
+		if np_head:
+			head = np_head
+	else:
+		var h = get_node_or_null("Head") as Node3D
+		if h:
+			head = h
+
 	if head == null:
 		head = Node3D.new()
 		head.name = "Head"
@@ -97,9 +153,10 @@ func _ensure_nodes() -> void:
 	if camera_path != NodePath():
 		cam = get_node_or_null(camera_path) as Camera3D
 	else:
-		cam = head.get_node_or_null("Camera3D") as Camera3D
-		if cam == null:
-			cam = get_node_or_null("Head/Camera3D") as Camera3D
+		if head:
+			cam = head.get_node_or_null("Camera3D") as Camera3D
+			if cam == null:
+				cam = get_node_or_null("Head/Camera3D") as Camera3D
 	if cam == null:
 		cam = Camera3D.new()
 		cam.name = "Camera3D"
@@ -107,17 +164,15 @@ func _ensure_nodes() -> void:
 		cam.far = 200.0
 		head.add_child(cam)
 
-	# Muzzle light
+	# Muzzle
 	if muzzle_path != NodePath():
 		muzzle = get_node_or_null(muzzle_path) as OmniLight3D
 	else:
-		muzzle = head.get_node_or_null("MuzzleLight") as OmniLight3D
-		if muzzle == null:
-			muzzle = head.get_node_or_null("Camera3D/MuzzleLight") as OmniLight3D
-		if muzzle == null:
+		if head:
 			muzzle = head.get_node_or_null("MuzzleLight") as OmniLight3D
 			if muzzle == null:
-				# search under Head
+				muzzle = head.get_node_or_null("Camera3D/MuzzleLight") as OmniLight3D
+			if muzzle == null:
 				for c in head.get_children():
 					if c is OmniLight3D:
 						muzzle = c
@@ -130,31 +185,6 @@ func _ensure_nodes() -> void:
 		muzzle.omni_range = 7.0
 		muzzle.position = Vector3(0.3, -0.25, -0.9)
 		head.add_child(muzzle)
-
-	# Gun mesh (optional visual)
-	var gun := head.get_node_or_null("GunMesh") as MeshInstance3D
-	if gun == null:
-		gun = get_node_or_null("Head/GunMesh") as MeshInstance3D
-	if gun == null:
-		# only create if not already present (check any MeshInstance under Head)
-		var has_gun := false
-		for c in head.get_children():
-			if c is MeshInstance3D:
-				# assume first mesh is gun if named
-				if "Gun" in c.name:
-					has_gun = true
-					break
-		if not has_gun:
-			var gun_mi := MeshInstance3D.new()
-			gun_mi.name = "GunMesh"
-			var gb := BoxMesh.new()
-			gb.size = Vector3(0.07, 0.11, 0.55)
-			var gm := StandardMaterial3D.new()
-			gm.albedo_color = Color(0.12, 0.12, 0.16)
-			gb.material = gm
-			gun_mi.mesh = gb
-			gun_mi.position = Vector3(0.28, -0.24, -0.55)
-			head.add_child(gun_mi)
 
 
 func request_dash() -> void:
@@ -196,6 +226,8 @@ func toss_coin() -> void:
 	coin.add_child(cs)
 	cs.shape = ss
 	coin.set_meta("coin", true)
+	if cam == null:
+		_ensure_nodes()
 	coin.position = cam.global_position + (-cam.global_transform.basis.z) * 0.5
 	var vel: Vector3 = -cam.global_transform.basis.z * float(Cfg.coin_toss_velocity)
 	vel.y += Cfg.coin_toss_velocity * 0.6
