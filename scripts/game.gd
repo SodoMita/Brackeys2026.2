@@ -306,13 +306,17 @@ func _build_hud() -> void:
 	hud_wpn.label_settings = _make_ls(9, Color(0.8, 0.8, 0.8))
 	hud_wpn.text = "REVOLVER"
 	cl.add_child(hud_wpn)
-	for r in [Rect2(156, 84, 8, 2), Rect2(156, 94, 8, 2), Rect2(158, 82, 2, 6), Rect2(160, 92, 2, 6)]:
+	
+	var crosshair_container := Control.new()
+	crosshair_container.set_anchors_preset(Control.PRESET_CENTER)
+	cl.add_child(crosshair_container)
+	for r in [Rect2(-4, -6, 8, 2), Rect2(-4, 4, 8, 2), Rect2(-2, -8, 2, 6), Rect2(0, 2, 2, 6)]:
 		var cr := ColorRect.new()
 		cr.color = Color(1, 1, 1, 0.9)
 		cr.position = r.position
 		cr.size = r.size
-		cr.visible = false
-		cl.add_child(cr)
+		cr.visible = true
+		crosshair_container.add_child(cr)
 		crosshair.append(cr)
 	hurt_flash = ColorRect.new()
 	hurt_flash.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -713,7 +717,7 @@ func _spawn_dead(at: Vector3, kind: String) -> void:
 func _process(dt: float) -> void:
 	hitmarker_t = maxf(hitmarker_t - dt, 0.0)
 	for c in crosshair:
-		c.visible = hitmarker_t > 0.0
+		c.color = Color(1, 0, 0, 0.8) if hitmarker_t > 0.0 else Color(1, 1, 1, 0.9)
 	if wave_delay > 0.0:
 		wave_delay -= dt
 		if wave_delay <= 0.0:

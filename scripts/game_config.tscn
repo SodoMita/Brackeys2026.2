@@ -1,6 +1,6 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene format=3 uid="uid://cq0xahuv6j172"]
 
-[ext_resource type="Script" path="res://scripts/game_config.gd" id="1_cfg"]
+[ext_resource type="Script" uid="uid://c7vm8645un56q" path="res://scripts/game_config.gd" id="1_cfg"]
 
-[node name="Cfg" type="Node"]
+[node name="Cfg" type="Node" unique_id=168684754]
 script = ExtResource("1_cfg")
