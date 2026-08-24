@@ -1,6 +1,6 @@
-[gd_scene load_steps=2 format=3 uid="uid://gal2ovuoosyv0dz900d"]
+[gd_scene load_steps=2 format=3 uid="uid://rurac07mg6xn9"]
 
-[ext_resource type="PackedScene" uid="uid://f63x1gto6dij99qmwqs" path="res://scenes/enemy.tscn" id="1_base"]
+[ext_resource type="PackedScene" uid="uid://uameiu3sbichl" path="res://scenes/enemy.tscn" id="1_base"]
 
 [node name="Boss" instance=ExtResource("1_base")]
 kind = "boss"

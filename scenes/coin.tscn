@@ -1,4 +1,4 @@
-[gd_scene load_steps=4 format=3 uid="uid://o6h3p037r1farloi10q"]
+[gd_scene load_steps=4 format=3 uid="uid://xqt5ipb1wov7h"]
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_coin"]
 top_radius = 0.12
