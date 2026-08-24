@@ -11,7 +11,7 @@ func _get_portrait_scene_presets() -> Array[Dictionary]:
 			"author":"Dialogic",
 			"type": "General",
 			"icon":"",
-			"preview_image":[this_folder.path_join("highlight_portrait_thumbnail.png")],
+			"preview_image":[this_folder.path_join("highlight_portrait_thumbnail.webp")],
 			"documentation":"",
 		},
 	]

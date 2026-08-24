@@ -32,7 +32,7 @@ func _get_portrait_scene_presets() -> Array[Dictionary]:
 			"author":"Dialogic",
 			"type": "Default",
 			"icon":"",
-			"preview_image":[this_folder.path_join("default_portrait_thumbnail.png")],
+			"preview_image":[this_folder.path_join("default_portrait_thumbnail.webp")],
 			"documentation":"",
 		},
 		{
@@ -42,7 +42,7 @@ func _get_portrait_scene_presets() -> Array[Dictionary]:
 			"author":"Dialogic",
 			"type": "Custom",
 			"icon":"",
-			"preview_image":[this_folder.path_join("custom_portrait_thumbnail.png")],
+			"preview_image":[this_folder.path_join("custom_portrait_thumbnail.webp")],
 			"documentation":"https://docs.dialogic.pro/custom-portraits.html",
 		},
 		{
@@ -52,7 +52,7 @@ func _get_portrait_scene_presets() -> Array[Dictionary]:
 			"author":"Dialogic",
 			"type": "General",
 			"icon":"",
-			"preview_image":[this_folder.path_join("simple_image_portrait_thumbnail.png")],
+			"preview_image":[this_folder.path_join("simple_image_portrait_thumbnail.webp")],
 			"documentation":"",
 		}
 	]

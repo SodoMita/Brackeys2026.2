@@ -193,7 +193,7 @@ func suggest_timelines(text:CodeEdit, type := CodeEdit.KIND_MEMBER, color:=Color
 func suggest_labels(text:CodeEdit, timeline:String='', end:='', color:=Color()) -> void:
 	if timeline in DialogicResourceUtil.get_label_cache():
 		for i in DialogicResourceUtil.get_label_cache()[timeline]:
-			text.add_code_completion_option(CodeEdit.KIND_MEMBER, i, i+end, color, load("res://addons/dialogic/Modules/Jump/icon_label.png"))
+			text.add_code_completion_option(CodeEdit.KIND_MEMBER, i, i+end, color, load("res://addons/dialogic/Modules/Jump/icon_label.webp"))
 
 
 # Helper that adds all portraits of a given character as options
