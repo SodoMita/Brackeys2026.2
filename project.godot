@@ -24,13 +24,17 @@ Dialogic="*uid://ds2q0uclmolvu"
 [dialogic]
 
 directories/dch_directory={}
-directories/dtl_directory={}
+directories/dtl_directory={
+"betrayal": "res://dialogue/betrayal.dtl",
+"ending": "res://dialogue/ending.dtl",
+"intro": "res://dialogue/intro.dtl",
+"quip1": "res://dialogue/quip1.dtl"
+}
 layout/style_directory={}
 
 [display]
 
-window/size/viewport_width=320
-window/size/viewport_height=180
+window/size/mode=4
 window/stretch/mode="viewport"
 
 [editor_plugins]
@@ -51,6 +55,10 @@ dialogic_default_action={
 [input_devices]
 
 pointing/emulate_mouse_from_touch=false
+
+[physics]
+
+3d/physics_engine="Jolt Physics"
 
 [rendering]
 
