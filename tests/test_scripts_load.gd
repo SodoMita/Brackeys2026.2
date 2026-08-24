@@ -119,7 +119,8 @@ func test_dialogue_files_exist() -> void:
 
 func test_game_constants_sane() -> void:
 	var scene: Node3D = (load("res://scenes/main.tscn") as PackedScene).instantiate()
-	add_to_root(scene)
+	scene._ready()
+	own(scene)
 	assert_eq(scene.ROOMS.size(), 3, "three rooms")
 	assert_eq(scene.ROOM_WAVES.size(), 3, "waves per room table")
 	assert_eq(scene.DOOR_Z.size(), 5, "five door planes")
@@ -134,7 +135,8 @@ func test_game_constants_sane() -> void:
 
 func test_wave_clear_advances() -> void:
 	var scene: Node3D = (load("res://scenes/main.tscn") as PackedScene).instantiate()
-	add_to_root(scene)
+	scene._ready()
+	own(scene)
 	scene._start()
 	assert_eq(scene.wave_in_room, 0)
 	var foes: Array = scene.enemies.get_children()
@@ -151,7 +153,8 @@ func test_wave_clear_advances() -> void:
 
 func test_style_decay_over_time() -> void:
 	var scene: Node3D = (load("res://scenes/main.tscn") as PackedScene).instantiate()
-	add_to_root(scene)
+	scene._ready()
+	own(scene)
 	scene._start()
 	scene.style = 100.0
 	var before := scene.style
@@ -162,7 +165,8 @@ func test_style_decay_over_time() -> void:
 
 func test_on_attacked_null_enemy_safe() -> void:
 	var scene: Node3D = (load("res://scenes/main.tscn") as PackedScene).instantiate()
-	add_to_root(scene)
+	scene._ready()
+	own(scene)
 	scene._start()
 	scene.player.request_parry()
 	scene._on_attacked(null)
@@ -172,7 +176,8 @@ func test_on_attacked_null_enemy_safe() -> void:
 
 func test_process_with_freed_projectile() -> void:
 	var scene: Node3D = (load("res://scenes/main.tscn") as PackedScene).instantiate()
-	add_to_root(scene)
+	scene._ready()
+	own(scene)
 	scene._start()
 	var pr = load("res://scripts/projectile.gd").new()
 	scene.add_child(pr)

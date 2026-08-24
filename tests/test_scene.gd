@@ -1,15 +1,27 @@
 extends TestBase
 ## Integration tests: instantiate the FPS root scene headless.
+##
+## Boot pattern matches the known-good main suite: call _ready() without
+## entering the SceneTree, so _process/_physics_process do not run between
+## assertions. Tests that need in-tree behavior call `_boot_in_tree()`.
 
 
 func _boot() -> Node3D:
 	var scene: Node3D = (load("res://scenes/main.tscn") as PackedScene).instantiate()
-	# Prefer in-tree so tweens / World3D work; fall back to manual _ready.
-	if runner and runner.root:
-		add_to_root(scene)
-	else:
-		scene._ready()
-		own(scene)
+	scene._ready()
+	own(scene)
+	return scene
+
+
+func _boot_in_tree() -> Node3D:
+	var scene: Node3D = (load("res://scenes/main.tscn") as PackedScene).instantiate()
+	# Pause the tree so automatic process does not race the test.
+	var was_paused := runner.paused
+	runner.paused = true
+	add_to_root(scene)
+	runner.paused = was_paused
+	# Keep paused for the duration of in-tree tests that step manually.
+	runner.paused = true
 	return scene
 
 
@@ -168,7 +180,7 @@ func test_projectile_parry_and_hit() -> void:
 	var scene := _boot()
 	scene._start()
 	var pr = load("res://scripts/projectile.gd").new()
-	pr.position = scene.player.global_position + Vector3(0, 1.2, 0)
+	pr.position = scene.player.position + Vector3(0, 1.2, 0)
 	pr.damage = 15.0
 	scene.add_child(pr)
 	scene.projectiles.append(pr)
@@ -177,7 +189,7 @@ func test_projectile_parry_and_hit() -> void:
 	assert_true(not is_instance_valid(pr) or not (pr in scene.projectiles), "parry consumes projectile")
 
 	var pr2 = load("res://scripts/projectile.gd").new()
-	pr2.position = scene.player.global_position + Vector3(0, 1.2, 0)
+	pr2.position = scene.player.position + Vector3(0, 1.2, 0)
 	pr2.damage = 15.0
 	scene.add_child(pr2)
 	scene.projectiles.append(pr2)

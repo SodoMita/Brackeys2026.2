@@ -16,6 +16,8 @@ var _failed := 0
 func _initialize() -> void:
 	print("")
 	print("=== Brackeys 2026.2 — test suite ===")
+	# Pause the tree so nodes added during tests do not auto-process.
+	paused = true
 	for fname in _collect_tests():
 		_run_suite(fname)
 	print("=== %d passed, %d failed ===" % [_passed, _failed])
