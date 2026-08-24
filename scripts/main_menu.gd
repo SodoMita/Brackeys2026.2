@@ -26,6 +26,9 @@ var _stick: HSlider
 var _volume: HSlider
 var _deadzone: HSlider
 var _text_speed: HSlider
+var _resolution: OptionButton
+var _vsync: OptionButton
+var _aa: OptionButton
 var _invert: Button
 var _fullscreen: Button
 var _borderless: Button
@@ -45,6 +48,7 @@ func _init() -> void:
 
 
 func _ready() -> void:
+	Settings.apply_saved()
 	if DisplayServer.get_name() != "headless":
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	if DisplayServer.is_touchscreen_available():
@@ -191,6 +195,13 @@ static func _slider(minv: float, maxv: float, stepv: float) -> HSlider:
 	return s
 
 
+static func _options(items: PackedStringArray) -> OptionButton:
+	var o := OptionButton.new()
+	o.custom_minimum_size = Vector2(120, 18)
+	for item in items: o.add_item(item)
+	return o
+
+
 static func _toggle_button() -> Button:
 	var b := _button("OFF", 56)
 	b.toggle_mode = true
@@ -250,6 +261,16 @@ func _build_settings_panel() -> void:
 	_fullscreen = _toggle_button()
 	r5.add_child(_fullscreen)
 
+	var rv := _add_row(box, "RESOLUTION")
+	_resolution = _options(["1280 × 720", "1600 × 900", "1920 × 1080", "2560 × 1440"])
+	rv.add_child(_resolution)
+	var rvs := _add_row(box, "V-SYNC")
+	_vsync = _options(["OFF", "ON"])
+	rvs.add_child(_vsync)
+	var raa := _add_row(box, "ANTI-ALIASING")
+	_aa = _options(["OFF", "MSAA 2X", "MSAA 4X", "MSAA 8X"])
+	raa.add_child(_aa)
+
 	var r6 := _add_row(box, "STICK DEADZONE")
 	_deadzone = _slider(0.0, 0.8, 0.01)
 	r6.add_child(_deadzone)
@@ -285,6 +306,9 @@ func _build_settings_panel() -> void:
 	_volume.value_changed.connect(func(_v): _on_live_change())
 	_deadzone.value_changed.connect(func(_v): _on_live_change())
 	_text_speed.value_changed.connect(func(_v): _on_live_change())
+	_resolution.item_selected.connect(func(_i): _on_live_change())
+	_vsync.item_selected.connect(func(_i): _on_live_change())
+	_aa.item_selected.connect(func(_i): _on_live_change())
 	_sens.drag_ended.connect(func(_c): _persist())
 	_stick.drag_ended.connect(func(_c): _persist())
 	_volume.drag_ended.connect(func(_c): _persist())
@@ -332,6 +356,9 @@ func _collect() -> Dictionary:
 		"borderless": bool(_borderless.button_pressed),
 		"controller_vibration": bool(_vibration.button_pressed),
 		"subtitles": bool(_subtitles.button_pressed),
+		"resolution": [Vector2i(1280, 720), Vector2i(1600, 900), Vector2i(1920, 1080), Vector2i(2560, 1440)][_resolution.selected],
+		"vsync": _vsync.selected,
+		"aa_mode": _aa.selected,
 	}
 
 
@@ -362,6 +389,11 @@ func _sync_widgets() -> void:
 	_borderless.set_pressed_no_signal(bool(cur.get("borderless", false)))
 	_vibration.set_pressed_no_signal(bool(cur.get("controller_vibration", true)))
 	_subtitles.set_pressed_no_signal(bool(cur.get("subtitles", true)))
+	var resolutions := [Vector2i(1280, 720), Vector2i(1600, 900), Vector2i(1920, 1080), Vector2i(2560, 1440)]
+	var wanted: Vector2i = cur.get("resolution", Vector2i(1280, 720))
+	_resolution.select(maxi(0, resolutions.find(wanted)))
+	_vsync.select(clampi(int(cur.get("vsync", 1)), 0, 1))
+	_aa.select(clampi(int(cur.get("aa_mode", 2)), 0, 3))
 	_arming = false
 	_refresh_labels()
 
@@ -381,20 +413,8 @@ func _refresh_labels() -> void:
 
 
 func _reset_defaults() -> void:
-	var d := Settings.capture_defaults().duplicate()
-	_arming = true
-	_sens.set_value_no_signal(float(d.get("mouse_sensitivity", _sens.min_value)))
-	_stick.set_value_no_signal(float(d.get("stick_look_speed", _stick.min_value)))
-	_volume.set_value_no_signal(float(d.get("master_volume", 1.0)))
-	_invert.set_pressed_no_signal(bool(d.get("invert_look", false)))
-	_fullscreen.set_pressed_no_signal(bool(d.get("fullscreen", false)))
-	_deadzone.set_value_no_signal(float(d.get("stick_deadzone", 0.18)))
-	_text_speed.set_value_no_signal(float(d.get("text_speed", 0.01)))
-	_borderless.set_pressed_no_signal(bool(d.get("borderless", false)))
-	_vibration.set_pressed_no_signal(bool(d.get("controller_vibration", true)))
-	_subtitles.set_pressed_no_signal(bool(d.get("subtitles", true)))
-	_arming = false
-	_on_live_change()
+	Settings.apply(Settings.capture_defaults())
+	_sync_widgets()
 	_persist()
 
 
