@@ -93,16 +93,13 @@ extends Node
 
 
 func heal_on_damage(current_hp: float, damage: float) -> float:
-	return clampf(current_hp + damage * heal_factor, 0.0, max_hp)
+	var cap: float = max_hp if max_hp > 0.0 else 100.0
+	return clampf(current_hp + damage * heal_factor, 0.0, cap)
 
 
 func rank_for_points(points: float) -> String:
-	var rank := String(ranks[0]) if ranks.size() > 0 else "D"
-	for i in mini(rank_thresholds.size(), ranks.size()):
-		if points >= rank_thresholds[i]:
-			rank = String(ranks[i])
-	return rank
+	return CombatLogic.rank_for_points(points, rank_thresholds, ranks)
 
 
 func decay_rate(points: float) -> float:
-	return decay_base + maxf(points, 0.0) * decay_scale
+	return CombatLogic.decay_rate(points, decay_base, decay_scale)

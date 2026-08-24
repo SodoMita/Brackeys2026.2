@@ -66,11 +66,16 @@ func _process(_dt: float) -> void:
 
 
 func _unhandled_input(ev: InputEvent) -> void:
+	if prompt == null or panel == null:
+		return
 	if ev is InputEventKey and ev.pressed and not ev.echo:
-		if ev.keycode == KEY_E and prompt.visible or (open and ev.keycode == KEY_E):
+		# Parenthesize: open with E when near, or close with E when open.
+		if ev.keycode == KEY_E and (prompt.visible or open):
 			if open:
 				close()
 			else:
+				if player_ref == null or not is_instance_valid(player_ref):
+					return
 				open = true
 				player_ref.disabled = true
 				panel.visible = true
@@ -81,6 +86,7 @@ func _unhandled_input(ev: InputEvent) -> void:
 
 func close() -> void:
 	open = false
-	panel.visible = false
-	if player_ref:
+	if panel:
+		panel.visible = false
+	if player_ref and is_instance_valid(player_ref):
 		player_ref.disabled = false

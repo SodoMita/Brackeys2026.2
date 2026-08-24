@@ -33,6 +33,8 @@ func _ready() -> void:
 	sprite = SpriteLib.build(kind)
 	if sprite:
 		add_child(sprite)
+		if has_meta("boss") and bool(get_meta("boss")):
+			sprite.modulate = Color(1.6, 0.5, 0.5)
 	else:
 		# fallback: solid capsule with eyes (frames not present)
 		var body := MeshInstance3D.new()
@@ -72,9 +74,13 @@ func stagger(t: float) -> void:
 
 
 func take_damage(d: float, dir: Vector3, knock: float) -> void:
-	hp -= d
-	velocity += dir * knock
 	if hp <= 0.0:
+		return
+	hp -= maxf(d, 0.0)
+	if dir.length_squared() > 0.0001:
+		velocity += dir.normalized() * knock
+	if hp <= 0.0:
+		hp = 0.0
 		died.emit(global_position)
 		queue_free()
 
@@ -88,7 +94,17 @@ func _set_telegraph(on: bool) -> void:
 		(e.mesh as SphereMesh).material.set("albedo_color", col)
 
 
+func _face_flat(dir: Vector3) -> void:
+	# look_at errors if the target is parallel to the up vector — keep facing horizontal.
+	var flat := Vector3(dir.x, 0.0, dir.z)
+	if flat.length_squared() < 0.0001:
+		return
+	look_at(global_position + flat.normalized(), Vector3.UP)
+
+
 func _physics_process(dt: float) -> void:
+	if dt < 0.0:
+		dt = 0.0
 	velocity.y -= Cfg.gravity * dt
 	atk_cd = maxf(atk_cd - dt, 0.0)
 	if stagger_t > 0.0:
@@ -108,11 +124,16 @@ func _physics_process(dt: float) -> void:
 			if windup_t <= 0.0:
 				windup_t = -1.0
 				_set_telegraph(false)
-				if d < Cfg.enemy_attack_range + 0.6:
+				if ranged:
+					# Spitters / boss fire a volley at the player after telegraph.
+					var aim := (target.global_position + Vector3(0, 1.2, 0) - global_position)
+					if aim.length() > 0.01:
+						volley.emit(aim.normalized(), global_position + Vector3(0, 1.2, 0))
+				elif d < Cfg.enemy_attack_range + 0.6:
 					attacked.emit()
 				atk_cd = Cfg.enemy_strike_cooldown
 		elif ranged:
-			var dir := to.normalized()
+			var dir := to.normalized() if d > 0.01 else Vector3.FORWARD
 			var want := 13.0
 			var move := 0.0
 			if d > want + 3.0:
@@ -122,7 +143,7 @@ func _physics_process(dt: float) -> void:
 			velocity.x = move_toward(velocity.x, dir.x * speed * move, 50.0 * dt)
 			velocity.z = move_toward(velocity.z, dir.z * speed * move, 50.0 * dt)
 			if d > 0.01:
-				look_at(global_position + dir, Vector3.UP)
+				_face_flat(dir)
 			if atk_cd <= 0.0:
 				windup_t = Cfg.enemy_windup
 				_set_telegraph(true)
@@ -132,19 +153,20 @@ func _physics_process(dt: float) -> void:
 			velocity.x = move_toward(velocity.x, dir.x * speed, 50.0 * dt)
 			velocity.z = move_toward(velocity.z, dir.z * speed, 50.0 * dt)
 			if d > 0.01:
-				look_at(global_position + dir, Vector3.UP)
+				_face_flat(dir)
 		elif atk_cd <= 0.0:
 			windup_t = Cfg.enemy_windup
 			_set_telegraph(true)
 			windup.emit()
-	if sprite and target and is_instance_valid(target):
+	if sprite and is_instance_valid(sprite) and target and is_instance_valid(target):
 		sprite.flip_h = target.global_position.x < global_position.x
-		if windup_t >= 0.0 and sprite.sprite_frames.has_animation("act"):
-			if sprite.animation != &"act":
-				sprite.play("act")
-		elif horizontal_speed_v() > 0.5:
-			if sprite.animation != &"walk":
-				sprite.play("walk")
+		if sprite.sprite_frames:
+			if windup_t >= 0.0 and sprite.sprite_frames.has_animation("act"):
+				if sprite.animation != &"act":
+					sprite.play("act")
+			elif horizontal_speed_v() > 0.5 and sprite.sprite_frames.has_animation("walk"):
+				if sprite.animation != &"walk":
+					sprite.play("walk")
 	move_and_slide()
 
 

@@ -96,11 +96,27 @@ func is_parry_active() -> bool:
 
 
 func cycle_weapon() -> void:
-	weapon = 0 if weapon == 1 else 1
+	# Cycle through owned weapons only (revolver / shotgun / nailgun).
+	var order: Array = []
+	for i in weapons.size():
+		if weapons[i]:
+			order.append(i)
+	if order.is_empty():
+		weapon = 0
+		return
+	var idx := order.find(weapon)
+	if idx < 0:
+		weapon = int(order[0])
+	else:
+		weapon = int(order[(idx + 1) % order.size()])
 
 
 func toss_coin() -> void:
+	if dead or disabled:
+		return
 	if coin and is_instance_valid(coin):
+		return
+	if cam == null or not is_inside_tree():
 		return
 	coin = RigidBody3D.new()
 	var cmi := MeshInstance3D.new()
@@ -125,7 +141,9 @@ func toss_coin() -> void:
 	vel.y += Cfg.coin_toss_velocity * 0.6
 	coin.linear_velocity = vel
 	coin.angular_velocity = Vector3(20.0, 5.0, 20.0)
-	add_child(coin)
+	# Parent to the scene root so the coin is world-space, not stuck to the player.
+	var host: Node = get_parent() if get_parent() else self
+	host.add_child(coin)
 	coin_age = 0.0
 	coin_tossed.emit()
 
@@ -292,7 +310,12 @@ func horizontal_speed() -> float:
 
 
 func try_fire() -> void:
-	if fire_cd > 0.0:
+	if dead or disabled or fire_cd > 0.0:
+		return
+	if cam == null or not is_inside_tree():
+		return
+	var world := get_world_3d()
+	if world == null or world.direct_space_state == null:
 		return
 	match weapon:
 		2:
@@ -314,24 +337,27 @@ func try_fire() -> void:
 	damage *= damage_mult
 	pellets = 1 if weapon == 2 else pellets
 	spread = 0.015 if weapon == 2 else spread
+	var space := world.direct_space_state
 	for _i in pellets:
 		var dir := -cam.global_transform.basis.z
 		dir += cam.global_transform.basis.x * randf_range(-spread, spread)
 		dir += cam.global_transform.basis.y * randf_range(-spread, spread)
 		dir = dir.normalized()
 		var from := cam.global_position
-		var space := get_world_3d().direct_space_state
 		var q := PhysicsRayQueryParameters3D.create(from, from + dir * 150.0)
 		q.exclude = [get_rid()]
 		var hit := space.intersect_ray(q)
-		if not hit:
+		if hit.is_empty():
 			continue
-		if hit.collider.has_meta("coin"):
+		var collider = hit.get("collider")
+		if collider == null or not is_instance_valid(collider):
+			continue
+		if collider.has_meta("coin"):
 			_ricochet(damage)
 			return
-		if hit.collider.has_method("take_damage"):
-			var headshot: bool = hit.position.y > hit.collider.global_position.y + 0.55
-			fired.emit(hit.collider, headshot, not is_on_floor(), damage, false)
+		if collider.has_method("take_damage"):
+			var headshot: bool = hit.position.y > collider.global_position.y + 0.55
+			fired.emit(collider, headshot, not is_on_floor(), damage, false)
 	muzzle.light_energy = 7.0
 
 

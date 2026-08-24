@@ -178,11 +178,24 @@ func _make_door(z: float, width: float) -> Node3D:
 
 
 func door_set(d: Node3D, closed: bool) -> void:
+	if d == null or not is_instance_valid(d):
+		return
+	if not d.has_meta("body") or not d.has_meta("mesh"):
+		return
 	var sb: StaticBody3D = d.get_meta("body")
 	var mi: MeshInstance3D = d.get_meta("mesh")
-	sb.set_deferred("disabled", not closed)
-	var tw := create_tween()
-	tw.tween_property(mi, "position:y", 2.5 if closed else 6.5, 0.6)
+	if sb == null or mi == null:
+		return
+	# StaticBody3D has no `disabled` — toggle every CollisionShape3D child.
+	for child in sb.get_children():
+		if child is CollisionShape3D:
+			(child as CollisionShape3D).set_deferred("disabled", not closed)
+	# create_tween requires the node to be inside the tree.
+	if is_inside_tree():
+		var tw := create_tween()
+		tw.tween_property(mi, "position:y", 2.5 if closed else 6.5, 0.6)
+	else:
+		mi.position.y = 2.5 if closed else 6.5
 	_play(sfx_door)
 
 
@@ -427,13 +440,16 @@ func _unhandled_input(ev: InputEvent) -> void:
 
 
 func _start() -> void:
+	if state == State.PLAYING or state == State.BOSS:
+		return
 	state = State.PLAYING
-	overlay.visible = false
+	if overlay:
+		overlay.visible = false
 	if DisplayServer.get_name() != "headless":
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-	door_set(doors[0], true)
-	door_set(doors[2], true)
-	door_set(doors[4], true)
+	for di in [0, 2, 4]:
+		if di < doors.size() and is_instance_valid(doors[di]):
+			door_set(doors[di], true)
 	_say("res://dialogue/intro.dtl")
 	_spawn_wave()
 
@@ -441,19 +457,30 @@ func _start() -> void:
 func _enter_room(r: int) -> void:
 	if state != State.PLAYING:
 		return
+	if r < 0 or r >= ROOMS.size():
+		return
+	# Ignore re-entry into the current room (trigger can fire more than once).
+	if r == room and wave_in_room == 0 and alive > 0:
+		return
 	room = r
 	wave_in_room = 0
-	door_set(doors[1 if r == 1 else 3], true)
-	hud_wave.text = "ROOM %d" % (r + 1)
+	var door_idx := 1 if r == 1 else 3
+	if door_idx >= 0 and door_idx < doors.size() and is_instance_valid(doors[door_idx]):
+		door_set(doors[door_idx], true)
+	if hud_wave:
+		hud_wave.text = "ROOM %d" % (r + 1)
 	_spawn_wave()
 
 
 func _room_bounds() -> Vector2:
+	if room < 0 or room >= ROOMS.size():
+		return ROOMS[0]
 	return ROOMS[room]
 
 
 func _spawn_wave() -> void:
-	var b := _room_bounds()
+	if room < 0 or room >= ROOMS.size() or room >= ROOM_WAVES.size():
+		return
 	var hounds := 3 + room + wave_in_room
 	var spitters := 1 + wave_in_room if room + wave_in_room >= 2 else 0
 	for i in hounds:
@@ -466,8 +493,9 @@ func _spawn_wave() -> void:
 func _spawn_enemy(ranged: bool, at := Vector3.ZERO, boss := false) -> CharacterBody3D:
 	var e: CharacterBody3D = load("res://scripts/enemy.gd").new()
 	e.kind = "boss" if boss else ("spitter" if ranged else "hound")
+	# Node3D has no `modulate` (CanvasItem only). Tint via scale / later sprite.
 	if boss:
-		e.modulate = Color(1.6, 0.5, 0.5)
+		e.set_meta("boss", true)
 	if at == Vector3.ZERO:
 		var b := _room_bounds()
 		for _t in 12:
@@ -500,16 +528,23 @@ func _betrayal() -> void:
 	if state != State.PLAYING:
 		return
 	state = State.BOSS
-	door_set(doors[4], true)
-	companion.vanish()
+	if doors.size() > 4 and is_instance_valid(doors[4]):
+		door_set(doors[4], true)
+	if companion and is_instance_valid(companion) and companion.has_method("vanish"):
+		companion.vanish()
 	_say("res://dialogue/betrayal.dtl")
 	boss_delay = 3.5
 
 
 func _on_volley(dir: Vector3, origin: Vector3) -> void:
 	_play(sfx_spit)
-	for i in Cfg.spitter_volley:
-		var ang: float = (float(i) - float(Cfg.spitter_volley - 1) / 2.0) * float(Cfg.spitter_spread)
+	if dir.length_squared() < 0.0001:
+		dir = Vector3(0, 0, -1)
+	else:
+		dir = dir.normalized()
+	var volley_n: int = maxi(int(Cfg.spitter_volley), 1)
+	for i in volley_n:
+		var ang: float = (float(i) - float(volley_n - 1) / 2.0) * float(Cfg.spitter_spread)
 		var d := dir.rotated(Vector3.UP, ang)
 		var pr = load("res://scripts/projectile.gd").new()
 		pr.position = origin
@@ -522,16 +557,19 @@ func _on_volley(dir: Vector3, origin: Vector3) -> void:
 func _on_enemy_died(pos: Vector3, e: Node3D) -> void:
 	_play(sfx_die)
 	style += Cfg.style_kill
-	if player.sliding:
+	if player and is_instance_valid(player) and player.sliding:
 		style += Cfg.style_slide_kill
-	_add_scrap_for(e)
+	if e and is_instance_valid(e):
+		_add_scrap_for(e)
 	_spawn_gibs(pos)
-	alive -= 1
+	alive = maxi(alive - 1, 0)
 	if alive > 0:
 		return
 	if state == State.BOSS:
 		_end_mission()
 	elif state == State.PLAYING:
+		if room < 0 or room >= ROOM_WAVES.size():
+			return
 		if wave_in_room < ROOM_WAVES[room] - 1:
 			wave_in_room += 1
 			wave_delay = 1.2
@@ -569,7 +607,15 @@ func _on_player_died() -> void:
 func _on_fired(enemy: Node3D, headshot: bool, airborne: bool, damage: float, ricochet: bool) -> void:
 	if state not in [State.PLAYING, State.BOSS]:
 		return
-	var dir := (enemy.global_position - player.global_position).normalized()
+	if enemy == null or not is_instance_valid(enemy) or player == null:
+		return
+	if not enemy.has_method("take_damage"):
+		return
+	var dir := (enemy.global_position - player.global_position)
+	if dir.length_squared() < 0.0001:
+		dir = -player.global_transform.basis.z
+	else:
+		dir = dir.normalized()
 	enemy.take_damage(damage, dir, 4.0)
 	player.hp = CombatLogic.heal_on_damage(player.hp, damage, Cfg.heal_factor, Cfg.max_hp)
 	hud_hp.text = "%d" % int(player.hp)
@@ -614,9 +660,14 @@ func _on_attacked(e: Node3D) -> void:
 
 
 func _on_purchase(item: int) -> void:
+	if player == null or not is_instance_valid(player):
+		return
 	if item == -1:
 		for t in terminals:
-			t.refresh_panel(scrap, player.weapons[2])
+			if is_instance_valid(t):
+				t.refresh_panel(scrap, player.weapons[2])
+		return
+	if item < 0 or item > 2:
 		return
 	var cost: int = [int(Cfg.nailgun_cost), int(Cfg.plating_cost), int(Cfg.overclock_cost)][item]
 	if item == 0 and player.weapons[2]:
@@ -638,7 +689,8 @@ func _on_purchase(item: int) -> void:
 			player.damage_mult *= Cfg.overclock_mult
 	_play(sfx_buy)
 	for t in terminals:
-		t.refresh_panel(scrap, player.weapons[2])
+		if is_instance_valid(t):
+			t.refresh_panel(scrap, player.weapons[2])
 
 
 func _spawn_gibs(at: Vector3) -> void:
@@ -661,9 +713,12 @@ func _spawn_gibs(at: Vector3) -> void:
 
 # ------------------------------------------------------------- loop
 func _process(dt: float) -> void:
+	if dt < 0.0:
+		dt = 0.0
 	hitmarker_t = maxf(hitmarker_t - dt, 0.0)
 	for c in crosshair:
-		c.visible = hitmarker_t > 0.0
+		if is_instance_valid(c):
+			c.visible = hitmarker_t > 0.0
 	if wave_delay > 0.0:
 		wave_delay -= dt
 		if wave_delay <= 0.0:
@@ -676,51 +731,60 @@ func _process(dt: float) -> void:
 			_spawn_enemy(true, Vector3(0, 0, -118), true)
 			_spawn_enemy(false, Vector3(-8, 0, -115))
 			_spawn_enemy(false, Vector3(8, 0, -115))
-	if state in [State.PLAYING, State.BOSS]:
+	if state in [State.PLAYING, State.BOSS] and player and is_instance_valid(player):
 		style = maxf(style - Cfg.decay_rate(style) * dt, 0.0)
 		var rank: String = str(Cfg.rank_for_points(style))
-		hud_rank.text = rank
-		var col := Color(0.7, 0.7, 0.7)
-		match rank:
-			"C": col = Color(0.5, 0.9, 1.0)
-			"B": col = Color(0.4, 1.0, 0.5)
-			"A": col = Color(1.0, 0.9, 0.3)
-			"S": col = Color(1.0, 0.5, 0.2)
-			"SS": col = Color(1.0, 0.2, 0.3)
-			"SSS": col = Color(1.0, 0.05, 0.4)
-		hud_rank.label_settings.font_color = col
-		hud_wpn.text = ["REVOLVER", "SHOTGUN", "NAILGUN"][player.weapon]
+		if hud_rank:
+			hud_rank.text = rank
+			var col := Color(0.7, 0.7, 0.7)
+			match rank:
+				"C": col = Color(0.5, 0.9, 1.0)
+				"B": col = Color(0.4, 1.0, 0.5)
+				"A": col = Color(1.0, 0.9, 0.3)
+				"S": col = Color(1.0, 0.5, 0.2)
+				"SS": col = Color(1.0, 0.2, 0.3)
+				"SSS": col = Color(1.0, 0.05, 0.4)
+			if hud_rank.label_settings:
+				hud_rank.label_settings.font_color = col
+		if hud_wpn:
+			var wpn_names := ["REVOLVER", "SHOTGUN", "NAILGUN"]
+			var wi: int = clampi(int(player.weapon), 0, wpn_names.size() - 1)
+			hud_wpn.text = wpn_names[wi]
 	# projectiles vs player / parry
-	for p in projectiles.duplicate():
-		if not is_instance_valid(p):
-			projectiles.erase(p)
-			continue
-		var d: float = p.position.distance_to(player.global_position + Vector3(0, 1.2, 0))
-		if player.is_parry_active() and d < 2.6:
-			style += Cfg.style_parry
-			player.hp = CombatLogic.heal_on_damage(player.hp, Cfg.parry_heal_bonus, 1.0, Cfg.max_hp)
-			hud_hp.text = "%d" % int(player.hp)
-			player.parried.emit()
-			p.queue_free()
-			projectiles.erase(p)
-		elif d < 0.8:
-			player.take_damage(p.damage)
-			style = CombatLogic.on_hurt(style)
-			hud_hp.text = "%d" % int(maxf(player.hp, 0.0))
-			_play(sfx_hurt)
-			p.queue_free()
-			projectiles.erase(p)
+	if player and is_instance_valid(player):
+		for p in projectiles.duplicate():
+			if not is_instance_valid(p):
+				projectiles.erase(p)
+				continue
+			var d: float = p.position.distance_to(player.global_position + Vector3(0, 1.2, 0))
+			if player.is_parry_active() and d < 2.6:
+				style += Cfg.style_parry
+				player.hp = CombatLogic.heal_on_damage(player.hp, Cfg.parry_heal_bonus, 1.0, Cfg.max_hp)
+				if hud_hp:
+					hud_hp.text = "%d" % int(player.hp)
+				player.parried.emit()
+				p.queue_free()
+				projectiles.erase(p)
+			elif d < 0.8:
+				var dmg: float = float(p.damage) if "damage" in p else float(Cfg.projectile_damage)
+				player.take_damage(dmg)
+				style = CombatLogic.on_hurt(style)
+				if hud_hp:
+					hud_hp.text = "%d" % int(maxf(player.hp, 0.0))
+				_play(sfx_hurt)
+				p.queue_free()
+				projectiles.erase(p)
 	var i := debris.size() - 1
 	while i >= 0:
-		var d: Dictionary = debris[i]
-		d.life -= dt
-		if d.life <= 0.0 or not is_instance_valid(d.node):
-			if is_instance_valid(d.node):
-				d.node.queue_free()
+		var entry: Dictionary = debris[i]
+		entry.life -= dt
+		if entry.life <= 0.0 or not is_instance_valid(entry.node):
+			if is_instance_valid(entry.node):
+				entry.node.queue_free()
 			debris.remove_at(i)
 		else:
-			d.vel.y -= Cfg.gravity * dt
-			d.node.position += d.vel * dt
-			var s := clampf(d.life, 0.0, 1.0)
-			d.node.scale = Vector3(s, s, s)
+			entry.vel.y -= Cfg.gravity * dt
+			entry.node.position += entry.vel * dt
+			var s := clampf(entry.life, 0.0, 1.0)
+			entry.node.scale = Vector3(s, s, s)
 		i -= 1

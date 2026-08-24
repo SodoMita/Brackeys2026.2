@@ -7,13 +7,13 @@ const BASE := "res://assets/sprites/"
 
 const SETS := {
 	"colt": {
-		"idle": [],
+		"idle": ["colt_idle.png"],
 		"walk": ["colt_walk1.png", "colt_walk2.png", "colt_walk3.png", "colt_walk4.png", "colt_walk5.png"],
 		"act": ["colt_shoot.png"],
 		"h": 1.8,
 	},
 	"boss": {
-		"idle": [],
+		"idle": ["colt_idle.png"],
 		"walk": ["colt_walk1.png", "colt_walk2.png", "colt_walk3.png", "colt_walk4.png", "colt_walk5.png"],
 		"act": ["colt_shoot.png"],
 		"h": 1.9,

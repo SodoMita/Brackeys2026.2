@@ -43,11 +43,14 @@ func _ready() -> void:
 func vanish() -> void:
 	hidden = true
 	visible = false
+	set_physics_process(false)
 
 
 func _physics_process(dt: float) -> void:
 	if hidden:
 		return
+	if dt < 0.0:
+		dt = 0.0
 	velocity.y -= Cfg.gravity * dt
 	if player_ref and is_instance_valid(player_ref):
 		var player: Node3D = player_ref
@@ -63,29 +66,30 @@ func _physics_process(dt: float) -> void:
 			velocity.z = move_toward(velocity.z, 0.0, 30.0 * dt)
 		# support fire at nearest enemy
 		fire_cd = maxf(fire_cd - dt, 0.0)
-		if fire_cd <= 0.0:
+		if fire_cd <= 0.0 and enemy_pool and is_instance_valid(enemy_pool):
 			var best: Node3D = null
 			var bd := 25.0
-			var pool: Node3D = enemy_pool
-			if pool:
-				for en in pool.get_children():
-					if is_instance_valid(en) and en.has_method("take_damage"):
-						var ed: float = en.global_position.distance_to(global_position)
-						if ed < bd:
-							bd = ed
-							best = en
+			for en in enemy_pool.get_children():
+				if is_instance_valid(en) and en.has_method("take_damage"):
+					var ed: float = en.global_position.distance_to(global_position)
+					if ed < bd:
+						bd = ed
+						best = en
 			if best:
 				fire_cd = Cfg.companion_fire_cd
-				var dir := (best.global_position + Vector3(0, 1, 0) - global_position).normalized()
+				var aim := best.global_position + Vector3(0, 1, 0) - global_position
+				var dir := aim.normalized() if aim.length_squared() > 0.0001 else Vector3.FORWARD
 				best.take_damage(Cfg.companion_damage, dir, 1.0)
 				shoot_t = 0.3
 				shot.emit()
-	if sprite and player_ref and is_instance_valid(player_ref):
+	if sprite and is_instance_valid(sprite) and player_ref and is_instance_valid(player_ref):
 		sprite.flip_h = player_ref.global_position.x < global_position.x
-		if shoot_t > 0.0:
+		if sprite.sprite_frames == null:
+			pass
+		elif shoot_t > 0.0 and sprite.sprite_frames.has_animation("act"):
 			if sprite.animation != &"act":
 				sprite.play("act")
-		elif Vector2(velocity.x, velocity.z).length() > 0.5:
+		elif Vector2(velocity.x, velocity.z).length() > 0.5 and sprite.sprite_frames.has_animation("walk"):
 			if sprite.animation != &"walk":
 				sprite.play("walk")
 		elif sprite.sprite_frames.has_animation("idle"):

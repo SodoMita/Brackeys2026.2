@@ -19,6 +19,12 @@ func assert_false(cond: bool, msg: String = "condition") -> void:
 
 
 func assert_eq(a: Variant, b: Variant, msg: String = "") -> void:
+	if typeof(a) == TYPE_FLOAT or typeof(b) == TYPE_FLOAT:
+		# Fall back to near-equality for floaty asserts used with assert_eq.
+		if typeof(a) in [TYPE_FLOAT, TYPE_INT] and typeof(b) in [TYPE_FLOAT, TYPE_INT]:
+			if absf(float(a) - float(b)) > 0.0001:
+				failures.append("expected '%s' == '%s' — %s" % [str(a), str(b), msg])
+			return
 	if a != b:
 		failures.append("expected '%s' == '%s' — %s" % [str(a), str(b), msg])
 
@@ -51,3 +57,18 @@ func assert_lt(a: float, b: float, msg: String = "") -> void:
 func assert_le(a: float, b: float, msg: String = "") -> void:
 	if not (a <= b):
 		failures.append("expected %f <= %f — %s" % [a, b, msg])
+
+
+func assert_not_null(v: Variant, msg: String = "value") -> void:
+	if v == null:
+		failures.append("expected non-null — %s" % msg)
+
+
+func assert_null(v: Variant, msg: String = "value") -> void:
+	if v != null:
+		failures.append("expected null — %s" % msg)
+
+
+func assert_has_method(obj: Object, method: String, msg: String = "") -> void:
+	if obj == null or not obj.has_method(method):
+		failures.append("expected method '%s' — %s" % [method, msg])
