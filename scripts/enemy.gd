@@ -1,5 +1,6 @@
 extends CharacterBody3D
 ## "Hound": melee chaser with a telegraphed strike (parry-able).
+## Now uses SpriteActor with front/back views (Seirin triangulation).
 
 signal died(pos: Vector3)
 signal windup
@@ -14,7 +15,7 @@ var stagger_t := 0.0
 var target: Node3D
 var ranged := false
 var kind := "hound"
-var sprite: AnimatedSprite3D = null
+var sprite: Node3D = null # can be SpriteActor or AnimatedSprite3D (legacy)
 var eyes: Array = []
 
 
@@ -30,40 +31,47 @@ func _init() -> void:
 
 
 func _ready() -> void:
-	sprite = SpriteLib.build(kind)
-	if sprite:
-		add_child(sprite)
+	# Prefer directional actor
+	var actor = SpriteLib.build_actor(kind)
+	if actor:
+		sprite = actor
+		add_child(actor)
 	else:
-		# fallback: solid capsule with eyes (frames not present)
-		var body := MeshInstance3D.new()
-		var cm := CapsuleMesh.new()
-		cm.radius = 0.45
-		cm.height = 1.5
-		var bm := StandardMaterial3D.new()
-		bm.albedo_color = Color(0.35, 0.03, 0.05)
-		bm.roughness = 0.6
-		bm.emission_enabled = true
-		bm.emission = Color(0.8, 0.05, 0.1)
-		bm.emission_energy_multiplier = 0.35
-		cm.material = bm
-		body.mesh = cm
-		body.position = Vector3(0.0, 0.75, 0.0)
-		add_child(body)
-		for sx in [-0.16, 0.16]:
-			var eye := MeshInstance3D.new()
-			var em := SphereMesh.new()
-			em.radius = 0.06
-			em.height = 0.12
-			em.radial_segments = 8
-			em.rings = 4
-			var emat := StandardMaterial3D.new()
-			emat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-			emat.albedo_color = Color(1.0, 0.9, 0.3)
-			em.material = emat
-			eye.mesh = em
-			eye.position = Vector3(sx, 1.25, -0.38)
-			add_child(eye)
-			eyes.append(eye)
+		var legacy = SpriteLib.build(kind)
+		if legacy:
+			sprite = legacy
+			add_child(legacy)
+		else:
+			# fallback: solid capsule with eyes (frames not present)
+			var body := MeshInstance3D.new()
+			var cm := CapsuleMesh.new()
+			cm.radius = 0.45
+			cm.height = 1.5
+			var bm := StandardMaterial3D.new()
+			bm.albedo_color = Color(0.35, 0.03, 0.05)
+			bm.roughness = 0.6
+			bm.emission_enabled = true
+			bm.emission = Color(0.8, 0.05, 0.1)
+			bm.emission_energy_multiplier = 0.35
+			cm.material = bm
+			body.mesh = cm
+			body.position = Vector3(0.0, 0.75, 0.0)
+			add_child(body)
+			for sx in [-0.16, 0.16]:
+				var eye := MeshInstance3D.new()
+				var em := SphereMesh.new()
+				em.radius = 0.06
+				em.height = 0.12
+				em.radial_segments = 8
+				em.rings = 4
+				var emat := StandardMaterial3D.new()
+				emat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+				emat.albedo_color = Color(1.0, 0.9, 0.3)
+				em.material = emat
+				eye.mesh = em
+				eye.position = Vector3(sx, 1.25, -0.38)
+				add_child(eye)
+				eyes.append(eye)
 
 
 func stagger(t: float) -> void:
@@ -81,11 +89,24 @@ func take_damage(d: float, dir: Vector3, knock: float) -> void:
 
 func _set_telegraph(on: bool) -> void:
 	if sprite:
-		sprite.modulate = Color(3.0, 3.0, 3.0) if on else Color(1, 1, 1)
+		if sprite is SpriteActor:
+			sprite.set_modulate(Color(3.0, 3.0, 3.0) if on else Color(1, 1, 1))
+		elif sprite is AnimatedSprite3D:
+			sprite.modulate = Color(3.0, 3.0, 3.0) if on else Color(1, 1, 1)
 		return
 	var col := Color(1.0, 1.0, 1.0) if on else Color(1.0, 0.9, 0.3)
 	for e in eyes:
 		(e.mesh as SphereMesh).material.set("albedo_color", col)
+
+
+func _get_anim_sprite() -> AnimatedSprite3D:
+	if sprite == null:
+		return null
+	if sprite is SpriteActor:
+		return sprite.sprite
+	if sprite is AnimatedSprite3D:
+		return sprite
+	return null
 
 
 func _physics_process(dt: float) -> void:
@@ -137,14 +158,45 @@ func _physics_process(dt: float) -> void:
 			windup_t = Cfg.enemy_windup
 			_set_telegraph(true)
 			windup.emit()
+
 	if sprite and target and is_instance_valid(target):
-		sprite.flip_h = target.global_position.x < global_position.x
-		if windup_t >= 0.0 and sprite.sprite_frames.has_animation("act"):
-			if sprite.animation != &"act":
-				sprite.play("act")
+		var to_target := target.global_position - global_position
+		# forward = where we look (-Z)
+		var fwd := -global_transform.basis.z
+		if sprite is SpriteActor:
+			sprite.update_direction(to_target, fwd)
+			# flip_h based on cross product for side readability
+			var right := global_transform.basis.x
+			var cross_dot := right.dot(to_target)
+			# keep flip for left/right when front
+			if not sprite.is_back:
+				sprite.set_flip_h(cross_dot < 0)
+		else:
+			var as3 := _get_anim_sprite()
+			if as3:
+				as3.flip_h = target.global_position.x < global_position.x
+
+		# animation selection
+		if windup_t >= 0.0:
+			if sprite is SpriteActor:
+				if sprite.sprite.sprite_frames.has_animation("act_front") or sprite.sprite.sprite_frames.has_animation("act"):
+					sprite.play("act")
+			else:
+				var as3 := _get_anim_sprite()
+				if as3 and as3.sprite_frames.has_animation("act"):
+					if as3.animation != &"act":
+						as3.play("act")
 		elif horizontal_speed_v() > 0.5:
-			if sprite.animation != &"walk":
+			if sprite is SpriteActor:
 				sprite.play("walk")
+			else:
+				var as3 := _get_anim_sprite()
+				if as3 and as3.animation != &"walk" and (as3.sprite_frames.has_animation("walk") or as3.sprite_frames.has_animation("walk_front")):
+					# choose best walk
+					if as3.sprite_frames.has_animation("walk_front"):
+						as3.play("walk_front")
+					else:
+						as3.play("walk")
 	move_and_slide()
 
 
