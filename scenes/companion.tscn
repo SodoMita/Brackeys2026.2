@@ -1,0 +1,19 @@
+[gd_scene load_steps=3 format=3 uid="uid://pz628ajj30fmwh6x1lr"]
+
+[ext_resource type="Script" uid="uid://bg13xfsu7macc" path="res://scripts/companion.gd" id="1_comp"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_c1"]
+radius = 0.4
+height = 1.6
+
+[node name="Companion" type="CharacterBody3D"]
+script = ExtResource("1_comp")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("CapsuleShape3D_c1")
+position = Vector3(0, 0.8, 0)
+
+# SpriteActor will be added at runtime via SpriteLib if no sprite present.
+# You can manually add a SpriteActor or AnimatedSprite3D here in editor:
+# - Add child Node3D "Visual" with AnimatedSprite3D configured with front/back frames
+#   from assets/sprites/colt_front_*.webp etc.

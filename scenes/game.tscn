@@ -1,0 +1,22 @@
+[gd_scene load_steps=6 format=3 uid="uid://tkiy1pwc4tin1z8ddt0"]
+
+[ext_resource type="Script" uid="uid://bjd3s0sfg2joj" path="res://scripts/game.gd" id="1_game"]
+[ext_resource type="PackedScene" uid="uid://w0jvqdomojkfli8ho1m" path="res://scenes/level.tscn" id="2_level"]
+[ext_resource type="PackedScene" uid="uid://1p2ryphjsf7xxjz1f0p" path="res://scenes/player.tscn" id="3_player"]
+[ext_resource type="PackedScene" uid="uid://pz628ajj30fmwh6x1lr" path="res://scenes/companion.tscn" id="4_comp"]
+[ext_resource type="PackedScene" uid="uid://lv51q2lanje5lr6n9kt" path="res://scenes/hud.tscn" id="5_hud"]
+
+[node name="Game" type="Node3D"]
+script = ExtResource("1_game")
+
+[node name="Level" parent="." instance=ExtResource("2_level")]
+
+[node name="Enemies" type="Node3D" parent="."]
+
+[node name="Player" parent="." instance=ExtResource("3_player")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -4)
+
+[node name="Companion" parent="." instance=ExtResource("4_comp")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0, -2)
+
+[node name="HUD" parent="." instance=ExtResource("5_hud")]

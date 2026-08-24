@@ -1,0 +1,23 @@
+[gd_scene load_steps=3 format=3 uid="uid://e9hhd05kd4kb4oucq5t"]
+
+[sub_resource type="Environment" id="Environment_env"]
+background_mode = 0
+background_color = Color(0.12, 0.07, 0.03, 1)
+ambient_light_source = 1
+ambient_light_color = Color(0.8, 0.6, 0.4, 1)
+ambient_light_energy = 0.6
+fog_enabled = true
+fog_light_color = Color(0.5, 0.3, 0.12, 1)
+fog_density = 0.01
+tonemap_mode = 2
+
+[node name="Environment" type="Node3D"]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_env")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.927183, -0.211309, 0.309524, 0, 0.826352, 0.563171, -0.374607, -0.522099, 0.766044, 0, 0, 0)
+light_color = Color(1, 0.85, 0.6, 1)
+light_energy = 1.1
+shadow_enabled = true
