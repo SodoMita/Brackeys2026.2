@@ -1,4 +1,4 @@
-[gd_scene load_steps=3 format=3 uid="uid://e9hhd05kd4kb4oucq5t"]
+[gd_scene load_steps=2 format=3 uid="uid://e9hhd05kd4kb4oucq5t"]
 
 [sub_resource type="Environment" id="Environment_env"]
 background_mode = 0
