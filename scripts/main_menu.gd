@@ -24,8 +24,13 @@ var btn_reset: Button
 var _sens: HSlider
 var _stick: HSlider
 var _volume: HSlider
+var _deadzone: HSlider
+var _text_speed: HSlider
 var _invert: Button
 var _fullscreen: Button
+var _borderless: Button
+var _vibration: Button
+var _subtitles: Button
 var _sens_lbl: Label
 var _stick_lbl: Label
 var _vol_lbl: Label
@@ -245,6 +250,22 @@ func _build_settings_panel() -> void:
 	_fullscreen = _toggle_button()
 	r5.add_child(_fullscreen)
 
+	var r6 := _add_row(box, "STICK DEADZONE")
+	_deadzone = _slider(0.0, 0.8, 0.01)
+	r6.add_child(_deadzone)
+	var r7 := _add_row(box, "TEXT SPEED")
+	_text_speed = _slider(0.001, 0.1, 0.001)
+	r7.add_child(_text_speed)
+	var r8 := _add_row(box, "BORDERLESS")
+	_borderless = _toggle_button()
+	r8.add_child(_borderless)
+	var r9 := _add_row(box, "CONTROLLER VIBRATION")
+	_vibration = _toggle_button()
+	r9.add_child(_vibration)
+	var r10 := _add_row(box, "SUBTITLES")
+	_subtitles = _toggle_button()
+	r10.add_child(_subtitles)
+
 	var actions := HBoxContainer.new()
 	actions.add_theme_constant_override("separation", 6)
 	box.add_child(actions)
@@ -262,15 +283,23 @@ func _build_settings_panel() -> void:
 	_sens.value_changed.connect(func(_v): _on_live_change())
 	_stick.value_changed.connect(func(_v): _on_live_change())
 	_volume.value_changed.connect(func(_v): _on_live_change())
+	_deadzone.value_changed.connect(func(_v): _on_live_change())
+	_text_speed.value_changed.connect(func(_v): _on_live_change())
 	_sens.drag_ended.connect(func(_c): _persist())
 	_stick.drag_ended.connect(func(_c): _persist())
 	_volume.drag_ended.connect(func(_c): _persist())
+	_deadzone.drag_ended.connect(func(_c): _persist())
+	_text_speed.drag_ended.connect(func(_c): _persist())
 	_invert.toggled.connect(func(_on):
 		_on_live_change()
 		_persist())
 	_fullscreen.toggled.connect(func(_on):
 		_on_live_change()
 		_persist())
+	for toggle in [_borderless, _vibration, _subtitles]:
+		toggle.toggled.connect(func(_on):
+			_on_live_change()
+			_persist())
 
 
 func open_settings() -> void:
@@ -298,6 +327,11 @@ func _collect() -> Dictionary:
 		"invert_look": bool(_invert.button_pressed),
 		"master_volume": float(_volume.value),
 		"fullscreen": bool(_fullscreen.button_pressed),
+		"stick_deadzone": float(_deadzone.value),
+		"text_speed": float(_text_speed.value),
+		"borderless": bool(_borderless.button_pressed),
+		"controller_vibration": bool(_vibration.button_pressed),
+		"subtitles": bool(_subtitles.button_pressed),
 	}
 
 
@@ -323,6 +357,11 @@ func _sync_widgets() -> void:
 	_volume.set_value_no_signal(clampf(float(cur.get("master_volume", 1.0)), 0.0, 1.0))
 	_invert.set_pressed_no_signal(bool(cur.get("invert_look", false)))
 	_fullscreen.set_pressed_no_signal(bool(cur.get("fullscreen", false)))
+	_deadzone.set_value_no_signal(float(cur.get("stick_deadzone", 0.18)))
+	_text_speed.set_value_no_signal(float(cur.get("text_speed", 0.01)))
+	_borderless.set_pressed_no_signal(bool(cur.get("borderless", false)))
+	_vibration.set_pressed_no_signal(bool(cur.get("controller_vibration", true)))
+	_subtitles.set_pressed_no_signal(bool(cur.get("subtitles", true)))
 	_arming = false
 	_refresh_labels()
 
@@ -337,6 +376,8 @@ func _refresh_labels() -> void:
 	_invert.add_theme_color_override("font_color", CYAN if _invert.button_pressed else PAPER)
 	_fullscreen.text = "ON" if _fullscreen.button_pressed else "OFF"
 	_fullscreen.add_theme_color_override("font_color", CYAN if _fullscreen.button_pressed else PAPER)
+	for toggle in [_borderless, _vibration, _subtitles]:
+		toggle.text = "ON" if toggle.button_pressed else "OFF"
 
 
 func _reset_defaults() -> void:
@@ -347,6 +388,11 @@ func _reset_defaults() -> void:
 	_volume.set_value_no_signal(float(d.get("master_volume", 1.0)))
 	_invert.set_pressed_no_signal(bool(d.get("invert_look", false)))
 	_fullscreen.set_pressed_no_signal(bool(d.get("fullscreen", false)))
+	_deadzone.set_value_no_signal(float(d.get("stick_deadzone", 0.18)))
+	_text_speed.set_value_no_signal(float(d.get("text_speed", 0.01)))
+	_borderless.set_pressed_no_signal(bool(d.get("borderless", false)))
+	_vibration.set_pressed_no_signal(bool(d.get("controller_vibration", true)))
+	_subtitles.set_pressed_no_signal(bool(d.get("subtitles", true)))
 	_arming = false
 	_on_live_change()
 	_persist()
