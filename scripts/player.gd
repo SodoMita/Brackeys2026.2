@@ -9,29 +9,6 @@ signal parried
 signal coin_tossed
 signal player_died
 
-# for better weapon logic, probably temporary, will move elsewhere soon
-@onready
-var WEAPON_STATS := {
-	0: { # Revolver
-		"cooldown": Cfg.revolver_cooldown,
-		"pellets": 1,
-		"spread": 0.0,
-		"damage": Cfg.revolver_damage
-	},
-	1: { # Shotgun
-		"cooldown": Cfg.shotgun_cooldown,
-		"pellets": int(Cfg.shotgun_pellets),
-		"spread": float(Cfg.shotgun_spread),
-		"damage": Cfg.shotgun_damage
-	},
-	2: { # Nailgun
-		"cooldown": Cfg.nailgun_cooldown,
-		"pellets": 1,
-		"spread": 0.015,
-		"damage": Cfg.nailgun_damage
-	}
-}
-	
 const STICK_DEAD := 0.15
 
 var yaw := 0.0
@@ -68,10 +45,6 @@ var touch_look := Vector2.ZERO
 var touch_fire := false
 var touch_jump := false
 var touch_slide := false
-
-# screen shake
-var shake_strength := 0.0
-var shake_decay := 8.0
 
 
 func _init() -> void:
@@ -196,6 +169,8 @@ func _unhandled_input(ev: InputEvent) -> void:
 
 
 func _apply_look(dyaw: float, dpitch: float) -> void:
+	if Cfg.invert_look:
+		dpitch = -dpitch
 	yaw += dyaw
 	pitch = clampf(pitch + dpitch, -1.45, 1.45)
 	rotation.y = yaw
@@ -206,7 +181,8 @@ func _gather_move() -> Vector2:
 	if touch_move.length() > 0.05:
 		return touch_move
 	var j := Vector2(Input.get_joy_axis(0, JOY_AXIS_LEFT_X), Input.get_joy_axis(0, JOY_AXIS_LEFT_Y))
-	if j.length() > STICK_DEAD:
+	var deadzone := float(Settings.current.get("stick_deadzone", STICK_DEAD))
+	if j.length() > deadzone:
 		var jf := j.limit_length(1.0)
 		return Vector2(jf.x, -jf.y)  # stick up = forward
 	var ix := 0.0
@@ -241,7 +217,8 @@ func _physics_process(dt: float) -> void:
 
 	# --- look: gamepad right stick + accumulated touch deltas
 	var rs := Vector2(Input.get_joy_axis(0, JOY_AXIS_RIGHT_X), Input.get_joy_axis(0, JOY_AXIS_RIGHT_Y))
-	if rs.length() > STICK_DEAD:
+	var look_deadzone := float(Settings.current.get("stick_deadzone", STICK_DEAD))
+	if rs.length() > look_deadzone:
 		_apply_look(-rs.x * Cfg.stick_look_speed * dt, -rs.y * Cfg.stick_look_speed * dt)
 	if touch_look.length() > 0.0:
 		_apply_look(-touch_look.x * 0.004, -touch_look.y * 0.004)
@@ -309,18 +286,6 @@ func _physics_process(dt: float) -> void:
 			or Input.get_joy_axis(0, JOY_AXIS_TRIGGER_RIGHT) > 0.4
 	if firing:
 		try_fire()
-		
-	# --- screen shake
-	# --- Screen Shake Processing ---
-	if shake_strength > 0.0:
-		shake_strength = maxf(shake_strength - shake_decay * dt, 0.0)
-		cam.position = Vector3(
-			randf_range(-shake_strength, shake_strength),
-			randf_range(-shake_strength, shake_strength),
-			0.0
-		)
-	else:
-		cam.position = Vector3.ZERO
 
 
 var _prev_lt := false
@@ -333,15 +298,26 @@ func horizontal_speed() -> float:
 func try_fire() -> void:
 	if fire_cd > 0.0:
 		return
-	# gets weapon info directly instead of using match cases, defaults to revolver
-	var weapon_info = WEAPON_STATS.get(weapon, WEAPON_STATS[0])
-	fire_cd = weapon_info["cooldown"]
-	
-	var pellets: int = weapon_info["pellets"]
-	var spread: float = weapon_info["spread"]
-	var damage: float = weapon_info["damage"]
+	match weapon:
+		2:
+			fire_cd = Cfg.nailgun_cooldown
+		1:
+			fire_cd = Cfg.shotgun_cooldown
+		_:
+			fire_cd = Cfg.revolver_cooldown
+	var pellets: int = 1 if weapon == 0 else int(Cfg.shotgun_pellets)
+	var spread: float = 0.0 if weapon == 0 else float(Cfg.shotgun_spread)
+	var damage: float
+	match weapon:
+		1:
+			damage = Cfg.shotgun_damage
+		2:
+			damage = Cfg.nailgun_damage
+		_:
+			damage = Cfg.revolver_damage
 	damage *= damage_mult
-
+	pellets = 1 if weapon == 2 else pellets
+	spread = 0.015 if weapon == 2 else spread
 	for _i in pellets:
 		var dir := -cam.global_transform.basis.z
 		dir += cam.global_transform.basis.x * randf_range(-spread, spread)
@@ -360,7 +336,6 @@ func try_fire() -> void:
 		if hit.collider.has_method("take_damage"):
 			var headshot: bool = hit.position.y > hit.collider.global_position.y + 0.55
 			fired.emit(hit.collider, headshot, not is_on_floor(), damage, false)
-	add_shake(0.15)
 	muzzle.light_energy = 7.0
 
 
@@ -389,10 +364,6 @@ func take_damage(d: float) -> void:
 	if dead:
 		return
 	hp -= d
-	add_shake(0.4)
 	if hp <= 0.0:
 		dead = true
 		player_died.emit()
-		
-func add_shake(amount: float) -> void:
-	shake_strength = maxf(shake_strength, amount)
