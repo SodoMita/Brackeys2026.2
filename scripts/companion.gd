@@ -2,6 +2,7 @@ extends CharacterBody3D
 ## COLT — the colleague. Follows the player and lays down support fire.
 ## (Until he doesn't.)
 ## Now with SpriteActor front/back (Seirin triangulation)
+## Scene-friendly: works from .tscn or procedurally.
 
 signal shot
 
@@ -14,16 +15,33 @@ var enemy_pool: Node3D = null
 
 
 func _init() -> void:
-	var pc := CollisionShape3D.new()
-	var caps := CapsuleShape3D.new()
-	caps.radius = 0.4
-	caps.height = 1.6
-	pc.shape = caps
-	pc.position = Vector3(0.0, 0.8, 0.0)
-	add_child(pc)
+	pass
 
 
 func _ready() -> void:
+	_ensure_collision()
+	_ensure_visuals()
+
+
+func _ensure_collision() -> void:
+	var col := get_node_or_null("CollisionShape3D") as CollisionShape3D
+	if col == null:
+		col = CollisionShape3D.new()
+		col.name = "CollisionShape3D"
+		var caps := CapsuleShape3D.new()
+		caps.radius = 0.4
+		caps.height = 1.6
+		col.shape = caps
+		col.position = Vector3(0.0, 0.8, 0.0)
+		add_child(col)
+
+
+func _ensure_visuals() -> void:
+	# Reuse existing sprite if scene provides one
+	for child in get_children():
+		if child is SpriteActor or child is AnimatedSprite3D:
+			sprite = child
+			return
 	var actor = SpriteLib.build_actor("colt")
 	if actor:
 		sprite = actor
@@ -35,6 +53,7 @@ func _ready() -> void:
 			add_child(legacy)
 		else:
 			var body := MeshInstance3D.new()
+			body.name = "FallbackBody"
 			var cm := CapsuleMesh.new()
 			cm.radius = 0.4
 			cm.height = 1.6
@@ -112,9 +131,6 @@ func _physics_process(dt: float) -> void:
 
 		if sprite is SpriteActor:
 			sprite.update_direction(to_player, fwd)
-			# when companion is in front of player (player sees back), force back view
-			# dot(forward, to_player) <0 => player behind companion => back
-			# Our update_direction already does that.
 			if shoot_t > 0.0:
 				sprite.play("act")
 			elif vel2.length() > 0.5:

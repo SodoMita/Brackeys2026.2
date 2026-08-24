@@ -1,0 +1,10 @@
+[gd_scene load_steps=2 format=3 uid="uid://gal2ovuoosyv0dz900d"]
+
+[ext_resource type="PackedScene" uid="uid://f63x1gto6dij99qmwqs" path="res://scenes/enemy.tscn" id="1_base"]
+
+[node name="Boss" instance=ExtResource("1_base")]
+kind = "boss"
+ranged = true
+is_boss = true
+custom_hp = 400.0
+custom_speed = 9.0
