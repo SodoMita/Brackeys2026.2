@@ -1,13 +1,14 @@
 extends CharacterBody3D
 ## COLT — the colleague. Follows the player and lays down support fire.
 ## (Until he doesn't.)
+## Now with SpriteActor front/back (Seirin triangulation)
 
 signal shot
 
 var fire_cd := 0.0
 var hidden := false
 var shoot_t := 0.0
-var sprite: AnimatedSprite3D = null
+var sprite: Node3D = null # SpriteActor or AnimatedSprite3D
 var player_ref: Node3D = null
 var enemy_pool: Node3D = null
 
@@ -23,26 +24,42 @@ func _init() -> void:
 
 
 func _ready() -> void:
-	sprite = SpriteLib.build("colt")
-	if sprite:
-		add_child(sprite)
+	var actor = SpriteLib.build_actor("colt")
+	if actor:
+		sprite = actor
+		add_child(actor)
 	else:
-		var body := MeshInstance3D.new()
-		var cm := CapsuleMesh.new()
-		cm.radius = 0.4
-		cm.height = 1.6
-		var bm := StandardMaterial3D.new()
-		bm.albedo_color = Color(0.75, 0.6, 0.35)
-		bm.roughness = 0.7
-		cm.material = bm
-		body.mesh = cm
-		body.position = Vector3(0.0, 0.8, 0.0)
-		add_child(body)
+		var legacy = SpriteLib.build("colt")
+		if legacy:
+			sprite = legacy
+			add_child(legacy)
+		else:
+			var body := MeshInstance3D.new()
+			var cm := CapsuleMesh.new()
+			cm.radius = 0.4
+			cm.height = 1.6
+			var bm := StandardMaterial3D.new()
+			bm.albedo_color = Color(0.75, 0.6, 0.35)
+			bm.roughness = 0.7
+			cm.material = bm
+			body.mesh = cm
+			body.position = Vector3(0.0, 0.8, 0.0)
+			add_child(body)
 
 
 func vanish() -> void:
 	hidden = true
 	visible = false
+
+
+func _get_anim_sprite() -> AnimatedSprite3D:
+	if sprite == null:
+		return null
+	if sprite is SpriteActor:
+		return sprite.sprite
+	if sprite is AnimatedSprite3D:
+		return sprite
+	return null
 
 
 func _physics_process(dt: float) -> void:
@@ -81,15 +98,41 @@ func _physics_process(dt: float) -> void:
 				shoot_t = 0.3
 				shot.emit()
 	if sprite and player_ref and is_instance_valid(player_ref):
-		sprite.flip_h = player_ref.global_position.x < global_position.x
-		if shoot_t > 0.0:
-			if sprite.animation != &"act":
+		var to_player := player_ref.global_position - global_position
+		var fwd := -global_transform.basis.z
+		# if moving, forward is velocity dir
+		var vel2 := Vector2(velocity.x, velocity.z)
+		if vel2.length() > 0.5:
+			fwd = Vector3(velocity.x, 0, velocity.z).normalized()
+		else:
+			# when idle, face player slightly
+			fwd = -to_player
+			if fwd.length_squared() < 0.001:
+				fwd = Vector3(0, 0, -1)
+
+		if sprite is SpriteActor:
+			sprite.update_direction(to_player, fwd)
+			# when companion is in front of player (player sees back), force back view
+			# dot(forward, to_player) <0 => player behind companion => back
+			# Our update_direction already does that.
+			if shoot_t > 0.0:
 				sprite.play("act")
-		elif Vector2(velocity.x, velocity.z).length() > 0.5:
-			if sprite.animation != &"walk":
+			elif vel2.length() > 0.5:
 				sprite.play("walk")
-		elif sprite.sprite_frames.has_animation("idle"):
-			if sprite.animation != &"idle":
+			else:
 				sprite.play("idle")
+		else:
+			var as3 := _get_anim_sprite()
+			if as3:
+				as3.flip_h = player_ref.global_position.x < global_position.x
+				if shoot_t > 0.0:
+					if as3.animation != &"act" and as3.sprite_frames.has_animation("act"):
+						as3.play("act")
+				elif vel2.length() > 0.5:
+					if as3.animation != &"walk" and as3.sprite_frames.has_animation("walk"):
+						as3.play("walk")
+				elif as3.sprite_frames.has_animation("idle"):
+					if as3.animation != &"idle":
+						as3.play("idle")
 	shoot_t = maxf(shoot_t - dt, 0.0)
 	move_and_slide()
