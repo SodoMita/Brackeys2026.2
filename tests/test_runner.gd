@@ -3,9 +3,6 @@ extends SceneTree
 ##
 ## Usage:
 ##   godot --headless --path . --script res://tests/test_runner.gd
-##
-## Discovers every tests/test_*.gd file, runs all of its test_* methods,
-## prints a report and exits with code 1 when anything failed (CI-friendly).
 
 const TEST_DIR := "res://tests"
 
@@ -16,8 +13,6 @@ var _failed := 0
 func _initialize() -> void:
 	print("")
 	print("=== Brackeys 2026.2 — test suite ===")
-	# Pause the tree so nodes added during tests do not auto-process.
-	paused = true
 	for fname in _collect_tests():
 		_run_suite(fname)
 	print("=== %d passed, %d failed ===" % [_passed, _failed])
@@ -50,30 +45,14 @@ func _run_suite(fname: String) -> void:
 		print("[FAIL] %s — cannot load script" % fname)
 		return
 	var suite = script.new()
-	if suite == null:
-		_failed += 1
-		print("[FAIL] %s — cannot instantiate suite" % fname)
-		return
 	suite.runner = self
 	var methods: Array = []
 	for m in script.get_script_method_list():
-		var n := String(m["name"])
-		if n.begins_with("test_"):
-			methods.append(n)
-	methods.sort()
-	if methods.is_empty():
-		print("[WARN] %s — no test_* methods" % fname)
-
-	var cfg := root.get_node_or_null("Cfg")
-	var max_hp_snap: float = float(cfg.max_hp) if cfg else 100.0
-
+		if String(m["name"]).begins_with("test_"):
+			methods.append(m["name"])
 	for mname in methods:
 		var before: int = suite.failures.size()
 		suite.call(mname)
-		if suite.has_method("_cleanup"):
-			suite._cleanup()
-		if cfg:
-			cfg.max_hp = max_hp_snap
 		if suite.failures.size() == before:
 			_passed += 1
 			print("[PASS] %s :: %s" % [fname, mname])
@@ -82,5 +61,3 @@ func _run_suite(fname: String) -> void:
 			print("[FAIL] %s :: %s" % [fname, mname])
 			for i in range(before, suite.failures.size()):
 				print("       - %s" % suite.failures[i])
-	suite.runner = null
-	suite = null
