@@ -50,18 +50,22 @@ func setup_ui(cl: CanvasLayer) -> void:
 
 
 func refresh_panel(scrap: int, has_nailgun: bool) -> void:
+	if panel == null:
+		return
 	panel.text = "S C R A P   T E R M I N A L   [%d scrap]\n\n1 · NAILGUN ............ %d%s\n2 · REINFORCED PLATING . %d  (+%d HP)\n3 · OVERCLOCK .......... %d  (+15%% dmg)\n\nE — close" % [
 		scrap, Cfg.nailgun_cost, " (owned)" if has_nailgun else "", Cfg.plating_cost, int(Cfg.plating_hp), Cfg.overclock_cost]
 
 
 func _process(_dt: float) -> void:
+	if prompt == null:
+		return
 	if player_ref and is_instance_valid(player_ref):
 		var near := global_position.distance_to(player_ref.global_position) < 2.6
 		prompt.visible = near and not open
 		if open:
 			if Input.is_key_pressed(KEY_ESCAPE):
 				close()
-	elif prompt:
+	else:
 		prompt.visible = false
 
 

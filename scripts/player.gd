@@ -213,9 +213,14 @@ func _gather_move() -> Vector2:
 	return Vector2(ix, iy).normalized()
 
 
+var _prev_lt := false
+
+
 func _physics_process(dt: float) -> void:
 	if dead or disabled:
 		return
+	if dt < 0.0:
+		dt = 0.0
 	dash_cd = maxf(dash_cd - dt, 0.0)
 	parry_cd = maxf(parry_cd - dt, 0.0)
 	if parry_age >= 0.0:
@@ -223,12 +228,15 @@ func _physics_process(dt: float) -> void:
 		if parry_age > Cfg.parry_active_window * 2.0:
 			parry_age = -1.0
 	fire_cd = maxf(fire_cd - dt, 0.0)
-	muzzle.light_energy = maxf(muzzle.light_energy - dt * 120.0, 0.0)
+	if muzzle:
+		muzzle.light_energy = maxf(muzzle.light_energy - dt * 120.0, 0.0)
 	if coin and is_instance_valid(coin):
 		coin_age += dt
 		if coin_age > Cfg.coin_lifetime:
 			coin.queue_free()
 			coin = null
+	elif coin and not is_instance_valid(coin):
+		coin = null
 
 	# --- look: gamepad right stick + accumulated touch deltas
 	var rs := Vector2(Input.get_joy_axis(0, JOY_AXIS_RIGHT_X), Input.get_joy_axis(0, JOY_AXIS_RIGHT_Y))
@@ -239,7 +247,8 @@ func _physics_process(dt: float) -> void:
 		touch_look = Vector2.ZERO
 
 	var m := _gather_move()
-	var wish := (transform.basis * Vector3(m.x, 0.0, -m.y)).normalized()
+	var wish_vec := transform.basis * Vector3(m.x, 0.0, -m.y)
+	var wish := wish_vec.normalized() if wish_vec.length_squared() > 0.0001 else Vector3.ZERO
 	var grounded := is_on_floor()
 
 	# --- jump (hold-to-bhop, no fall damage anywhere)
@@ -255,7 +264,8 @@ func _physics_process(dt: float) -> void:
 		slid.emit()
 	if not want_slide or not grounded:
 		sliding = false
-	head.position.y = lerpf(head.position.y, 0.95 if sliding else 1.6, 12.0 * dt)
+	if head:
+		head.position.y = lerpf(head.position.y, 0.95 if sliding else 1.6, 12.0 * dt)
 
 	# --- gravity / dash
 	if dash_t > 0.0:
@@ -300,9 +310,6 @@ func _physics_process(dt: float) -> void:
 			or Input.get_joy_axis(0, JOY_AXIS_TRIGGER_RIGHT) > 0.4
 	if firing:
 		try_fire()
-
-
-var _prev_lt := false
 
 
 func horizontal_speed() -> float:
@@ -385,7 +392,8 @@ func _get_enemies() -> Array:
 func take_damage(d: float) -> void:
 	if dead:
 		return
-	hp -= d
+	hp -= maxf(d, 0.0)
 	if hp <= 0.0:
+		hp = 0.0
 		dead = true
 		player_died.emit()

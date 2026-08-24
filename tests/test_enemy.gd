@@ -234,3 +234,44 @@ func test_cfg_helpers() -> void:
 	assert_gt(Cfg.parry_active_window, 0.0)
 	assert_gt(float(Cfg.ricochet_targets), 0.0)
 	assert_eq(Cfg.ranks.size(), Cfg.rank_thresholds.size(), "ranks align with thresholds")
+
+
+func test_mobile_controls_missing_safe() -> void:
+	# setup must not crash even if we only construct the node
+	var mc = load("res://scripts/mobile_controls.gd").new()
+	var p: CharacterBody3D = load("res://scripts/player.gd").new()
+	runner.root.add_child(p)
+	runner.root.add_child(mc)
+	# Addon is vendored — setup should succeed and wire sticks.
+	mc.setup(p)
+	assert_true(mc.player == p)
+	mc.free()
+	p.free()
+
+
+func test_enemy_negative_dt_and_no_target() -> void:
+	var e: CharacterBody3D = load("res://scripts/enemy.gd").new()
+	runner.root.add_child(e)
+	e.target = null
+	e._physics_process(-0.5)
+	e._physics_process(0.016)
+	e.free()
+
+
+func test_boss_meta_tints_sprite_or_fallback() -> void:
+	var e: CharacterBody3D = load("res://scripts/enemy.gd").new()
+	e.kind = "boss"
+	e.set_meta("boss", true)
+	runner.root.add_child(e)
+	# Must construct without "modulate on Node3D" error.
+	assert_true(e.has_meta("boss"))
+	e.free()
+
+
+func test_shop_refresh_without_setup_safe() -> void:
+	var st = load("res://scripts/shop_terminal.gd").new()
+	runner.root.add_child(st)
+	# refresh/close before setup_ui must not crash
+	st.refresh_panel(10, false)
+	st.close()
+	st.free()

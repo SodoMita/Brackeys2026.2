@@ -639,23 +639,31 @@ func _add_scrap_for(e: Node3D) -> void:
 func _on_attacked(e: Node3D) -> void:
 	if state not in [State.PLAYING, State.BOSS]:
 		return
+	if player == null or not is_instance_valid(player):
+		return
 	if player.is_parry_active():
 		player.hp = CombatLogic.heal_on_damage(player.hp, Cfg.parry_heal_bonus, 1.0, Cfg.max_hp)
-		hud_hp.text = "%d" % int(player.hp)
+		if hud_hp:
+			hud_hp.text = "%d" % int(player.hp)
 		style += Cfg.style_parry
 		if e and is_instance_valid(e) and e.has_method("stagger"):
 			e.stagger(Cfg.parry_stagger)
 		player.parried.emit()
-		hurt_flash.color = Color(0.3, 1.0, 1.0, 0.35)
-		var tw := create_tween()
-		tw.tween_property(hurt_flash, "color", Color(0.3, 1.0, 1.0, 0.0), 0.35)
+		if hurt_flash:
+			hurt_flash.color = Color(0.3, 1.0, 1.0, 0.35)
+			if is_inside_tree():
+				var tw := create_tween()
+				tw.tween_property(hurt_flash, "color", Color(0.3, 1.0, 1.0, 0.0), 0.35)
 	else:
 		player.take_damage(Cfg.enemy_damage)
 		style = CombatLogic.on_hurt(style)
-		hud_hp.text = "%d" % int(maxf(player.hp, 0.0))
-		hurt_flash.color = Color(1.0, 0.0, 0.1, 0.45)
-		var tw := create_tween()
-		tw.tween_property(hurt_flash, "color", Color(1.0, 0.0, 0.1, 0.0), 0.4)
+		if hud_hp:
+			hud_hp.text = "%d" % int(maxf(player.hp, 0.0))
+		if hurt_flash:
+			hurt_flash.color = Color(1.0, 0.0, 0.1, 0.45)
+			if is_inside_tree():
+				var tw := create_tween()
+				tw.tween_property(hurt_flash, "color", Color(1.0, 0.0, 0.1, 0.0), 0.4)
 		_play(sfx_hurt)
 
 
