@@ -99,16 +99,27 @@ Blood heals, style decays, parry everything.
 Touch controls appear automatically on touch devices (virtual stick + button
 cluster); gamepad and keyboard work everywhere, including web exports.
 
-## Art: DOOM-style billboard sprites
+## Art: DOOM-style billboard sprites with front/back + Seirin triangulation
 
 Characters are 2D sprites in a gritty Road-of-the-Dead flash style
-(cyborg partner, mutant/bot enemies), generated as 5-frame walk-cycle
-sheets, sliced by `tools/slice_sheet.py` (connected components, any
-layout), matted to transparency by `tools/make_sprites.py` using the
-difference-matte triangulation from github.com/SodoMita/Seirin, and
-rendered in-game as billboarded `AnimatedSprite3D`s (`sprite_lib.gd`).
-Player stays fully 3D first-person. Missing frames fall back to solid
-capsules so the game always runs.
+(cyborg partner COLT, mutant hound, spitter), generated as **2-3 frame**
+walk-cycle sheets (side-by-side, 1 image), sliced by `tools/slice_sheet.py`
+(connected components, any layout), matted to transparency by
+`tools/make_sprites.py` using the **difference-matte triangulation from
+github.com/SodoMita/Seirin** (`B=F*a, W=F*a+(1-a) => a=1-(W-B), F=B/a`):
+
+- White plate: figure on pure white #FFFFFF
+- Black plate: same pose/position/scale over pure black #000000, generated as **edit of white plate** so they register pixel-perfect
+- Triangulate: `tools/triangulate_matte.py white black out --alpha-out alpha`
+- Verify: `tools/check_matte.py out --report`
+
+Front and back views are first-class:
+- `colt_front_idle_white/black.png` + `colt_back_idle_white/black.png` -> `colt_front_idle.png` + `colt_back_idle.png`
+- Walk: `colt_front_walk_sheet_white/black.png` (3 frames side-by-side) -> `colt_front_walk1-3.png` + `colt_back_walk1-3.png`
+- Same for hound and spitter, with **straight back 180°** (not 3/4) for back view
+- If a sheet already contains front+back (e.g. spitter idle sheet with front left, back right), slice it into front/back
+
+Runtime: `SpriteLib.build_actor(kind)` returns `SpriteActor` (Node3D) with front/back switching based on dot(forward, to_player) — front when facing player, back when player behind. `enemy.gd` and `companion.gd` use this. Legacy `build()` still works with side-view fallback. Missing frames fall back to solid capsules so the game always runs. See `docs/SPRITES.md` for full workflow.
 
 ## Designer tuning
 

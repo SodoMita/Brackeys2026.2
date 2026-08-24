@@ -526,6 +526,7 @@ func _on_enemy_died(pos: Vector3, e: Node3D) -> void:
 		style += Cfg.style_slide_kill
 	_add_scrap_for(e)
 	_spawn_gibs(pos)
+	_spawn_dead(pos, e.kind if e.get("kind") != null else "hound")
 	alive -= 1
 	if alive > 0:
 		return
@@ -657,6 +658,55 @@ func _spawn_gibs(at: Vector3) -> void:
 			"vel": Vector3(randf_range(-6.0, 6.0), randf_range(2.0, 9.0), randf_range(-6.0, 6.0)),
 			"life": randf_range(0.5, 1.0),
 		})
+
+
+func _spawn_dead(at: Vector3, kind: String) -> void:
+	# Spawn dead billboard from triangulated WebP dead sprite (single view lying)
+	var actor = SpriteLib.build_actor(kind)
+	var dead_tex: Texture2D = null
+	if actor and actor.frames:
+		# try dead animation
+		if actor.frames.has_animation("dead"):
+			dead_tex = actor.frames.get_frame_texture("dead", 0)
+		elif actor.frames.has_animation("idle"):
+			dead_tex = actor.frames.get_frame_texture("idle", 0)
+	# fallback: direct load of dead webp
+	if dead_tex == null:
+		var candidates := [
+			"res://assets/sprites/%s_dead.webp" % kind,
+			"res://assets/sprites/colt_dead.webp",
+			"res://assets/sprites/hound_dead.webp",
+			"res://assets/sprites/spitter_dead.webp",
+		]
+		for p in candidates:
+			if ResourceLoader.exists(p):
+				dead_tex = load(p)
+				break
+	if dead_tex == null:
+		return
+	var sf := SpriteFrames.new()
+	sf.remove_animation("default")
+	sf.add_animation("dead")
+	sf.set_animation_loop("dead", false)
+	sf.add_frame("dead", dead_tex)
+	var as3 := AnimatedSprite3D.new()
+	as3.sprite_frames = sf
+	as3.billboard = 1
+	as3.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var h: float = 1.8
+	if SpriteLib.SETS.has(kind):
+		h = float(SpriteLib.SETS[kind].h) * 0.6  # lying, lower
+	as3.pixel_size = h / float(dead_tex.get_height())
+	as3.position = at + Vector3(0, h * 0.3, 0)
+	# lay flat-ish by rotating? Keep billboard but lower
+	as3.play("dead")
+	add_child(as3)
+	# fade out after some time via debris system
+	debris.append({
+		"node": as3,
+		"vel": Vector3.ZERO,
+		"life": 12.0,
+	})
 
 
 # ------------------------------------------------------------- loop
