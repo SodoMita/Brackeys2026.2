@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dgteot3g2xw78"
-path="res://.godot/imported/pl3 happy.webp-7a49313244ae7097b2150a258b29afbc.ctex"
+path="res://.godot/imported/pl3 happy.webp-23ad6199da73b11d9bd969aa9c9fcd0a.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://addons/dialogic/Example Assets/portraits/Jane/pl3 happy.webp"
-dest_files=["res://.godot/imported/pl3 happy.webp-7a49313244ae7097b2150a258b29afbc.ctex"]
+dest_files=["res://.godot/imported/pl3 happy.webp-23ad6199da73b11d9bd969aa9c9fcd0a.ctex"]
 
 [params]
 

@@ -98,7 +98,7 @@ const SETS := {
 static func _load_textures(list: Array) -> Array:
 	var out: Array = []
 	for f in list:
-		var path := BASE + f
+		var path : String = BASE + f
 		if ResourceLoader.exists(path):
 			var tex = load(path)
 			if tex:
