@@ -11,3 +11,8 @@ editor_settings-4.tres
 # OS cruft
 .DS_Store
 Thumbs.db
+
+*.import
+*.swp
+*.blend1
+
