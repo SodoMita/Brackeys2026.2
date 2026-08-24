@@ -81,7 +81,7 @@ func _init() -> void:
 
 
 func _get_icon() -> Resource:
-	return load(this_folder.path_join('icon_music.png'))
+	return load(this_folder.path_join('icon_music.webp'))
 
 #endregion
 
