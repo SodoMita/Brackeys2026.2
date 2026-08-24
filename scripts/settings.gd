@@ -1,99 +1,97 @@
 class_name Settings
 extends RefCounted
-## Player-facing settings (main menu → SETTINGS): mouse sensitivity, stick
-## look speed, invert look, master volume, fullscreen.
-##
-## Designer defaults are captured from the Cfg autoload's exported values on
-## first use; user overrides persist to user://settings.cfg and are re-applied
-## on boot. Everything applies live — no restart needed.
+## Persistent player-facing options. Platform-specific settings are intentionally excluded.
 
-const KEYS := ["mouse_sensitivity", "stick_look_speed", "invert_look", "master_volume", "fullscreen"]
-
-## Test hook — swap for an isolated file, restore after.
+const KEYS := [
+	"mouse_sensitivity", "stick_look_speed", "stick_deadzone", "invert_look",
+	"master_volume", "dialogue_volume", "typing_volume", "fullscreen", "borderless",
+	"resolution", "vsync", "render_scale", "screen_shake", "text_speed",
+	"controller_vibration", "subtitles"
+]
+const ACTIONS := {
+	"move_forward": [KEY_W, KEY_UP], "move_back": [KEY_S, KEY_DOWN],
+	"move_left": [KEY_A, KEY_LEFT], "move_right": [KEY_D, KEY_RIGHT],
+	"jump": [KEY_SPACE], "dash": [KEY_SHIFT], "slide": [KEY_CTRL, KEY_C],
+	"parry": [KEY_F, KEY_V], "fire": [MOUSE_BUTTON_LEFT], "coin": [MOUSE_BUTTON_RIGHT],
+	"weapon_1": [KEY_1], "weapon_2": [KEY_2], "weapon_3": [KEY_3], "interact": [KEY_E]
+}
 static var path := "user://settings.cfg"
-
 static var current: Dictionary = {}
-
 static var _defaults: Dictionary = {}
 
-
-## Capture (once) the designed defaults from Cfg. Returns the defaults dict.
 static func capture_defaults() -> Dictionary:
 	if _defaults.is_empty():
 		_defaults = {
-			"mouse_sensitivity": Cfg.mouse_sensitivity,
-			"stick_look_speed": Cfg.stick_look_speed,
-			"invert_look": Cfg.invert_look,
-			"master_volume": 1.0,
-			"fullscreen": false,
+			"mouse_sensitivity": Cfg.mouse_sensitivity, "stick_look_speed": Cfg.stick_look_speed,
+			"stick_deadzone": 0.18, "invert_look": Cfg.invert_look, "master_volume": 1.0,
+			"dialogue_volume": 1.0, "typing_volume": 0.8, "fullscreen": false, "borderless": false,
+			"resolution": Vector2i(1280, 720), "vsync": 1, "render_scale": 1.0,
+			"screen_shake": 1.0, "text_speed": 0.01, "controller_vibration": true, "subtitles": true
 		}
 	return _defaults
-
 
 static func default_value(key: String) -> Variant:
 	return capture_defaults().get(key)
 
+static func _ensure_actions() -> void:
+	for action in ACTIONS:
+		if not InputMap.has_action(action):
+			InputMap.add_action(action, 0.5)
+			for key in ACTIONS[action]:
+				var ev := InputEventKey.new()
+				ev.keycode = key
+				InputMap.action_add_event(action, ev)
 
-## Read the persisted overrides (falls back to defaults per key).
 static func load_config() -> Dictionary:
 	capture_defaults()
+	_ensure_actions()
+	var out := _defaults.duplicate()
 	var cf := ConfigFile.new()
-	if cf.load(path) != OK:
-		return _defaults.duplicate()
-	var out := {}
-	for key in KEYS:
-		out[key] = cf.get_value("settings", key, _defaults.get(key))
+	if cf.load(path) == OK:
+		for key in KEYS: out[key] = cf.get_value("settings", key, out[key])
 	return out
 
-
-## Apply values to Cfg / AudioServer / DisplayServer. Missing keys fall back
-## to the captured defaults; floats are coerced and clamped.
 static func apply(values: Dictionary) -> void:
 	capture_defaults()
-	Cfg.mouse_sensitivity = clampf(float(values.get("mouse_sensitivity", _defaults["mouse_sensitivity"])), 0.0001, 0.05)
-	Cfg.stick_look_speed = clampf(float(values.get("stick_look_speed", _defaults["stick_look_speed"])), 0.1, 10.0)
-	Cfg.invert_look = bool(values.get("invert_look", false))
-	current = {
-		"mouse_sensitivity": Cfg.mouse_sensitivity,
-		"stick_look_speed": Cfg.stick_look_speed,
-		"invert_look": Cfg.invert_look,
-		"master_volume": clampf(float(values.get("master_volume", 1.0)), 0.0, 1.0),
-		"fullscreen": bool(values.get("fullscreen", false)),
-	}
-	var vol := float(current["master_volume"])
-	var bus := AudioServer.get_bus_index("Master")
-	if bus >= 0:
-		AudioServer.set_bus_mute(bus, vol <= 0.001)
-		AudioServer.set_bus_volume_db(bus, linear_to_db(clampf(vol, 0.001, 1.0)))
-	# Window mode changes are desktop-only (no-op on headless CI / web).
+	_ensure_actions()
+	current = _defaults.duplicate()
+	for key in KEYS: current[key] = values.get(key, current[key])
+	Cfg.mouse_sensitivity = clampf(float(current.mouse_sensitivity), 0.0001, 0.05)
+	Cfg.stick_look_speed = clampf(float(current.stick_look_speed), 0.1, 10.0)
+	Cfg.invert_look = bool(current.invert_look)
+	ProjectSettings.set_setting("dialogic/text/letter_speed", clampf(float(current.text_speed), 0.001, 0.2))
+	var master := AudioServer.get_bus_index("Master")
+	if master >= 0:
+		var vol := clampf(float(current.master_volume), 0.0, 1.0)
+		AudioServer.set_bus_mute(master, vol <= 0.001)
+		AudioServer.set_bus_volume_db(master, linear_to_db(maxf(vol, 0.001)))
+	var type_bus := AudioServer.get_bus_index("Dialogic")
+	if type_bus >= 0: AudioServer.set_bus_volume_db(type_bus, linear_to_db(maxf(float(current.typing_volume), 0.001)))
 	if DisplayServer.get_name() != "headless" and not OS.has_feature("web"):
-		var want_full := bool(current["fullscreen"])
-		var mode := DisplayServer.WINDOW_MODE_FULLSCREEN if want_full else DisplayServer.WINDOW_MODE_WINDOWED
-		if DisplayServer.window_get_mode() != mode:
-			DisplayServer.window_set_mode(mode)
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN if bool(current.fullscreen) else DisplayServer.WINDOW_MODE_WINDOWED)
+		DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_BORDERLESS, bool(current.borderless))
+		DisplayServer.window_set_size(current.resolution)
+		DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_ENABLED if int(current.vsync) else DisplayServer.VSYNC_DISABLED)
 
-
-## Load the persisted file (if any) and apply it.
 static func apply_saved() -> void:
 	apply(load_config())
 
-
-## Persist the given values (missing keys are filled from the defaults).
 static func save(values: Dictionary) -> void:
-	capture_defaults()
+	apply(values)
 	var cf := ConfigFile.new()
-	for key in KEYS:
-		cf.set_value("settings", key, values.get(key, _defaults.get(key)))
+	for key in KEYS: cf.set_value("settings", key, current[key])
 	cf.save(path)
 
-
-## Convenience: persist whatever was last applied (Settings.current).
-static func save_current() -> void:
-	save(current if not current.is_empty() else load_config())
-
-
-## Reset to the designer defaults and persist them.
 static func reset_defaults() -> void:
-	var d := capture_defaults().duplicate()
-	apply(d)
-	save(d)
+	apply(capture_defaults())
+	save(current)
+
+static func rebind(action: String, event: InputEvent) -> void:
+	_ensure_actions()
+	InputMap.action_erase_events(action)
+	InputMap.action_add_event(action, event)
+
+static func binding_text(action: String) -> String:
+	_ensure_actions()
+	var events := InputMap.action_get_events(action)
+	return events[0].as_text() if not events.is_empty() else "Unbound"
