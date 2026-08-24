@@ -1,0 +1,40 @@
+[gd_scene load_steps=5 format=3 uid="uid://esdspn22c8sho"]
+
+[ext_resource type="Script" uid="uid://bkaiw13t2n002" path="res://scripts/player.gd" id="1_player"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_1"]
+radius = 0.4
+height = 1.6
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_gun"]
+albedo_color = Color(0.12, 0.12, 0.16, 1.0)
+roughness = 0.7
+
+[sub_resource type="BoxMesh" id="BoxMesh_gun"]
+size = Vector3(0.07, 0.11, 0.55)
+material = SubResource("StandardMaterial3D_gun")
+
+[node name="Player" type="CharacterBody3D"]
+script = ExtResource("1_player")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("CapsuleShape3D_1")
+position = Vector3(0, 0.8, 0)
+
+[node name="Head" type="Node3D" parent="."]
+position = Vector3(0, 1.6, 0)
+
+[node name="Camera3D" type="Camera3D" parent="Head"]
+fov = 90.0
+far = 200.0
+
+[node name="MuzzleLight" type="OmniLight3D" parent="Head"]
+position = Vector3(0.3, -0.25, -0.9)
+light_color = Color(1, 0.75, 0.35, 1.0)
+light_energy = 0.0
+omni_range = 7.0
+shadow_enabled = false
+
+[node name="GunMesh" type="MeshInstance3D" parent="Head"]
+position = Vector3(0.28, -0.24, -0.55)
+mesh = SubResource("BoxMesh_gun")

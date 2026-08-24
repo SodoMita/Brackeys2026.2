@@ -1,0 +1,20 @@
+[gd_scene load_steps=3 format=3 uid="uid://uameiu3sbichl"]
+
+[ext_resource type="Script" uid="uid://bikpdrreueody" path="res://scripts/enemy.gd" id="1_enemy"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_e1"]
+radius = 0.45
+height = 1.5
+
+[node name="Enemy" type="CharacterBody3D"]
+script = ExtResource("1_enemy")
+kind = "hound"
+ranged = false
+is_boss = false
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("CapsuleShape3D_e1")
+position = Vector3(0, 0.75, 0)
+
+# Visual fallback: If you have no sprites, a capsule will be created at runtime.
+# For editor preview, add SpriteActor manually or AnimatedSprite3D with frames from SpriteLib.

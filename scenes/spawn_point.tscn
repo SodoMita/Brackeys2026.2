@@ -1,0 +1,3 @@
+[gd_scene load_steps=1 format=3 uid="uid://cpih52q6ur487"]
+
+[node name="SpawnPoint" type="Marker3D"]

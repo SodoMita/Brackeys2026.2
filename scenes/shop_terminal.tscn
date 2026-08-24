@@ -1,0 +1,26 @@
+[gd_scene load_steps=5 format=3 uid="uid://jp2vsbog7nldw"]
+
+[ext_resource type="Script" uid="uid://je6q208edg6y" path="res://scripts/shop_terminal.gd" id="1_shop"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_shop"]
+size = Vector3(0.8, 1.4, 0.4)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_shop"]
+albedo_color = Color(0.1, 0.08, 0.06, 1.0)
+emission_enabled = true
+emission = Color(1, 0.6, 0.1, 1.0)
+emission_energy_multiplier = 0.8
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_shop"]
+size = Vector3(0.8, 1.4, 0.4)
+
+[node name="ShopTerminal" type="StaticBody3D"]
+script = ExtResource("1_shop")
+
+[node name="Mesh" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.7, 0)
+mesh = SubResource("BoxMesh_shop")
+surface_material_override/0 = SubResource("StandardMaterial3D_shop")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("BoxShape3D_shop")

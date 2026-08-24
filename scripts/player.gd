@@ -1,6 +1,9 @@
 extends CharacterBody3D
 ## Fast FPS controller: run, jump (no fall damage), dash, slide, parry,
 ## coin toss + ricochet. Inputs: keyboard+mouse, gamepad, touchscreen.
+## Now supports being instanced from a .tscn (editor-editable).
+## If child nodes exist in the scene, they are reused; otherwise created procedurally.
+## _init creates fallback nodes so headless tests work without _ready.
 
 signal fired(enemy: Node3D, headshot: bool, airborne: bool, damage: float, ricochet: bool)
 signal dashed
@@ -11,12 +14,17 @@ signal player_died
 
 const STICK_DEAD := 0.15
 
+@export_group("References (auto-filled if empty)")
+@export var head_path: NodePath
+@export var camera_path: NodePath
+@export var muzzle_path: NodePath
+
 var yaw := 0.0
 var pitch := 0.0
 var head: Node3D
 var cam: Camera3D
 var muzzle: OmniLight3D
-var hp: float
+var hp: float = 100.0
 var dead := false
 var enemy_pool: Node3D = null
 
@@ -46,10 +54,15 @@ var touch_fire := false
 var touch_jump := false
 var touch_slide := false
 
+var _prev_lt := false
+
 
 func _init() -> void:
-	hp = Cfg.max_hp
+	# Create fallback nodes in _init so tests that call _ready manually or don't enter tree still have them.
+	# If scene provides nodes, _ensure_nodes in _ready will dedupe.
+	hp = Cfg.max_hp if Cfg and "max_hp" in Cfg else 100.0
 	var pc := CollisionShape3D.new()
+	pc.name = "CollisionShape3D"
 	var caps := CapsuleShape3D.new()
 	caps.radius = 0.4
 	caps.height = 1.6
@@ -58,19 +71,22 @@ func _init() -> void:
 	add_child(pc)
 	head = Node3D.new()
 	head.name = "Head"
-	add_child(head)
 	head.position = Vector3(0.0, 1.6, 0.0)
+	add_child(head)
 	cam = Camera3D.new()
+	cam.name = "Camera3D"
 	cam.fov = 90.0
 	cam.far = 200.0
 	head.add_child(cam)
 	muzzle = OmniLight3D.new()
+	muzzle.name = "MuzzleLight"
 	muzzle.light_color = Color(1.0, 0.75, 0.35)
 	muzzle.light_energy = 0.0
 	muzzle.omni_range = 7.0
 	muzzle.position = Vector3(0.3, -0.25, -0.9)
 	head.add_child(muzzle)
 	var gun := MeshInstance3D.new()
+	gun.name = "GunMesh"
 	var gb := BoxMesh.new()
 	gb.size = Vector3(0.07, 0.11, 0.55)
 	var gm := StandardMaterial3D.new()
@@ -79,6 +95,96 @@ func _init() -> void:
 	gun.mesh = gb
 	gun.position = Vector3(0.28, -0.24, -0.55)
 	head.add_child(gun)
+
+
+func _ready() -> void:
+	_ensure_nodes()
+	hp = Cfg.max_hp if Cfg and "max_hp" in Cfg else hp
+
+
+func _ensure_nodes() -> void:
+	# Dedupe: if scene provides a node with same name but different instance, keep scene one.
+	# CollisionShape3D
+	var existing_col := get_node_or_null("CollisionShape3D") as CollisionShape3D
+	# If we have multiple CollisionShape3D (fallback + scene), keep first scene-provided? Simplify: if more than 1, remove fallback.
+	var cols: Array = []
+	for c in get_children():
+		if c is CollisionShape3D:
+			cols.append(c)
+	if cols.size() > 1:
+		# Keep the one that is not the _init fallback? Heuristic: keep last (scene) and remove earlier
+		# Our _init nodes are added first, scene nodes added after _init, so scene nodes are later in child list
+		for i in range(cols.size() - 1):
+			var to_remove = cols[i]
+			if is_instance_valid(to_remove):
+				to_remove.queue_free()
+
+	# Head dedupe
+	var heads: Array = []
+	for c in get_children():
+		if c is Node3D and c.name == "Head":
+			heads.append(c)
+	if heads.size() > 1:
+		# Keep the last one (scene), remove earlier fallback heads
+		for i in range(heads.size() - 1):
+			var h = heads[i]
+			if is_instance_valid(h):
+				h.queue_free()
+		# Update head reference to the remaining one
+		head = get_node_or_null("Head") as Node3D
+
+	# Resolve references via paths or names
+	if head_path != NodePath():
+		var np_head = get_node_or_null(head_path) as Node3D
+		if np_head:
+			head = np_head
+	else:
+		var h = get_node_or_null("Head") as Node3D
+		if h:
+			head = h
+
+	if head == null:
+		head = Node3D.new()
+		head.name = "Head"
+		head.position = Vector3(0.0, 1.6, 0.0)
+		add_child(head)
+
+	# Camera
+	if camera_path != NodePath():
+		cam = get_node_or_null(camera_path) as Camera3D
+	else:
+		if head:
+			cam = head.get_node_or_null("Camera3D") as Camera3D
+			if cam == null:
+				cam = get_node_or_null("Head/Camera3D") as Camera3D
+	if cam == null:
+		cam = Camera3D.new()
+		cam.name = "Camera3D"
+		cam.fov = 90.0
+		cam.far = 200.0
+		head.add_child(cam)
+
+	# Muzzle
+	if muzzle_path != NodePath():
+		muzzle = get_node_or_null(muzzle_path) as OmniLight3D
+	else:
+		if head:
+			muzzle = head.get_node_or_null("MuzzleLight") as OmniLight3D
+			if muzzle == null:
+				muzzle = head.get_node_or_null("Camera3D/MuzzleLight") as OmniLight3D
+			if muzzle == null:
+				for c in head.get_children():
+					if c is OmniLight3D:
+						muzzle = c
+						break
+	if muzzle == null:
+		muzzle = OmniLight3D.new()
+		muzzle.name = "MuzzleLight"
+		muzzle.light_color = Color(1.0, 0.75, 0.35)
+		muzzle.light_energy = 0.0
+		muzzle.omni_range = 7.0
+		muzzle.position = Vector3(0.3, -0.25, -0.9)
+		head.add_child(muzzle)
 
 
 func request_dash() -> void:
@@ -120,6 +226,8 @@ func toss_coin() -> void:
 	coin.add_child(cs)
 	cs.shape = ss
 	coin.set_meta("coin", true)
+	if cam == null:
+		_ensure_nodes()
 	coin.position = cam.global_position + (-cam.global_transform.basis.z) * 0.5
 	var vel: Vector3 = -cam.global_transform.basis.z * float(Cfg.coin_toss_velocity)
 	vel.y += Cfg.coin_toss_velocity * 0.6
@@ -174,7 +282,8 @@ func _apply_look(dyaw: float, dpitch: float) -> void:
 	yaw += dyaw
 	pitch = clampf(pitch + dpitch, -1.45, 1.45)
 	rotation.y = yaw
-	head.rotation.x = pitch
+	if head:
+		head.rotation.x = pitch
 
 
 func _gather_move() -> Vector2:
@@ -201,6 +310,10 @@ func _gather_move() -> Vector2:
 func _physics_process(dt: float) -> void:
 	if dead or disabled:
 		return
+	if cam == null or head == null or muzzle == null:
+		_ensure_nodes()
+		if cam == null:
+			return
 	dash_cd = maxf(dash_cd - dt, 0.0)
 	parry_cd = maxf(parry_cd - dt, 0.0)
 	if parry_age >= 0.0:
@@ -286,9 +399,6 @@ func _physics_process(dt: float) -> void:
 			or Input.get_joy_axis(0, JOY_AXIS_TRIGGER_RIGHT) > 0.4
 	if firing:
 		try_fire()
-
-
-var _prev_lt := false
 
 
 func horizontal_speed() -> float:
