@@ -26,7 +26,8 @@ var _stick: HSlider
 var _volume: HSlider
 var _deadzone: HSlider
 var _text_speed: HSlider
-var _resolution: OptionButton
+var _resolution_width: SpinBox
+var _resolution_height: SpinBox
 var _vsync: OptionButton
 var _aa: OptionButton
 var _invert: Button
@@ -195,6 +196,16 @@ static func _slider(minv: float, maxv: float, stepv: float) -> HSlider:
 	return s
 
 
+static func _resolution_box() -> SpinBox:
+	var box := SpinBox.new()
+	box.min_value = 320
+	box.max_value = 7680
+	box.step = 1
+	box.allow_greater = true
+	box.custom_minimum_size = Vector2(72, 18)
+	return box
+
+
 static func _options(items: PackedStringArray) -> OptionButton:
 	var o := OptionButton.new()
 	o.custom_minimum_size = Vector2(120, 18)
@@ -262,8 +273,11 @@ func _build_settings_panel() -> void:
 	r5.add_child(_fullscreen)
 
 	var rv := _add_row(box, "RESOLUTION")
-	_resolution = _options(["1280 × 720", "1600 × 900", "1920 × 1080", "2560 × 1440"])
-	rv.add_child(_resolution)
+	_resolution_width = _resolution_box()
+	_resolution_height = _resolution_box()
+	rv.add_child(_resolution_width)
+	rv.add_child(_label("×", 10, PAPER))
+	rv.add_child(_resolution_height)
 	var rvs := _add_row(box, "V-SYNC")
 	_vsync = _options(["OFF", "ON"])
 	rvs.add_child(_vsync)
@@ -306,7 +320,8 @@ func _build_settings_panel() -> void:
 	_volume.value_changed.connect(func(_v): _on_live_change())
 	_deadzone.value_changed.connect(func(_v): _on_live_change())
 	_text_speed.value_changed.connect(func(_v): _on_live_change())
-	_resolution.item_selected.connect(func(_i): _on_live_change())
+	_resolution_width.value_changed.connect(func(_v): _on_live_change())
+	_resolution_height.value_changed.connect(func(_v): _on_live_change())
 	_vsync.item_selected.connect(func(_i): _on_live_change())
 	_aa.item_selected.connect(func(_i): _on_live_change())
 	_sens.drag_ended.connect(func(_c): _persist())
@@ -356,7 +371,7 @@ func _collect() -> Dictionary:
 		"borderless": bool(_borderless.button_pressed),
 		"controller_vibration": bool(_vibration.button_pressed),
 		"subtitles": bool(_subtitles.button_pressed),
-		"resolution": [Vector2i(1280, 720), Vector2i(1600, 900), Vector2i(1920, 1080), Vector2i(2560, 1440)][_resolution.selected],
+		"resolution": Vector2i(int(_resolution_width.value), int(_resolution_height.value)),
 		"vsync": _vsync.selected,
 		"aa_mode": _aa.selected,
 	}
@@ -389,9 +404,9 @@ func _sync_widgets() -> void:
 	_borderless.set_pressed_no_signal(bool(cur.get("borderless", false)))
 	_vibration.set_pressed_no_signal(bool(cur.get("controller_vibration", true)))
 	_subtitles.set_pressed_no_signal(bool(cur.get("subtitles", true)))
-	var resolutions := [Vector2i(1280, 720), Vector2i(1600, 900), Vector2i(1920, 1080), Vector2i(2560, 1440)]
 	var wanted: Vector2i = cur.get("resolution", Vector2i(1280, 720))
-	_resolution.select(maxi(0, resolutions.find(wanted)))
+	_resolution_width.set_value_no_signal(wanted.x)
+	_resolution_height.set_value_no_signal(wanted.y)
 	_vsync.select(clampi(int(cur.get("vsync", 1)), 0, 1))
 	_aa.select(clampi(int(cur.get("aa_mode", 2)), 0, 3))
 	_arming = false
