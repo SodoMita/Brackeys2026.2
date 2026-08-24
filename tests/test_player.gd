@@ -18,7 +18,6 @@ func test_player_inits_with_cfg_hp() -> void:
 	assert_eq(p.weapon, 0)
 	assert_true(bool(p.weapons[0]) and bool(p.weapons[1]))
 	assert_false(bool(p.weapons[2]), "nailgun locked by default")
-	pass  # cleaned up by runner
 
 
 func test_look_clamps_pitch() -> void:
@@ -29,7 +28,6 @@ func test_look_clamps_pitch() -> void:
 	assert_ge(p.pitch, -1.45)
 	assert_near(p.rotation.y, p.yaw, 0.001)
 	assert_near(p.head.rotation.x, p.pitch, 0.001)
-	pass  # cleaned up by runner
 
 
 func test_parry_window_and_cooldown() -> void:
@@ -38,17 +36,14 @@ func test_parry_window_and_cooldown() -> void:
 	p.request_parry()
 	assert_true(p.is_parry_active(), "active immediately")
 	assert_gt(p.parry_cd, 0.0, "cooldown armed")
-	# advance past window without going through full physics (no floor)
 	p.parry_age = Cfg.parry_active_window + 0.05
 	assert_false(p.is_parry_active(), "expired")
-	# cooldown blocks re-press
 	var age_before := p.parry_age
 	p.request_parry()
 	assert_eq(p.parry_age, age_before, "cooldown blocks")
 	p.parry_cd = 0.0
 	p.request_parry()
 	assert_near(p.parry_age, 0.0, 0.001, "re-armed after cd")
-	pass  # cleaned up by runner
 
 
 func test_cycle_weapon_respects_ownership() -> void:
@@ -65,7 +60,6 @@ func test_cycle_weapon_respects_ownership() -> void:
 	assert_eq(p.weapon, 2, "nailgun now in cycle")
 	p.cycle_weapon()
 	assert_eq(p.weapon, 0)
-	pass  # cleaned up by runner
 
 
 func test_take_damage_and_death() -> void:
@@ -78,11 +72,9 @@ func test_take_damage_and_death() -> void:
 	p.take_damage(9999.0)
 	assert_true(p.dead)
 	assert_true(died[0], "death signal")
-	# further damage is a no-op
 	var hp_after := p.hp
 	p.take_damage(50.0)
 	assert_eq(p.hp, hp_after)
-	pass  # cleaned up by runner
 
 
 func test_toss_coin_once() -> void:
@@ -93,14 +85,15 @@ func test_toss_coin_once() -> void:
 	var first = p.coin
 	p.toss_coin()
 	assert_true(p.coin == first, "second toss ignored while live")
-	# dead player cannot toss
+	# coin is parented to root (host); track so cleanup frees it
+	if first.get_parent() == runner.root:
+		own(first)
 	if is_instance_valid(p.coin):
 		p.coin.queue_free()
 	p.coin = null
 	p.dead = true
 	p.toss_coin()
 	assert_true(p.coin == null, "dead cannot toss")
-	pass  # cleaned up by runner
 
 
 func test_dash_request_flag() -> void:
@@ -108,23 +101,19 @@ func test_dash_request_flag() -> void:
 	assert_false(p._want_dash)
 	p.request_dash()
 	assert_true(p._want_dash)
-	pass  # cleaned up by runner
 
 
 func test_try_fire_without_world_is_safe() -> void:
-	# Player not yet in a World3D: try_fire must early-out, not crash.
 	var p: CharacterBody3D = load("res://scripts/player.gd").new()
 	# Intentionally NOT added to the tree.
 	p.try_fire()
 	assert_eq(p.fire_cd, 0.0, "no fire without world")
-	# Also safe when dead / disabled
 	add_to_root(p)
 	p.dead = true
 	p.try_fire()
 	p.dead = false
 	p.disabled = true
 	p.try_fire()
-	pass  # cleaned up by runner
 
 
 func test_gather_move_touch_overrides() -> void:
@@ -134,17 +123,14 @@ func test_gather_move_touch_overrides() -> void:
 	assert_near(m.x, 1.0, 0.001)
 	assert_near(m.y, 0.0, 0.001)
 	p.touch_move = Vector2.ZERO
-	# no keyboard in headless → zero
 	var m2: Vector2 = p._gather_move()
 	assert_near(m2.length(), 0.0, 0.001)
-	pass  # cleaned up by runner
 
 
 func test_horizontal_speed() -> void:
 	var p := _make_player()
 	p.velocity = Vector3(3, 9, 4)
 	assert_near(p.horizontal_speed(), 5.0, 0.001)
-	pass  # cleaned up by runner
 
 
 func test_ricochet_with_empty_pool() -> void:
@@ -155,5 +141,3 @@ func test_ricochet_with_empty_pool() -> void:
 	add_to_root(pool)
 	p.enemy_pool = pool
 	p._ricochet(10.0)
-	pass  # cleaned up by runner
-	pass  # cleaned up by runner

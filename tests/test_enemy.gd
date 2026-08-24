@@ -5,13 +5,11 @@ extends TestBase
 func test_enemy_inits_and_fallback_mesh() -> void:
 	var e: CharacterBody3D = load("res://scripts/enemy.gd").new()
 	e.kind = "hound"
-	add_to_root(e)  # triggers _ready
+	add_to_root(e)
 	assert_near(float(e.hp), float(Cfg.enemy_hp), 0.001)
 	assert_false(e.ranged)
-	# take_damage reduces hp
 	e.take_damage(10.0, Vector3.FORWARD, 2.0)
 	assert_near(float(e.hp), float(Cfg.enemy_hp) - 10.0, 0.001)
-	pass  # cleaned up by runner
 
 
 func test_enemy_death_emits_once() -> void:
@@ -20,9 +18,8 @@ func test_enemy_death_emits_once() -> void:
 	var deaths := [0]
 	e.died.connect(func(_p): deaths[0] += 1)
 	e.take_damage(9999.0, Vector3.ZERO, 0.0)
-	# After free the instance may be invalid; count must be 1
 	assert_eq(deaths[0], 1, "single death signal")
-	# Double-kill on a fresh enemy that is already at 0 hp is guarded
+	# Already-dead guard on a fresh enemy
 	var e2: CharacterBody3D = load("res://scripts/enemy.gd").new()
 	add_to_root(e2)
 	e2.hp = 0.0
@@ -30,7 +27,6 @@ func test_enemy_death_emits_once() -> void:
 	e2.died.connect(func(_p): d2[0] += 1)
 	e2.take_damage(10.0, Vector3.FORWARD, 1.0)
 	assert_eq(d2[0], 0, "already-dead ignores further damage")
-	pass  # cleaned up by runner
 
 
 func test_enemy_stagger_cancels_windup() -> void:
@@ -40,7 +36,6 @@ func test_enemy_stagger_cancels_windup() -> void:
 	e.stagger(1.0)
 	assert_near(e.windup_t, -1.0, 0.001)
 	assert_ge(e.stagger_t, 1.0)
-	pass  # cleaned up by runner
 
 
 func test_spitter_emits_volley_after_windup() -> void:
@@ -55,13 +50,10 @@ func test_spitter_emits_volley_after_windup() -> void:
 	e.position = Vector3.ZERO
 	var volleys := [0]
 	e.volley.connect(func(_d, _o): volleys[0] += 1)
-	# Force the windup completion path via physics ticks
 	e.windup_t = 0.01
 	e._set_telegraph(true)
 	e._physics_process(0.02)
 	assert_eq(volleys[0], 1, "ranged windup fires volley")
-	pass  # cleaned up by runner
-	pass  # cleaned up by runner
 
 
 func test_melee_emits_attacked_in_range() -> void:
@@ -69,7 +61,7 @@ func test_melee_emits_attacked_in_range() -> void:
 	e.ranged = false
 	var target := Node3D.new()
 	add_to_root(target)
-	target.position = Vector3(0, 0, -1.0)  # inside attack range
+	target.position = Vector3(0, 0, -1.0)
 	add_to_root(e)
 	e.target = target
 	e.position = Vector3.ZERO
@@ -78,8 +70,6 @@ func test_melee_emits_attacked_in_range() -> void:
 	e.windup_t = 0.01
 	e._physics_process(0.02)
 	assert_eq(atks[0], 1, "melee strike emitted")
-	pass  # cleaned up by runner
-	pass  # cleaned up by runner
 
 
 func test_companion_vanish_and_follow() -> void:
@@ -89,17 +79,15 @@ func test_companion_vanish_and_follow() -> void:
 	player.position = Vector3(20, 0, 0)
 	add_to_root(c)
 	c.player_ref = player
-	c.enemy_pool = Node3D.new()
-	add_to_root(c.enemy_pool)
+	var pool := Node3D.new()
+	add_to_root(pool)
+	c.enemy_pool = pool
 	c._physics_process(0.016)
 	assert_false(c.hidden)
 	c.vanish()
 	assert_true(c.hidden)
 	assert_false(c.visible)
-	# further physics is a no-op
 	c._physics_process(0.016)
-	pass  # cleaned up by runner
-	pass  # cleaned up by runner
 
 
 func test_companion_support_fire() -> void:
@@ -121,11 +109,6 @@ func test_companion_support_fire() -> void:
 	c._physics_process(0.016)
 	assert_eq(shots[0], 1, "companion fired")
 	assert_lt(float(foe.hp), hp_before, "enemy took companion damage")
-	pass  # cleaned up by runner
-	pass  # cleaned up by runner
-	# pool + foe freed with parent chain via free of pool if still valid
-	if is_instance_valid(pool):
-		pass  # cleaned up by runner
 
 
 func test_projectile_lifetime() -> void:
@@ -136,12 +119,10 @@ func test_projectile_lifetime() -> void:
 	var start := pr.position
 	pr._physics_process(0.016)
 	assert_ne(pr.position, start, "projectile moved")
-	# burn remaining life
-	pr._physics_process(1.0)
-	# after life expires it queue_frees; allow a frame conceptually
+	pr.life = 0.0
+	pr._physics_process(0.016)
+	# queued for free — cleanup must skip it
 	assert_true(true, "lifetime path exercised")
-	if is_instance_valid(pr):
-		pass  # cleaned up by runner
 
 
 func test_projectile_negative_dt_safe() -> void:
@@ -150,26 +131,24 @@ func test_projectile_negative_dt_safe() -> void:
 	pr.life = 1.0
 	pr._physics_process(-0.5)
 	assert_ge(pr.life, 0.0)
-	pass  # cleaned up by runner
 
 
 func test_sprite_lib_unknown_and_partial() -> void:
 	assert_true(SpriteLib.build("nope") == null, "unknown kind → null")
-	# colt may or may not have enough frames imported in CI; either null or AnimatedSprite3D
 	var colt = SpriteLib.build("colt")
 	if colt != null:
 		assert_true(colt is AnimatedSprite3D)
 		assert_true(colt.sprite_frames != null)
-		pass  # cleaned up by runner
+		colt.free()
 	var hound = SpriteLib.build("hound")
 	if hound != null:
-		pass  # cleaned up by runner
+		hound.free()
 	var spit = SpriteLib.build("spitter")
 	if spit != null:
-		pass  # cleaned up by runner
+		spit.free()
 	var boss = SpriteLib.build("boss")
 	if boss != null:
-		pass  # cleaned up by runner
+		boss.free()
 
 
 func test_shop_terminal_setup_and_refresh() -> void:
@@ -184,11 +163,8 @@ func test_shop_terminal_setup_and_refresh() -> void:
 	assert_true(st.panel.text.find("42") >= 0, "scrap shown")
 	st.refresh_panel(0, true)
 	assert_true(st.panel.text.find("owned") >= 0, "owned marker")
-	# close without open is safe
 	st.close()
 	assert_false(st.open)
-	pass  # cleaned up by runner
-	pass  # cleaned up by runner
 
 
 func test_touch_controls_construct() -> void:
@@ -200,7 +176,6 @@ func test_touch_controls_construct() -> void:
 	assert_true(tc.buttons.has("fire"))
 	assert_true(tc.buttons.has("parry"))
 	assert_true(tc.buttons.has("coin"))
-	# press helpers must not crash with null-safe player
 	tc._press("fire", true)
 	assert_true(p.touch_fire)
 	tc._press("fire", false)
@@ -215,19 +190,16 @@ func test_touch_controls_construct() -> void:
 	tc._press("coin", true)
 	tc._press("slide", true)
 	assert_true(p.touch_slide)
-	# null player path
 	tc.player = null
 	tc._press("fire", true)
-	pass  # cleaned up by runner
-	pass  # cleaned up by runner
 
 
 func test_cfg_helpers() -> void:
-	assert_near(Cfg.heal_on_damage(50.0, 10.0), CombatLogic.heal_on_damage(50.0, 10.0, Cfg.heal_factor, Cfg.max_hp), 0.001)
+	assert_near(Cfg.heal_on_damage(50.0, 10.0),
+			CombatLogic.heal_on_damage(50.0, 10.0, Cfg.heal_factor, Cfg.max_hp), 0.001)
 	assert_eq(Cfg.rank_for_points(0.0), "D")
 	assert_eq(Cfg.rank_for_points(550.0), "SSS")
 	assert_gt(Cfg.decay_rate(100.0), Cfg.decay_rate(0.0))
-	# sanity on exported tuning (guards against accidental zeroing)
 	assert_gt(Cfg.max_hp, 0.0)
 	assert_gt(Cfg.revolver_damage, 0.0)
 	assert_gt(Cfg.enemy_hp, 0.0)
@@ -236,17 +208,13 @@ func test_cfg_helpers() -> void:
 	assert_eq(Cfg.ranks.size(), Cfg.rank_thresholds.size(), "ranks align with thresholds")
 
 
-func test_mobile_controls_missing_safe() -> void:
-	# setup must not crash even if we only construct the node
+func test_mobile_controls_setup() -> void:
 	var mc = load("res://scripts/mobile_controls.gd").new()
 	var p: CharacterBody3D = load("res://scripts/player.gd").new()
 	add_to_root(p)
 	add_to_root(mc)
-	# Addon is vendored — setup should succeed and wire sticks.
 	mc.setup(p)
 	assert_true(mc.player == p)
-	pass  # cleaned up by runner
-	pass  # cleaned up by runner
 
 
 func test_enemy_negative_dt_and_no_target() -> void:
@@ -255,23 +223,18 @@ func test_enemy_negative_dt_and_no_target() -> void:
 	e.target = null
 	e._physics_process(-0.5)
 	e._physics_process(0.016)
-	pass  # cleaned up by runner
 
 
-func test_boss_meta_tints_sprite_or_fallback() -> void:
+func test_boss_meta_constructs() -> void:
 	var e: CharacterBody3D = load("res://scripts/enemy.gd").new()
 	e.kind = "boss"
 	e.set_meta("boss", true)
 	add_to_root(e)
-	# Must construct without "modulate on Node3D" error.
 	assert_true(e.has_meta("boss"))
-	pass  # cleaned up by runner
 
 
 func test_shop_refresh_without_setup_safe() -> void:
 	var st = load("res://scripts/shop_terminal.gd").new()
 	add_to_root(st)
-	# refresh/close before setup_ui must not crash
 	st.refresh_panel(10, false)
 	st.close()
-	pass  # cleaned up by runner

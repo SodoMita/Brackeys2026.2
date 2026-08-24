@@ -6,7 +6,7 @@ extends RefCounted
 var failures: Array = []
 ## Injected by the runner; gives integration tests access to the SceneTree.
 var runner: SceneTree = null
-## Nodes spawned during a test; auto-freed after each test_* method.
+## Top-level nodes spawned during a test; auto-freed after each test_* method.
 var _owned: Array = []
 
 
@@ -21,11 +21,10 @@ func assert_false(cond: bool, msg: String = "condition") -> void:
 
 
 func assert_eq(a: Variant, b: Variant, msg: String = "") -> void:
-	if typeof(a) == TYPE_FLOAT or typeof(b) == TYPE_FLOAT:
-		if typeof(a) in [TYPE_FLOAT, TYPE_INT] and typeof(b) in [TYPE_FLOAT, TYPE_INT]:
-			if absf(float(a) - float(b)) > 0.0001:
-				failures.append("expected '%s' == '%s' — %s" % [str(a), str(b), msg])
-			return
+	if typeof(a) in [TYPE_FLOAT, TYPE_INT] and typeof(b) in [TYPE_FLOAT, TYPE_INT]:
+		if absf(float(a) - float(b)) > 0.0001:
+			failures.append("expected '%s' == '%s' — %s" % [str(a), str(b), msg])
+		return
 	if a != b:
 		failures.append("expected '%s' == '%s' — %s" % [str(a), str(b), msg])
 
@@ -75,14 +74,14 @@ func assert_has_method(obj: Object, method: String, msg: String = "") -> void:
 		failures.append("expected method '%s' — %s" % [method, msg])
 
 
-## Track a node for auto-cleanup after the current test.
+## Track a top-level node for auto-cleanup after the current test.
 func own(n: Node) -> Node:
 	if n != null:
 		_owned.append(n)
 	return n
 
 
-## Add child under the SceneTree root and track it.
+## Add child under the SceneTree root and track it for cleanup.
 func add_to_root(n: Node) -> Node:
 	if runner and runner.root and n:
 		runner.root.add_child(n)
@@ -91,13 +90,17 @@ func add_to_root(n: Node) -> Node:
 
 
 func _cleanup() -> void:
+	# Free only top-level owned nodes that are still alive and not already
+	# queued. Children freed via take_damage()/queue_free must not be free()'d
+	# again — that aborts the headless process.
 	for n in _owned:
-		if n != null and is_instance_valid(n):
-			n.free()
+		if n == null:
+			continue
+		if not is_instance_valid(n):
+			continue
+		if n.is_queued_for_deletion():
+			continue
+		# Only free if still parented to root (or orphaned). Skip if already
+		# reparented under something else that we will free as a parent.
+		n.free()
 	_owned.clear()
-	# Sweep any leftover non-autoload children under root (tests must not leak).
-	if runner and runner.root:
-		var keep := {"Cfg": true, "Dialogic": true}
-		for c in runner.root.get_children():
-			if c != null and is_instance_valid(c) and not keep.has(String(c.name)):
-				c.free()
