@@ -181,7 +181,8 @@ func _gather_move() -> Vector2:
 	if touch_move.length() > 0.05:
 		return touch_move
 	var j := Vector2(Input.get_joy_axis(0, JOY_AXIS_LEFT_X), Input.get_joy_axis(0, JOY_AXIS_LEFT_Y))
-	if j.length() > STICK_DEAD:
+	var deadzone := float(Settings.current.get("stick_deadzone", STICK_DEAD))
+	if j.length() > deadzone:
 		var jf := j.limit_length(1.0)
 		return Vector2(jf.x, -jf.y)  # stick up = forward
 	var ix := 0.0
@@ -216,7 +217,8 @@ func _physics_process(dt: float) -> void:
 
 	# --- look: gamepad right stick + accumulated touch deltas
 	var rs := Vector2(Input.get_joy_axis(0, JOY_AXIS_RIGHT_X), Input.get_joy_axis(0, JOY_AXIS_RIGHT_Y))
-	if rs.length() > STICK_DEAD:
+	var look_deadzone := float(Settings.current.get("stick_deadzone", STICK_DEAD))
+	if rs.length() > look_deadzone:
 		_apply_look(-rs.x * Cfg.stick_look_speed * dt, -rs.y * Cfg.stick_look_speed * dt)
 	if touch_look.length() > 0.0:
 		_apply_look(-touch_look.x * 0.004, -touch_look.y * 0.004)
