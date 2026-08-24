@@ -774,7 +774,9 @@ func _process(dt: float) -> void:
 				p.queue_free()
 				projectiles.erase(p)
 			elif d < 0.8:
-				var dmg: float = float(p.damage) if "damage" in p else float(Cfg.projectile_damage)
+				var dmg: float = float(Cfg.projectile_damage)
+				if p.get("damage") != null:
+					dmg = float(p.get("damage"))
 				player.take_damage(dmg)
 				style = CombatLogic.on_hurt(style)
 				if hud_hp:

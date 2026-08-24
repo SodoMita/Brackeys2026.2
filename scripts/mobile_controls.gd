@@ -32,7 +32,7 @@ func setup(p: CharacterBody3D) -> void:
 		stick.on_trigger.connect(func(a):
 			if player and is_instance_valid(player) and a != null:
 				# addon: up = -y; player: +y = forward
-				var v = a.input_v if "input_v" in a else Vector2.ZERO
+				var v: Vector2 = a.input_v
 				player.touch_move = Vector2(v.x, -v.y))
 	if stick.has_signal("on_released"):
 		stick.on_released.connect(func(_a):
@@ -47,18 +47,16 @@ func setup(p: CharacterBody3D) -> void:
 	look.anchor_bottom = 1.0
 	if look.has_signal("on_touch_pressed"):
 		look.on_touch_pressed.connect(func(a):
-			if a != null and "finger_index" in a and "pressed_position" in a:
+			if a != null:
 				_last_drag[a.finger_index] = a.pressed_position)
 	if look.has_signal("on_touch_dragged"):
 		look.on_touch_dragged.connect(func(a):
-			if a == null or not ("finger_index" in a):
+			if a == null:
 				return
 			if player and is_instance_valid(player) and _last_drag.has(a.finger_index):
-				var pos = a.drag_pos if "drag_pos" in a else a.pressed_position
-				player.touch_look += pos - _last_drag[a.finger_index]
-			if "pressed_position" in a:
-				_last_drag[a.finger_index] = a.pressed_position)
+				player.touch_look += a.drag_pos - _last_drag[a.finger_index]
+			_last_drag[a.finger_index] = a.pressed_position)
 	if look.has_signal("on_touch_released"):
 		look.on_touch_released.connect(func(a):
-			if a != null and "finger_index" in a:
+			if a != null:
 				_last_drag.erase(a.finger_index))

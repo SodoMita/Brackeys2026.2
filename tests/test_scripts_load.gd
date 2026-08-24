@@ -53,20 +53,18 @@ func test_cfg_autoload_present() -> void:
 
 
 func test_combat_logic_static_api() -> void:
-	assert_true(ClassDB.class_exists("CombatLogic") or true)  # class_name may not register in headless script mode
-	# Call through the loaded script so missing statics fail loudly.
-	var scr: GDScript = load("res://scripts/combat_logic.gd")
-	assert_true(scr != null)
-	var inst = scr.new()
-	assert_true(inst != null)
-	assert_has_method(inst, "heal_on_damage")
-	assert_has_method(inst, "rank_for_points")
-	assert_has_method(inst, "decay_rate")
-	assert_has_method(inst, "on_hurt")
-	assert_has_method(inst, "parry_active")
-	assert_has_method(inst, "nearest_targets")
-	assert_has_method(inst, "wave_composition")
-	assert_has_method(inst, "apply_purchase")
+	# Exercise the static API directly — missing symbols fail at parse/runtime.
+	assert_near(CombatLogic.heal_on_damage(50.0, 10.0, 0.8, 100.0), 58.0, 0.001)
+	assert_eq(CombatLogic.rank_for_points(0.0), "D")
+	assert_gt(CombatLogic.decay_rate(10.0), 0.0)
+	assert_near(CombatLogic.on_hurt(20.0), 10.0, 0.001)
+	assert_true(CombatLogic.parry_active(0.0, 0.2))
+	assert_eq(CombatLogic.nearest_targets(Vector3.ZERO, [], 3).size(), 0)
+	var w: Dictionary = CombatLogic.wave_composition(0, 0)
+	assert_true(w.has("hounds") and w.has("spitters"))
+	var r: Dictionary = CombatLogic.apply_purchase(
+			1, 100, 100.0, 100.0, 1.0, [true, true, false], [60, 40, 50], 25.0, 1.15)
+	assert_true(bool(r.ok))
 
 
 func test_player_public_api() -> void:
