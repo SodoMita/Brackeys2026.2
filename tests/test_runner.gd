@@ -61,9 +61,22 @@ func _run_suite(fname: String) -> void:
 	methods.sort()
 	if methods.is_empty():
 		print("[WARN] %s — no test_* methods" % fname)
+	# Snapshot designer-tunable Cfg values so shop tests cannot poison later suites.
+	var cfg := root.get_node_or_null("Cfg")
+	var cfg_snap := {}
+	if cfg:
+		for prop in ["max_hp", "heal_factor", "revolver_damage", "enemy_hp"]:
+			cfg_snap[prop] = cfg.get(prop)
 	for mname in methods:
 		var before: int = suite.failures.size()
 		suite.call(mname)
+		# Always free nodes the test spawned so the next case starts clean.
+		if suite.has_method("_cleanup"):
+			suite._cleanup()
+		# Restore Cfg after every test.
+		if cfg:
+			for prop in cfg_snap.keys():
+				cfg.set(prop, cfg_snap[prop])
 		if suite.failures.size() == before:
 			_passed += 1
 			print("[PASS] %s :: %s" % [fname, mname])

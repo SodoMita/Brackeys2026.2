@@ -4,7 +4,7 @@ extends TestBase
 
 func _make_player() -> CharacterBody3D:
 	var p: CharacterBody3D = load("res://scripts/player.gd").new()
-	runner.root.add_child(p)
+	add_to_root(p)
 	return p
 
 
@@ -18,7 +18,7 @@ func test_player_inits_with_cfg_hp() -> void:
 	assert_eq(p.weapon, 0)
 	assert_true(bool(p.weapons[0]) and bool(p.weapons[1]))
 	assert_false(bool(p.weapons[2]), "nailgun locked by default")
-	p.free()
+	pass  # cleaned up by runner
 
 
 func test_look_clamps_pitch() -> void:
@@ -29,7 +29,7 @@ func test_look_clamps_pitch() -> void:
 	assert_ge(p.pitch, -1.45)
 	assert_near(p.rotation.y, p.yaw, 0.001)
 	assert_near(p.head.rotation.x, p.pitch, 0.001)
-	p.free()
+	pass  # cleaned up by runner
 
 
 func test_parry_window_and_cooldown() -> void:
@@ -48,7 +48,7 @@ func test_parry_window_and_cooldown() -> void:
 	p.parry_cd = 0.0
 	p.request_parry()
 	assert_near(p.parry_age, 0.0, 0.001, "re-armed after cd")
-	p.free()
+	pass  # cleaned up by runner
 
 
 func test_cycle_weapon_respects_ownership() -> void:
@@ -65,7 +65,7 @@ func test_cycle_weapon_respects_ownership() -> void:
 	assert_eq(p.weapon, 2, "nailgun now in cycle")
 	p.cycle_weapon()
 	assert_eq(p.weapon, 0)
-	p.free()
+	pass  # cleaned up by runner
 
 
 func test_take_damage_and_death() -> void:
@@ -82,7 +82,7 @@ func test_take_damage_and_death() -> void:
 	var hp_after := p.hp
 	p.take_damage(50.0)
 	assert_eq(p.hp, hp_after)
-	p.free()
+	pass  # cleaned up by runner
 
 
 func test_toss_coin_once() -> void:
@@ -100,7 +100,7 @@ func test_toss_coin_once() -> void:
 	p.dead = true
 	p.toss_coin()
 	assert_true(p.coin == null, "dead cannot toss")
-	p.free()
+	pass  # cleaned up by runner
 
 
 func test_dash_request_flag() -> void:
@@ -108,7 +108,7 @@ func test_dash_request_flag() -> void:
 	assert_false(p._want_dash)
 	p.request_dash()
 	assert_true(p._want_dash)
-	p.free()
+	pass  # cleaned up by runner
 
 
 func test_try_fire_without_world_is_safe() -> void:
@@ -118,13 +118,13 @@ func test_try_fire_without_world_is_safe() -> void:
 	p.try_fire()
 	assert_eq(p.fire_cd, 0.0, "no fire without world")
 	# Also safe when dead / disabled
-	runner.root.add_child(p)
+	add_to_root(p)
 	p.dead = true
 	p.try_fire()
 	p.dead = false
 	p.disabled = true
 	p.try_fire()
-	p.free()
+	pass  # cleaned up by runner
 
 
 func test_gather_move_touch_overrides() -> void:
@@ -137,14 +137,14 @@ func test_gather_move_touch_overrides() -> void:
 	# no keyboard in headless → zero
 	var m2: Vector2 = p._gather_move()
 	assert_near(m2.length(), 0.0, 0.001)
-	p.free()
+	pass  # cleaned up by runner
 
 
 func test_horizontal_speed() -> void:
 	var p := _make_player()
 	p.velocity = Vector3(3, 9, 4)
 	assert_near(p.horizontal_speed(), 5.0, 0.001)
-	p.free()
+	pass  # cleaned up by runner
 
 
 func test_ricochet_with_empty_pool() -> void:
@@ -152,8 +152,8 @@ func test_ricochet_with_empty_pool() -> void:
 	p.enemy_pool = null
 	p._ricochet(10.0)
 	var pool := Node3D.new()
-	runner.root.add_child(pool)
+	add_to_root(pool)
 	p.enemy_pool = pool
 	p._ricochet(10.0)
-	pool.free()
-	p.free()
+	pass  # cleaned up by runner
+	pass  # cleaned up by runner

@@ -5,10 +5,7 @@ extends TestBase
 func _boot() -> Node3D:
 	var scene: Node3D = (load("res://scenes/main.tscn") as PackedScene).instantiate()
 	# Enter the tree first so create_tween() / World3D paths work.
-	if runner and runner.root:
-		runner.root.add_child(scene)
-	else:
-		scene._ready()
+	add_to_root(scene)
 	return scene
 
 
@@ -26,7 +23,6 @@ func test_scene_boots_into_menu() -> void:
 	assert_true(scene.hud_scrap != null, "scrap HUD built")
 	assert_true(scene.overlay != null, "menu overlay built")
 	assert_true(scene.overlay.visible, "menu visible at boot")
-	scene.free()
 
 
 func test_start_spawns_first_wave() -> void:
@@ -41,7 +37,7 @@ func test_start_spawns_first_wave() -> void:
 	# Expected composition for room 0 wave 0
 	var expected := CombatLogic.wave_composition(0, 0)
 	assert_eq(scene.alive, int(expected.hounds) + int(expected.spitters), "matches pure composition")
-	scene.free()
+	pass  # cleaned up by runner
 
 
 func test_wave_scaling() -> void:
@@ -54,7 +50,7 @@ func test_wave_scaling() -> void:
 	var expected := CombatLogic.wave_composition(1, 0)
 	# alive includes leftovers from room 1 + new spawns
 	assert_ge(float(scene.alive), float(expected.hounds + expected.spitters))
-	scene.free()
+	pass  # cleaned up by runner
 
 
 func test_enter_room_bounds_safe() -> void:
@@ -65,7 +61,7 @@ func test_enter_room_bounds_safe() -> void:
 	assert_eq(scene.room, 0, "invalid room ignored")
 	scene._enter_room(99)
 	assert_eq(scene.room, 0, "far room ignored")
-	scene.free()
+	pass  # cleaned up by runner
 
 
 func test_double_start_is_idempotent() -> void:
@@ -75,7 +71,7 @@ func test_double_start_is_idempotent() -> void:
 	scene._start()
 	assert_eq(scene.alive, n, "second _start does not double-spawn")
 	assert_eq(scene.state, scene.State.PLAYING)
-	scene.free()
+	pass  # cleaned up by runner
 
 
 func test_audio_synthesis() -> void:
@@ -87,7 +83,7 @@ func test_audio_synthesis() -> void:
 	assert_true(noise != null and noise.data.size() > 0, "noise tone")
 	var square: AudioStreamWAV = scene._tone(200.0, 0.05, 0.3, "square", 400.0)
 	assert_true(square != null and square.data.size() > 0, "square sweep")
-	scene.free()
+	pass  # cleaned up by runner
 
 
 func test_input_sources_do_not_crash_headless() -> void:
@@ -97,7 +93,7 @@ func test_input_sources_do_not_crash_headless() -> void:
 	scene._process(0.016)
 	scene._process(0.0)
 	scene._process(-1.0)  # negative dt must not crash
-	scene.free()
+	pass  # cleaned up by runner
 
 
 func test_shop_purchases() -> void:
@@ -129,7 +125,7 @@ func test_shop_purchases() -> void:
 	scene._on_purchase(-1)
 	# restore Cfg so later suites are not poisoned
 	Cfg.max_hp = max_before
-	scene.free()
+	pass  # cleaned up by runner
 
 
 func test_shop_broke() -> void:
@@ -140,22 +136,24 @@ func test_shop_broke() -> void:
 	scene._on_purchase(1)
 	assert_eq(float(Cfg.max_hp), max_before, "broke: no plating")
 	assert_eq(scene.scrap, 0)
-	scene.free()
+	pass  # cleaned up by runner
 
 
 func test_style_and_kill_flow() -> void:
 	var scene := _boot()
 	scene._start()
-	assert_eq(scene.enemies.get_child_count() > 0, true)
+	assert_true(scene.enemies.get_child_count() > 0)
 	var e: Node3D = scene.enemies.get_child(0)
 	var scrap_before := scene.scrap
 	var style_before := scene.style
+	var alive_before := scene.alive
 	# Simulate a kill via the public damage path
 	e.take_damage(9999.0, Vector3.FORWARD, 0.0)
 	assert_gt(float(scene.scrap), float(scrap_before), "kill grants scrap")
 	assert_gt(float(scene.style), float(style_before), "kill grants style")
+	assert_eq(scene.alive, alive_before - 1, "alive decremented")
 	assert_ge(float(scene.alive), 0.0, "alive never negative")
-	scene.free()
+	pass  # cleaned up by runner
 
 
 func test_fired_heals_and_styles() -> void:
@@ -170,7 +168,7 @@ func test_fired_heals_and_styles() -> void:
 	assert_gt(float(scene.style), style_before, "style from hit + headshot + air")
 	# null / freed enemy must not crash
 	scene._on_fired(null, false, false, 10.0, false)
-	scene.free()
+	pass  # cleaned up by runner
 
 
 func test_parry_melee_and_hurt() -> void:
@@ -190,7 +188,7 @@ func test_parry_melee_and_hurt() -> void:
 	var hp2: float = float(scene.player.hp)
 	scene._on_attacked(e)
 	assert_lt(float(scene.player.hp), hp2, "unparried strike damages")
-	scene.free()
+	pass  # cleaned up by runner
 
 
 func test_projectile_parry_and_hit() -> void:
@@ -214,7 +212,7 @@ func test_projectile_parry_and_hit() -> void:
 	var hp_before: float = float(scene.player.hp)
 	scene._process(0.016)
 	assert_lt(float(scene.player.hp), hp_before, "unparried projectile damages")
-	scene.free()
+	pass  # cleaned up by runner
 
 
 func test_volley_spawns_projectiles() -> void:
@@ -226,7 +224,7 @@ func test_volley_spawns_projectiles() -> void:
 	# zero-length dir must not crash
 	scene._on_volley(Vector3.ZERO, Vector3.ZERO)
 	assert_gt(float(scene.projectiles.size()), float(before + int(Cfg.spitter_volley)))
-	scene.free()
+	pass  # cleaned up by runner
 
 
 func test_betrayal_and_boss_spawn() -> void:
@@ -243,7 +241,7 @@ func test_betrayal_and_boss_spawn() -> void:
 	# second betrayal while already BOSS is a no-op
 	scene._betrayal()
 	assert_eq(scene.state, scene.State.BOSS)
-	scene.free()
+	pass  # cleaned up by runner
 
 
 func test_player_death_and_end() -> void:
@@ -258,7 +256,7 @@ func test_player_death_and_end() -> void:
 	scene2._end_mission()
 	assert_eq(scene2.state, scene2.State.END)
 	assert_true(scene2.overlay.visible)
-	scene.free()
+	pass  # cleaned up by runner
 	scene2.free()
 
 
@@ -267,7 +265,7 @@ func test_door_set_does_not_crash() -> void:
 	for d in scene.doors:
 		scene.door_set(d, true)
 		scene.door_set(d, false)
-	scene.free()
+	pass  # cleaned up by runner
 
 
 func test_room_cleared_opens_doors() -> void:
@@ -279,7 +277,7 @@ func test_room_cleared_opens_doors() -> void:
 	scene._room_cleared()
 	scene.room = 2
 	scene._room_cleared()
-	scene.free()
+	pass  # cleaned up by runner
 
 
 func test_gibs_and_debris_cleanup() -> void:
@@ -290,4 +288,4 @@ func test_gibs_and_debris_cleanup() -> void:
 	for _i in 30:
 		scene._process(0.1)
 	assert_eq(scene.debris.size(), 0, "debris cleaned up")
-	scene.free()
+	pass  # cleaned up by runner

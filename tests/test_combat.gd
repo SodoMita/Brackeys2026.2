@@ -50,7 +50,7 @@ func test_parry_window() -> void:
 
 func test_nearest_targets() -> void:
 	var parent := Node3D.new()
-	runner.root.add_child(parent)
+	add_to_root(parent)
 	var a := Node3D.new()
 	a.position = Vector3(5.0, 0.0, 0.0)
 	var b := Node3D.new()
