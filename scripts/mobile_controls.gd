@@ -33,10 +33,10 @@ func setup(p: CharacterBody3D) -> void:
 	look.anchor_top = 0.0
 	look.anchor_bottom = 1.0
 	look.on_touch_pressed.connect(func(a):
-		_last_drag[a.finger_index] = a.drag_pos)
+		_last_drag[a.finger_index] = a.pressed_position)
 	look.on_touch_dragged.connect(func(a):
 		if player and _last_drag.has(a.finger_index):
 			player.touch_look += a.drag_pos - _last_drag[a.finger_index]
-		_last_drag[a.finger_index] = a.drag_pos)
+		_last_drag[a.finger_index] = a.pressed_position)
 	look.on_touch_released.connect(func(a):
 		_last_drag.erase(a.finger_index))
