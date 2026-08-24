@@ -76,6 +76,7 @@ static func apply(values: Dictionary) -> void:
 	if tree != null:
 		var aa := clampi(int(current.aa_mode), 0, 3)
 		tree.root.msaa_3d = [Viewport.MSAA_DISABLED, Viewport.MSAA_2X, Viewport.MSAA_4X, Viewport.MSAA_8X][aa]
+		tree.root.scaling_3d_scale = clampf(float(current.render_scale), 0.5, 1.5)
 
 static func apply_saved() -> void:
 	apply(load_config())

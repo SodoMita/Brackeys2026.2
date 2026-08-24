@@ -24,6 +24,10 @@ var btn_reset: Button
 var _sens: HSlider
 var _stick: HSlider
 var _volume: HSlider
+var _dialogue_volume: HSlider
+var _typing_volume: HSlider
+var _render_scale: HSlider
+var _screen_shake: HSlider
 var _deadzone: HSlider
 var _text_speed: HSlider
 var _resolution_width: SpinBox
@@ -266,6 +270,18 @@ func _build_settings_panel() -> void:
 	_vol_lbl = _value_label()
 	r4.add_child(_volume)
 	r4.add_child(_vol_lbl)
+	var ra1 := _add_row(box, "DIALOGUE VOL")
+	_dialogue_volume = _slider(0.0, 1.0, 0.05)
+	ra1.add_child(_dialogue_volume)
+	var ra2 := _add_row(box, "TYPING VOL")
+	_typing_volume = _slider(0.0, 1.0, 0.05)
+	ra2.add_child(_typing_volume)
+	var ra3 := _add_row(box, "RENDER SCALE")
+	_render_scale = _slider(0.5, 1.5, 0.05)
+	ra3.add_child(_render_scale)
+	var ra4 := _add_row(box, "SCREEN SHAKE")
+	_screen_shake = _slider(0.0, 1.0, 0.05)
+	ra4.add_child(_screen_shake)
 
 	var r5 := _add_row(box, "FULLSCREEN")
 	r5.visible = not OS.has_feature("web")
@@ -318,6 +334,10 @@ func _build_settings_panel() -> void:
 	_sens.value_changed.connect(func(_v): _on_live_change())
 	_stick.value_changed.connect(func(_v): _on_live_change())
 	_volume.value_changed.connect(func(_v): _on_live_change())
+	_dialogue_volume.value_changed.connect(func(_v): _on_live_change())
+	_typing_volume.value_changed.connect(func(_v): _on_live_change())
+	_render_scale.value_changed.connect(func(_v): _on_live_change())
+	_screen_shake.value_changed.connect(func(_v): _on_live_change())
 	_deadzone.value_changed.connect(func(_v): _on_live_change())
 	_text_speed.value_changed.connect(func(_v): _on_live_change())
 	_resolution_width.value_changed.connect(func(_v): _on_live_change())
@@ -327,6 +347,10 @@ func _build_settings_panel() -> void:
 	_sens.drag_ended.connect(func(_c): _persist())
 	_stick.drag_ended.connect(func(_c): _persist())
 	_volume.drag_ended.connect(func(_c): _persist())
+	_dialogue_volume.drag_ended.connect(func(_c): _persist())
+	_typing_volume.drag_ended.connect(func(_c): _persist())
+	_render_scale.drag_ended.connect(func(_c): _persist())
+	_screen_shake.drag_ended.connect(func(_c): _persist())
 	_deadzone.drag_ended.connect(func(_c): _persist())
 	_text_speed.drag_ended.connect(func(_c): _persist())
 	_invert.toggled.connect(func(_on):
@@ -365,6 +389,10 @@ func _collect() -> Dictionary:
 		"stick_look_speed": float(_stick.value),
 		"invert_look": bool(_invert.button_pressed),
 		"master_volume": float(_volume.value),
+		"dialogue_volume": float(_dialogue_volume.value),
+		"typing_volume": float(_typing_volume.value),
+		"render_scale": float(_render_scale.value),
+		"screen_shake": float(_screen_shake.value),
 		"fullscreen": bool(_fullscreen.button_pressed),
 		"stick_deadzone": float(_deadzone.value),
 		"text_speed": float(_text_speed.value),
@@ -397,6 +425,10 @@ func _sync_widgets() -> void:
 	_sens.set_value_no_signal(clampf(float(cur.get("mouse_sensitivity", _sens.min_value)), _sens.min_value, _sens.max_value))
 	_stick.set_value_no_signal(clampf(float(cur.get("stick_look_speed", _stick.min_value)), _stick.min_value, _stick.max_value))
 	_volume.set_value_no_signal(clampf(float(cur.get("master_volume", 1.0)), 0.0, 1.0))
+	_dialogue_volume.set_value_no_signal(clampf(float(cur.get("dialogue_volume", 1.0)), 0.0, 1.0))
+	_typing_volume.set_value_no_signal(clampf(float(cur.get("typing_volume", 0.8)), 0.0, 1.0))
+	_render_scale.set_value_no_signal(clampf(float(cur.get("render_scale", 1.0)), 0.5, 1.5))
+	_screen_shake.set_value_no_signal(clampf(float(cur.get("screen_shake", 1.0)), 0.0, 1.0))
 	_invert.set_pressed_no_signal(bool(cur.get("invert_look", false)))
 	_fullscreen.set_pressed_no_signal(bool(cur.get("fullscreen", false)))
 	_deadzone.set_value_no_signal(float(cur.get("stick_deadzone", 0.18)))
