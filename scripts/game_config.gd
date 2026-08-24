@@ -15,6 +15,7 @@ extends Node
 @export var slide_max_speed := 17.0
 @export var mouse_sensitivity := 0.0026
 @export var stick_look_speed := 2.6
+@export var invert_look := false
 
 @export_group("Health")
 @export var max_hp := 100.0
