@@ -1,4 +1,4 @@
-[gd_scene load_steps=3 format=3 uid="uid://pz628ajj30fmwh6x1lr"]
+[gd_scene load_steps=3 format=3 uid="uid://gvwjsaylemuyh"]
 
 [ext_resource type="Script" uid="uid://bg13xfsu7macc" path="res://scripts/companion.gd" id="1_comp"]
 

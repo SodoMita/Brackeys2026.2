@@ -1,6 +1,6 @@
-[gd_scene load_steps=30 format=3 uid="uid://w0jvqdomojkfli8ho1m"]
+[gd_scene load_steps=30 format=3 uid="uid://g2lzo3vdsb10v"]
 
-[ext_resource type="PackedScene" uid="uid://0m3bvospt55emsi1er1" path="res://scenes/shop_terminal.tscn" id="1_shop"]
+[ext_resource type="PackedScene" uid="uid://jp2vsbog7nldw" path="res://scenes/shop_terminal.tscn" id="1_shop"]
 
 [sub_resource type="Environment" id="Environment_1"]
 background_mode = 0
