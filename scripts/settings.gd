@@ -5,7 +5,7 @@ extends RefCounted
 const KEYS := [
 	"mouse_sensitivity", "stick_look_speed", "stick_deadzone", "invert_look",
 	"master_volume", "dialogue_volume", "typing_volume", "fullscreen", "borderless",
-	"resolution", "vsync", "render_scale", "screen_shake", "text_speed",
+	"resolution", "vsync", "aa_mode", "render_scale", "screen_shake", "text_speed",
 	"controller_vibration", "subtitles"
 ]
 const ACTIONS := {
@@ -25,7 +25,7 @@ static func capture_defaults() -> Dictionary:
 			"mouse_sensitivity": Cfg.mouse_sensitivity, "stick_look_speed": Cfg.stick_look_speed,
 			"stick_deadzone": 0.18, "invert_look": Cfg.invert_look, "master_volume": 1.0,
 			"dialogue_volume": 1.0, "typing_volume": 0.8, "fullscreen": false, "borderless": false,
-			"resolution": Vector2i(1280, 720), "vsync": 1, "render_scale": 1.0,
+			"resolution": Vector2i(1280, 720), "vsync": 1, "aa_mode": 2, "render_scale": 1.0,
 			"screen_shake": 1.0, "text_speed": 0.01, "controller_vibration": true, "subtitles": true
 		}
 	return _defaults
@@ -72,6 +72,10 @@ static func apply(values: Dictionary) -> void:
 		DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_BORDERLESS, bool(current.borderless))
 		DisplayServer.window_set_size(current.resolution)
 		DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_ENABLED if int(current.vsync) else DisplayServer.VSYNC_DISABLED)
+	var tree := Engine.get_main_loop() as SceneTree
+	if tree != null:
+		var aa := clampi(int(current.aa_mode), 0, 3)
+		tree.root.msaa_3d = [Viewport.MSAA_DISABLED, Viewport.MSAA_2X, Viewport.MSAA_4X, Viewport.MSAA_8X][aa]
 
 static func apply_saved() -> void:
 	apply(load_config())
