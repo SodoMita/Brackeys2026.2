@@ -562,8 +562,7 @@ func _room_bounds() -> Vector2:
 
 
 func _spawn_wave() -> void:
-	var b := _room_bounds()
-	var hounds := 3 + room + wave_in_room
+	var hounds := int(Cfg.wave_base_count) + room + wave_in_room
 	var spitters := 1 + wave_in_room if room + wave_in_room >= 2 else 0
 	for i in hounds:
 		_spawn_enemy(false)
@@ -595,7 +594,7 @@ func _spawn_enemy(ranged: bool, at := Vector3.ZERO, boss := false) -> CharacterB
 	elif ranged:
 		e.set_meta("scrap", Cfg.scrap_spitter)
 	else:
-		e.speed = Cfg.enemy_speed + room * Cfg.enemy_speed_per_wave
+		e.custom_speed = Cfg.enemy_speed + (room + wave_in_room) * Cfg.enemy_speed_per_wave
 		e.set_meta("scrap", Cfg.scrap_hound)
 	e.died.connect(func(pos): _on_enemy_died(pos, e))
 	e.attacked.connect(_on_attacked.bind(e))
