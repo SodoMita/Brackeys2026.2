@@ -38,7 +38,10 @@ func _ensure_collision() -> void:
 			cols.append(c)
 	if cols.size() > 1:
 		for i in range(cols.size() - 1):
-			cols[i].queue_free()
+			if cols[i].is_inside_tree():
+				cols[i].queue_free()
+			else:
+				cols[i].free()
 	var col := get_node_or_null("CollisionShape3D") as CollisionShape3D
 	if col == null:
 		col = CollisionShape3D.new()

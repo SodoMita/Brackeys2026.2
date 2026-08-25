@@ -119,7 +119,10 @@ func _ensure_nodes() -> void:
 		for i in range(cols.size() - 1):
 			var to_remove = cols[i]
 			if is_instance_valid(to_remove):
-				to_remove.queue_free()
+				if to_remove.is_inside_tree():
+					to_remove.queue_free()
+				else:
+					to_remove.free()
 
 	# Head dedupe
 	var heads: Array = []
@@ -134,7 +137,10 @@ func _ensure_nodes() -> void:
 		for i in range(heads.size() - 1):
 			var h = heads[i]
 			if is_instance_valid(h):
-				h.queue_free()
+				if h.is_inside_tree():
+					h.queue_free()
+				else:
+					h.free()
 
 	# Resolve references via paths or names
 	if head_path != NodePath():
@@ -305,7 +311,10 @@ func _physics_process(dt: float) -> void:
 	if coin and is_instance_valid(coin):
 		coin_age += dt
 		if coin_age > Cfg.coin_lifetime:
-			coin.queue_free()
+			if coin.is_inside_tree():
+				coin.queue_free()
+			else:
+				coin.free()
 			coin = null
 
 	# --- look: gamepad right stick + accumulated touch deltas
@@ -430,7 +439,10 @@ func try_fire() -> void:
 
 func _ricochet(base_damage: float) -> void:
 	if coin and is_instance_valid(coin):
-		coin.queue_free()
+		if coin.is_inside_tree():
+			coin.queue_free()
+		else:
+			coin.free()
 		coin = null
 	var targets := CombatLogic.nearest_targets(global_position,
 			_get_enemies(), Cfg.ricochet_targets)

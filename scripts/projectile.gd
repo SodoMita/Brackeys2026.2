@@ -47,10 +47,16 @@ func _ensure_nodes() -> void:
 			shapes.append(child)
 	if meshes.size() > 1:
 		for i in range(meshes.size() - 1):
-			meshes[i].queue_free()
+			if meshes[i].is_inside_tree():
+				meshes[i].queue_free()
+			else:
+				meshes[i].free()
 	if shapes.size() > 1:
 		for i in range(shapes.size() - 1):
-			shapes[i].queue_free()
+			if shapes[i].is_inside_tree():
+				shapes[i].queue_free()
+			else:
+				shapes[i].free()
 	var has_mesh := false
 	var has_shape := false
 	for child in get_children():
@@ -87,4 +93,7 @@ func _physics_process(dt: float) -> void:
 	position += vel * dt
 	if life <= 0.0:
 		consumed.emit(position, false)
-		queue_free()
+		if queue_free().is_inside_tree():
+			queue_free().queue_free()
+		else:
+			queue_free().free()
