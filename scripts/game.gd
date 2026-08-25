@@ -58,44 +58,206 @@ var sfx_buy: AudioStreamPlayer
 var sfx_door: AudioStreamPlayer
 
 
+var _initialized := false
+var _triggers_wired := false
+
+
 func _ready() -> void:
-	var level_scene = load("res://scenes/level_1.tscn")
-	var level = level_scene.instantiate()
-	
-	doors = level.doors
-	terminals = level.terminals
-	trigger_nodes = level.trigger_nodes
-	
-	add_child(level)
-	enemies = Node3D.new()
-	enemies.name = "Enemies"
-	add_child(enemies)
-	
-	_build_player()
-	_build_companion()
+	if _initialized:
+		return
+	_initialized = true
+
+	# Prefer the editor-authored level and entity nodes. The empty main.tscn
+	# remains supported by instantiating the same level as a fallback.
+	var level := get_node_or_null("Level") as Node3D
+	if level == null:
+		var level_scene: PackedScene = load("res://scenes/level.tscn")
+		if level_scene != null:
+			level = level_scene.instantiate() as Node3D
+			if level != null:
+				level.name = "Level"
+				add_child(level)
+	_collect_level(level)
+
+	enemies = get_node_or_null("Enemies") as Node3D
+	if enemies == null:
+		enemies = Node3D.new()
+		enemies.name = "Enemies"
+		add_child(enemies)
+
+	player = get_node_or_null("Player") as CharacterBody3D
+	if player == null:
+		_build_player()
+	else:
+		_wire_player()
+
+	companion = get_node_or_null("Companion") as CharacterBody3D
+	if companion == null:
+		_build_companion()
+	else:
+		_wire_companion()
+
 	_build_hud()
 	_build_audio()
-	
-	# Hook up manually placed triggers in the editor
-	if trigger_nodes.size() >= 3:
-		trigger_nodes[0].body_entered.connect(func(b): if b == player: _enter_room(1))
-		trigger_nodes[1].body_entered.connect(func(b): if b == player: _enter_room(2))
-		trigger_nodes[2].body_entered.connect(func(b): if b == player: _betrayal())
-
-	if DisplayServer.is_touchscreen_available():
-		Input.set_emulate_mouse_from_touch(false)
-		var ts = load("res://scripts/touch_controls.gd").new()
-		add_child(ts)
-		ts.setup(player)
-		var mc = load("res://scripts/mobile_controls.gd").new()
-		add_child(mc)
-		mc.setup(player)
+	_wire_triggers()
+	_setup_touch_controls()
 	_show_menu()
 
 
+func _collect_level(level: Node3D) -> void:
+	doors.clear()
+	terminals.clear()
+	trigger_nodes.clear()
+	if level == null:
+		return
+
+	# level_1.tscn exposes typed arrays. Editor-authored level.tscn uses
+	# containers instead, so discover the same objects when no arrays exist.
+	var configured_doors = level.get("doors")
+	if configured_doors is Array:
+		for item in configured_doors:
+			if item is Node3D:
+				doors.append(item)
+	if doors.is_empty():
+		for item in level.find_children("*", "Node3D", true, false):
+			if item is Node3D and (item.has_method("door_set") or
+					String(item.name).begins_with("Door_") or
+					String(item.name).begins_with("Door") and
+					(item.get_node_or_null("Body") != null or item.get_node_or_null("StaticBody3D") != null)):
+				doors.append(item)
+
+	var configured_terminals = level.get("terminals")
+	if configured_terminals is Array:
+		for item in configured_terminals:
+			if item is Node3D:
+				terminals.append(item)
+	if terminals.is_empty():
+		for item in level.find_children("*", "Node", true, false):
+			if item is Node3D and item.has_method("setup_ui"):
+				terminals.append(item)
+
+	var configured_triggers = level.get("trigger_nodes")
+	if configured_triggers is Array:
+		for item in configured_triggers:
+			if item is Area3D:
+				trigger_nodes.append(item)
+	if trigger_nodes.is_empty():
+		for item in level.find_children("*", "Area3D", true, false):
+			if item is Area3D:
+				trigger_nodes.append(item)
+
+
+func _wire_triggers() -> void:
+	if _triggers_wired:
+		return
+	_triggers_wired = true
+	for i in trigger_nodes.size():
+		var trigger := trigger_nodes[i]
+		if trigger == null or not is_instance_valid(trigger):
+			continue
+		var handler := Callable(self, "_on_trigger_body").bind(i)
+		if not trigger.body_entered.is_connected(handler):
+			trigger.body_entered.connect(handler)
+
+
+func _on_trigger_body(body: Node3D, index: int) -> void:
+	if body != player:
+		return
+	var trigger_name := String(trigger_nodes[index].name).to_lower() if index < trigger_nodes.size() else ""
+	if index == 0 or trigger_name.contains("room2"):
+		_enter_room(1)
+	elif index == 1 or trigger_name.contains("room3"):
+		_enter_room(2)
+	else:
+		_betrayal()
+
+
+func _setup_touch_controls() -> void:
+	if not DisplayServer.is_touchscreen_available():
+		return
+	Input.set_emulate_mouse_from_touch(false)
+	if get_node_or_null("TouchControls") == null:
+		var ts = load("res://scripts/touch_controls.gd").new()
+		ts.name = "TouchControls"
+		add_child(ts)
+		ts.setup(player)
+	if get_node_or_null("MobileControls") == null:
+		var mc = load("res://scripts/mobile_controls.gd").new()
+		mc.name = "MobileControls"
+		add_child(mc)
+		mc.setup(player)
+
+
+func _wire_player() -> void:
+	if player == null:
+		return
+	player.enemy_pool = enemies
+	if player.has_signal("fired") and not player.fired.is_connected(_on_fired):
+		player.fired.connect(_on_fired)
+	if player.has_signal("player_died") and not player.player_died.is_connected(_on_player_died):
+		player.player_died.connect(_on_player_died)
+	if player.has_signal("dashed") and not player.dashed.is_connected(_on_player_dashed):
+		player.dashed.connect(_on_player_dashed)
+	if player.has_signal("slid") and not player.slid.is_connected(_on_player_slid):
+		player.slid.connect(_on_player_slid)
+	if player.has_signal("parried") and not player.parried.is_connected(_on_player_parried):
+		player.parried.connect(_on_player_parried)
+	if player.has_signal("coin_tossed") and not player.coin_tossed.is_connected(_on_coin_tossed):
+		player.coin_tossed.connect(_on_coin_tossed)
+
+
+func _wire_companion() -> void:
+	if companion == null:
+		return
+	companion.player_ref = player
+	companion.enemy_pool = enemies
+	if companion.has_signal("shot") and not companion.shot.is_connected(_on_companion_shot):
+		companion.shot.connect(_on_companion_shot)
+
+
+func _on_player_dashed() -> void:
+	_play(sfx_dash)
+
+
+func _on_player_slid() -> void:
+	_play(sfx_slide)
+
+
+func _on_player_parried() -> void:
+	_play(sfx_parry)
+
+
+func _on_coin_tossed() -> void:
+	_play(sfx_coin)
+
+
+func _on_companion_shot() -> void:
+	_play(sfx_shot)
+
 
 func door_set(d: Node3D, closed: bool) -> void:
-	d.door_set(closed)
+	if d == null or not is_instance_valid(d):
+		return
+	if d.has_method("door_set"):
+		d.door_set(closed)
+	else:
+		# Editor-authored levels use a plain Node3D with Body/Mesh children.
+		var body := d.get_node_or_null("Body") as StaticBody3D
+		if body == null:
+			body = d.get_node_or_null("StaticBody3D") as StaticBody3D
+		var shape := body.get_node_or_null("CollisionShape3D") as CollisionShape3D if body else null
+		var mesh := body.get_node_or_null("Mesh") as MeshInstance3D if body else null
+		if mesh == null and body:
+			mesh = body.get_node_or_null("MeshInstance3D") as MeshInstance3D
+		if shape:
+			shape.set_deferred("disabled", not closed)
+		if mesh:
+			var target_y := 2.5 if closed else 6.5
+			if is_inside_tree():
+				var tw := create_tween()
+				tw.tween_property(mesh, "position:y", target_y, 0.6)
+			else:
+				mesh.position.y = target_y
 	_play(sfx_door)
 
 
@@ -106,22 +268,14 @@ func _build_player() -> void:
 	player.name = "Player"
 	player.position = Vector3(0.0, 0.0, -4.0)
 	add_child(player)
-	player.enemy_pool = enemies
-	player.fired.connect(_on_fired)
-	player.player_died.connect(_on_player_died)
-	player.dashed.connect(func(): _play(sfx_dash))
-	player.slid.connect(func(): _play(sfx_slide))
-	player.parried.connect(func(): _play(sfx_parry))
-	player.coin_tossed.connect(func(): _play(sfx_coin))
+	_wire_player()
 
 
 func _build_companion() -> void:
 	companion = load("res://scripts/companion.gd").new()
 	companion.position = Vector3(2.0, 0.0, -2.0)
 	add_child(companion)
-	companion.player_ref = player
-	companion.enemy_pool = enemies
-	companion.shot.connect(func(): _play(sfx_shot))
+	_wire_companion()
 
 
 # ------------------------------------------------------------- HUD
@@ -134,7 +288,41 @@ func _make_ls(size: int, color: Color) -> LabelSettings:
 	return ls
 
 
+func _collect_hud(existing: CanvasLayer) -> void:
+	cl = existing
+	hud_hp = existing.get_node_or_null("HP") as Label
+	hud_rank = existing.get_node_or_null("Rank") as Label
+	hud_wave = existing.get_node_or_null("Wave") as Label
+	hud_scrap = existing.get_node_or_null("Scrap") as Label
+	hud_wpn = existing.get_node_or_null("Weapon") as Label
+	hurt_flash = existing.get_node_or_null("HurtFlash") as ColorRect
+	overlay = existing.get_node_or_null("Overlay") as Label
+	crosshair.clear()
+	var crosshair_root := existing.get_node_or_null("Crosshair")
+	if crosshair_root != null:
+		for child in crosshair_root.get_children():
+			if child is ColorRect:
+				child.visible = true
+				crosshair.append(child)
+
+
+func _setup_terminals() -> void:
+	for terminal in terminals:
+		if terminal == null or not is_instance_valid(terminal):
+			continue
+		terminal.player_ref = player
+		terminal.setup_ui(cl)
+		if terminal.has_signal("purchase_requested") and not terminal.purchase_requested.is_connected(_on_purchase):
+			terminal.purchase_requested.connect(_on_purchase)
+
+
 func _build_hud() -> void:
+	var existing := get_node_or_null("HUD") as CanvasLayer
+	if existing != null:
+		_collect_hud(existing)
+		_setup_terminals()
+		return
+
 	cl = CanvasLayer.new()
 	add_child(cl)
 	hud_hp = Label.new()
@@ -162,7 +350,7 @@ func _build_hud() -> void:
 	hud_wpn.label_settings = _make_ls(9, Color(0.8, 0.8, 0.8))
 	hud_wpn.text = "REVOLVER"
 	cl.add_child(hud_wpn)
-	
+
 	var crosshair_container := Control.new()
 	crosshair_container.set_anchors_preset(Control.PRESET_CENTER)
 	cl.add_child(crosshair_container)
@@ -185,10 +373,7 @@ func _build_hud() -> void:
 	overlay.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	overlay.label_settings = _make_ls(14, Color(1.0, 0.75, 0.4))
 	cl.add_child(overlay)
-	for t in terminals:
-		t.player_ref = player
-		t.setup_ui(cl)
-		t.purchase_requested.connect(_on_purchase)
+	_setup_terminals()
 
 
 func _show_menu() -> void:
@@ -232,28 +417,53 @@ func _make_p(stream: AudioStreamWAV, db: float) -> AudioStreamPlayer:
 	return p
 
 
+func _audio_child(root: Node, name: String) -> AudioStreamPlayer:
+	if root == null:
+		return null
+	return root.get_node_or_null(name) as AudioStreamPlayer
+
+
 func _build_audio() -> void:
-	sfx_shot = _make_p(_tone(900.0, 0.09, 0.5, "square", 140.0), -8.0)
-	sfx_hit = _make_p(_tone(500.0, 0.06, 0.4, "sine", 700.0), -8.0)
-	sfx_head = _make_p(_tone(1200.0, 0.1, 0.5, "sine", 1800.0), -6.0)
-	sfx_die = _make_p(_tone(200.0, 0.35, 0.7, "noise"), -5.0)
-	sfx_hurt = _make_p(_tone(140.0, 0.3, 0.7, "sine", 50.0), -4.0)
-	sfx_dash = _make_p(_tone(300.0, 0.12, 0.3, "sine", 700.0), -10.0)
-	sfx_slide = _make_p(_tone(600.0, 0.2, 0.25, "noise"), -14.0)
-	sfx_parry = _make_p(_tone(700.0, 0.18, 0.6, "sine", 1400.0), -5.0)
-	sfx_coin = _make_p(_tone(1600.0, 0.08, 0.3, "sine", 2200.0), -10.0)
-	sfx_windup = _make_p(_tone(220.0, 0.3, 0.4, "square", 110.0), -9.0)
-	sfx_spit = _make_p(_tone(500.0, 0.15, 0.4, "square", 900.0), -9.0)
-	sfx_buy = _make_p(_tone(800.0, 0.15, 0.4, "sine", 1200.0), -6.0)
-	sfx_door = _make_p(_tone(90.0, 0.5, 0.6, "noise"), -8.0)
+	# Reuse optional editor-authored SFX players and synthesize only the
+	# channels that are absent.
+	var sfx_root := get_node_or_null("SFX")
+	if sfx_root:
+		sfx_shot = _audio_child(sfx_root, "Shot")
+		sfx_hit = _audio_child(sfx_root, "Hit")
+		sfx_head = _audio_child(sfx_root, "Headshot")
+		sfx_die = _audio_child(sfx_root, "Die")
+		sfx_hurt = _audio_child(sfx_root, "Hurt")
+		sfx_dash = _audio_child(sfx_root, "Dash")
+		sfx_slide = _audio_child(sfx_root, "Slide")
+		sfx_parry = _audio_child(sfx_root, "Parry")
+		sfx_coin = _audio_child(sfx_root, "Coin")
+		sfx_windup = _audio_child(sfx_root, "Windup")
+		sfx_spit = _audio_child(sfx_root, "Spit")
+		sfx_buy = _audio_child(sfx_root, "Buy")
+		sfx_door = _audio_child(sfx_root, "Door")
+	if sfx_shot == null: sfx_shot = _make_p(_tone(900.0, 0.09, 0.5, "square", 140.0), -8.0)
+	if sfx_hit == null: sfx_hit = _make_p(_tone(500.0, 0.06, 0.4, "sine", 700.0), -8.0)
+	if sfx_head == null: sfx_head = _make_p(_tone(1200.0, 0.1, 0.5, "sine", 1800.0), -6.0)
+	if sfx_die == null: sfx_die = _make_p(_tone(200.0, 0.35, 0.7, "noise"), -5.0)
+	if sfx_hurt == null: sfx_hurt = _make_p(_tone(140.0, 0.3, 0.7, "sine", 50.0), -4.0)
+	if sfx_dash == null: sfx_dash = _make_p(_tone(300.0, 0.12, 0.3, "sine", 700.0), -10.0)
+	if sfx_slide == null: sfx_slide = _make_p(_tone(600.0, 0.2, 0.25, "noise"), -14.0)
+	if sfx_parry == null: sfx_parry = _make_p(_tone(700.0, 0.18, 0.6, "sine", 1400.0), -5.0)
+	if sfx_coin == null: sfx_coin = _make_p(_tone(1600.0, 0.08, 0.3, "sine", 2200.0), -10.0)
+	if sfx_windup == null: sfx_windup = _make_p(_tone(220.0, 0.3, 0.4, "square", 110.0), -9.0)
+	if sfx_spit == null: sfx_spit = _make_p(_tone(500.0, 0.15, 0.4, "square", 900.0), -9.0)
+	if sfx_buy == null: sfx_buy = _make_p(_tone(800.0, 0.15, 0.4, "sine", 1200.0), -6.0)
+	if sfx_door == null: sfx_door = _make_p(_tone(90.0, 0.5, 0.6, "noise"), -8.0)
 
 
 func _play(p: AudioStreamPlayer) -> void:
-	if p:
+	if p and p.is_inside_tree():
 		p.play()
 
 
 func _say(path: String) -> void:
+	if not is_inside_tree():
+		return
 	var d := get_node_or_null("/root/Dialogic")
 	if d == null or DisplayServer.get_name() == "headless":
 		return
@@ -330,9 +540,10 @@ func _spawn_enemy(ranged: bool, at := Vector3.ZERO, boss := false) -> CharacterB
 		e.modulate = Color(1.6, 0.5, 0.5)
 	if at == Vector3.ZERO:
 		var b := _room_bounds()
+		var player_pos := player.global_position if player != null and player.is_inside_tree() else player.position
 		for _t in 12:
 			at = Vector3(randf_range(-12.0, 12.0), 0.0, randf_range(b.y + 3.0, b.x - 3.0))
-			if at.distance_to(player.global_position) > 8.0:
+			if at.distance_to(player_pos) > 8.0:
 				break
 	e.position = at
 	e.target = player
