@@ -38,8 +38,13 @@ static func _ensure_actions() -> void:
 		if not InputMap.has_action(action):
 			InputMap.add_action(action, 0.5)
 			for key in ACTIONS[action]:
-				var ev := InputEventKey.new()
-				ev.keycode = key
+				var ev: InputEvent
+				if action in ["fire", "coin"]:
+					ev = InputEventMouseButton.new()
+					ev.button_index = key
+				else:
+					ev = InputEventKey.new()
+					ev.keycode = key
 				InputMap.action_add_event(action, ev)
 
 static func load_config() -> Dictionary:
@@ -49,6 +54,11 @@ static func load_config() -> Dictionary:
 	var cf := ConfigFile.new()
 	if cf.load(path) == OK:
 		for key in KEYS: out[key] = cf.get_value("settings", key, out[key])
+		for action in ACTIONS:
+			var saved: Array = cf.get_value("bindings", action, [])
+			if not saved.is_empty():
+				InputMap.action_erase_events(action)
+				for event in saved: InputMap.action_add_event(action, event)
 	return out
 
 static func apply(values: Dictionary) -> void:
@@ -65,8 +75,10 @@ static func apply(values: Dictionary) -> void:
 		var vol := clampf(float(current.master_volume), 0.0, 1.0)
 		AudioServer.set_bus_mute(master, vol <= 0.001)
 		AudioServer.set_bus_volume_db(master, linear_to_db(maxf(vol, 0.001)))
-	var type_bus := AudioServer.get_bus_index("Dialogic")
+	var type_bus_name := str(ProjectSettings.get_setting("dialogic/audio/type_sound_bus", "Master"))
+	var type_bus := AudioServer.get_bus_index(type_bus_name)
 	if type_bus >= 0: AudioServer.set_bus_volume_db(type_bus, linear_to_db(maxf(float(current.typing_volume), 0.001)))
+	ProjectSettings.set_setting("dialogic/audio/dialogue_volume", float(current.dialogue_volume))
 	if DisplayServer.get_name() != "headless" and not OS.has_feature("web"):
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN if bool(current.fullscreen) else DisplayServer.WINDOW_MODE_WINDOWED)
 		DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_BORDERLESS, bool(current.borderless))
@@ -95,6 +107,10 @@ static func rebind(action: String, event: InputEvent) -> void:
 	_ensure_actions()
 	InputMap.action_erase_events(action)
 	InputMap.action_add_event(action, event)
+	var cf := ConfigFile.new()
+	cf.load(path)
+	cf.set_value("bindings", action, InputMap.action_get_events(action))
+	cf.save(path)
 
 static func binding_text(action: String) -> String:
 	_ensure_actions()

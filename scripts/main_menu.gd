@@ -43,6 +43,8 @@ var _sens_lbl: Label
 var _stick_lbl: Label
 var _vol_lbl: Label
 var _arming := false
+var _binding_action := ""
+var _binding_button: Button
 
 
 func _init() -> void:
@@ -241,9 +243,12 @@ func _build_settings_panel() -> void:
 	_centered(panel)
 	settings_panel.add_child(panel)
 
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(460, 620)
+	panel.add_child(scroll)
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 4)
-	panel.add_child(box)
+	scroll.add_child(box)
 	box.add_child(_label("SETTINGS", 13, Color(1.0, 0.62, 0.3)))
 
 	var dm := float(Settings.default_value("mouse_sensitivity"))
@@ -317,6 +322,10 @@ func _build_settings_panel() -> void:
 	_subtitles = _toggle_button()
 	r10.add_child(_subtitles)
 
+	box.add_child(_label("KEY MAPPING — CLICK A BINDING, THEN PRESS A KEY", 8, CYAN))
+	for entry in [["MOVE FORWARD", "move_forward"], ["MOVE BACK", "move_back"], ["MOVE LEFT", "move_left"], ["MOVE RIGHT", "move_right"], ["JUMP", "jump"], ["DASH", "dash"], ["SLIDE", "slide"], ["PARRY", "parry"], ["FIRE", "fire"], ["COIN", "coin"], ["INTERACT", "interact"]]:
+		_add_binding_row(box, entry[0], entry[1])
+
 	var actions := HBoxContainer.new()
 	actions.add_theme_constant_override("separation", 6)
 	box.add_child(actions)
@@ -363,6 +372,26 @@ func _build_settings_panel() -> void:
 		toggle.toggled.connect(func(_on):
 			_on_live_change()
 			_persist())
+
+
+func _add_binding_row(box: VBoxContainer, title: String, action: String) -> void:
+	var row := _add_row(box, title)
+	var button := _button(Settings.binding_text(action), 150)
+	button.pressed.connect(func(): _begin_rebind(action, button))
+	row.add_child(button)
+
+
+func _begin_rebind(action: String, button: Button) -> void:
+	_binding_action = action
+	_binding_button = button
+	button.text = "PRESS A KEY…"
+
+
+func _finish_rebind(event: InputEvent) -> void:
+	Settings.rebind(_binding_action, event)
+	_binding_button.text = Settings.binding_text(_binding_action)
+	_binding_action = ""
+	_binding_button = null
 
 
 func open_settings() -> void:
@@ -481,6 +510,11 @@ func _on_quit_pressed() -> void:
 
 
 func _unhandled_input(ev: InputEvent) -> void:
+	if not _binding_action.is_empty():
+		if (ev is InputEventKey or ev is InputEventMouseButton or ev is InputEventJoypadButton) and ev.is_pressed():
+			_finish_rebind(ev)
+			get_viewport().set_input_as_handled()
+		return
 	if settings_open:
 		var back: bool = ev is InputEventKey and ev.pressed and not ev.echo \
 				and ev.keycode == KEY_ESCAPE

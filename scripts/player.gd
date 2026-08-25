@@ -135,37 +135,18 @@ func _unhandled_input(ev: InputEvent) -> void:
 		return
 	if ev is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		_apply_look(-ev.relative.x * Cfg.mouse_sensitivity, -ev.relative.y * Cfg.mouse_sensitivity)
-	elif ev is InputEventKey and ev.pressed and not ev.echo:
-		match ev.keycode:
-			KEY_SHIFT:
-				_want_dash = true
-			KEY_F, KEY_V:
-				request_parry()
-			KEY_1:
-				weapon = 0
-			KEY_2:
-				weapon = 1
-			KEY_3:
-				if weapons[2]:
-					weapon = 2
-	elif ev is InputEventJoypadButton and ev.pressed:
-		match ev.button_index:
-			JOY_BUTTON_LEFT_SHOULDER:
-				_want_dash = true
-			JOY_BUTTON_X:
-				request_parry()
-			JOY_BUTTON_DPAD_LEFT:
-				weapon = 0
-			JOY_BUTTON_DPAD_RIGHT:
-				weapon = 1
-			JOY_BUTTON_Y:
-				cycle_weapon()
-	elif ev is InputEventMouseButton and ev.pressed:
-		match ev.button_index:
-			MOUSE_BUTTON_LEFT:
-				touch_fire_mouse = true
-			MOUSE_BUTTON_RIGHT:
-				toss_coin()
+	if ev.is_action_pressed("dash"):
+		_want_dash = true
+	if ev.is_action_pressed("parry"):
+		request_parry()
+	if ev.is_action_pressed("weapon_1"):
+		weapon = 0
+	if ev.is_action_pressed("weapon_2"):
+		weapon = 1
+	if ev.is_action_pressed("weapon_3") and weapons[2]:
+		weapon = 2
+	if ev.is_action_pressed("coin"):
+		toss_coin()
 
 
 func _apply_look(dyaw: float, dpitch: float) -> void:
@@ -183,19 +164,8 @@ func _gather_move() -> Vector2:
 	var j := Vector2(Input.get_joy_axis(0, JOY_AXIS_LEFT_X), Input.get_joy_axis(0, JOY_AXIS_LEFT_Y))
 	var deadzone := float(Settings.current.get("stick_deadzone", STICK_DEAD))
 	if j.length() > deadzone:
-		var jf := j.limit_length(1.0)
-		return Vector2(jf.x, -jf.y)  # stick up = forward
-	var ix := 0.0
-	var iy := 0.0
-	if Input.is_key_pressed(KEY_W) or Input.is_key_pressed(KEY_UP):
-		iy += 1.0
-	if Input.is_key_pressed(KEY_S) or Input.is_key_pressed(KEY_DOWN):
-		iy -= 1.0
-	if Input.is_key_pressed(KEY_A) or Input.is_key_pressed(KEY_LEFT):
-		ix -= 1.0
-	if Input.is_key_pressed(KEY_D) or Input.is_key_pressed(KEY_RIGHT):
-		ix += 1.0
-	return Vector2(ix, iy).normalized()
+		return Vector2(j.limit_length(1.0).x, -j.limit_length(1.0).y)
+	return Input.get_vector("move_left", "move_right", "move_back", "move_forward")
 
 
 func _physics_process(dt: float) -> void:
@@ -229,13 +199,12 @@ func _physics_process(dt: float) -> void:
 	var grounded := is_on_floor()
 
 	# --- jump (hold-to-bhop, no fall damage anywhere)
-	var jump := Input.is_key_pressed(KEY_SPACE) or Input.is_joy_button_pressed(0, JOY_BUTTON_A) or touch_jump
+	var jump := Input.is_action_pressed("jump") or Input.is_joy_button_pressed(0, JOY_BUTTON_A) or touch_jump
 	if grounded and jump:
 		velocity.y = Cfg.jump_velocity
 
 	# --- slide
-	var want_slide := Input.is_key_pressed(KEY_CTRL) or Input.is_key_pressed(KEY_C) \
-			or Input.is_joy_button_pressed(0, JOY_BUTTON_RIGHT_SHOULDER) or touch_slide
+	var want_slide := Input.is_action_pressed("slide") or Input.is_joy_button_pressed(0, JOY_BUTTON_RIGHT_SHOULDER) or touch_slide
 	if want_slide and grounded and horizontal_speed() > 5.0 and not sliding:
 		sliding = true
 		slid.emit()
@@ -282,7 +251,7 @@ func _physics_process(dt: float) -> void:
 		toss_coin()
 	_prev_lt = coin_btn
 	var firing := touch_fire_mouse or touch_fire \
-			or Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) \
+			or Input.is_action_pressed("fire") \
 			or Input.get_joy_axis(0, JOY_AXIS_TRIGGER_RIGHT) > 0.4
 	if firing:
 		try_fire()
