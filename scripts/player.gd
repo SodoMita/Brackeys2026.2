@@ -98,6 +98,8 @@ func _init() -> void:
 
 
 func _ready() -> void:
+	# A level can be launched directly, bypassing the main menu. Initialize remappable actions here too.
+	Settings.apply_saved()
 	_ensure_nodes()
 	hp = Cfg.max_hp if Cfg and "max_hp" in Cfg else hp
 
