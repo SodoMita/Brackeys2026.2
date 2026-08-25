@@ -56,7 +56,7 @@ func test_required_scenes_instantiate() -> void:
 		if instance != null:
 			assert_true(instance is Node, "%s instance should be Node" % path)
 			# Free to avoid leaking in headless runner
-			instance.queue_free()
+			instance.free()
 
 
 func test_player_scene_has_valid_material() -> void:
@@ -91,7 +91,7 @@ func test_player_scene_has_valid_material() -> void:
 				var col = (mat as StandardMaterial3D).albedo_color
 				# Just ensure color is valid (not causing parse error)
 				assert_true(col is Color, "GunMesh material color should be valid Color")
-	inst.queue_free()
+	inst.free()
 
 
 func test_all_scenes_in_scenes_dir_load() -> void:

@@ -52,4 +52,4 @@ func test_nearest_targets() -> void:
 	assert_eq(got.size(), 2, "respects count")
 	assert_true(got[0] == b and got[1] == a, "sorted nearest first")
 	assert_eq(CombatLogic.nearest_targets(Vector3.ZERO, [a, b, c], 10).size(), 3, "count capped by pool")
-	parent.queue_free()
+	parent.free()
