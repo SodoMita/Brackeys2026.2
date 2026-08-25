@@ -22,7 +22,7 @@ Critical rules from Seirin sprite-spec.md:
 - Matte AFTER final upscale, not before.
 
 Usage:
-  python3 tools/triangulate_matte.py white.png black.png out.png [--alpha-out alpha.png]
+  python3 tools/triangulate_matte.py white.webp black.webp out.webp [--alpha-out alpha.png]
   python3 tools/triangulate_matte.py --check-dir assets/sprites
 """
 from __future__ import annotations
@@ -154,7 +154,8 @@ def main() -> None:
 
     if args.check_dir:
         d = Path(args.check_dir)
-        for p in sorted(d.glob("*.png")):
+        paths = sorted(list(d.glob("*.png")) + list(d.glob("*.webp")))
+        for p in paths:
             im = Image.open(p)
             if im.mode != "RGBA":
                 print(f"FAIL {p.name}: not RGBA ({im.mode})")

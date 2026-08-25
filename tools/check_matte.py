@@ -9,8 +9,8 @@ Verifies:
 - size and format
 
 Usage:
-  python3 tools/check_matte.py sprite.png --report
-  python3 tools/check_matte.py sprite.png --checks --out check.png
+  python3 tools/check_matte.py sprite.webp --report
+  python3 tools/check_matte.py sprite.webp --checks --out check.png
   python3 tools/check_matte.py assets/sprites --report
 """
 from __future__ import annotations
@@ -93,14 +93,16 @@ def check_image(path: Path, make_check_img: Path | None = None) -> dict:
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("input", help="PNG file or directory")
+    ap.add_argument("input", help="PNG or WebP file, or directory")
     ap.add_argument("--report", action="store_true", help="print report")
     ap.add_argument("--checks", action="store_true", help="same as --report but explicit")
     ap.add_argument("--out", default=None, help="write checker composite")
     args = ap.parse_args()
 
     p = Path(args.input)
-    paths = [p] if p.is_file() else sorted(p.glob("*.png"))
+    paths = [p] if p.is_file() else sorted(
+        list(p.glob("*.png")) + list(p.glob("*.webp"))
+    )
 
     any_fail = False
     for path in paths:
