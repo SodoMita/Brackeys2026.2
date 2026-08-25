@@ -328,6 +328,7 @@ func _build_hud() -> void:
 		return
 
 	cl = CanvasLayer.new()
+	cl.name = "HUD"
 	add_child(cl)
 	hud_hp = Label.new()
 	hud_hp.position = Vector2(8, 128)
