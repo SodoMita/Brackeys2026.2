@@ -592,11 +592,9 @@ func _spawn_enemy(ranged: bool, at := Vector3.ZERO, boss := false) -> CharacterB
 		e.custom_speed = Cfg.boss_speed
 		e.scale = Vector3(1.5, 1.5, 1.5)
 		e.set_meta("scrap", Cfg.scrap_boss)
-	elif ranged:
-		e.set_meta("scrap", Cfg.scrap_spitter)
 	else:
 		e.custom_speed = Cfg.enemy_speed + (room + wave_in_room) * Cfg.enemy_speed_per_wave
-		e.set_meta("scrap", Cfg.scrap_hound)
+		e.set_meta("scrap", Cfg.scrap_spitter if ranged else Cfg.scrap_hound)
 	e.died.connect(func(pos): _on_enemy_died(pos, e))
 	e.attacked.connect(_on_attacked.bind(e))
 	e.windup.connect(func(): _play(sfx_windup))
