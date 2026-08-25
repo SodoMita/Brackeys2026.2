@@ -60,9 +60,11 @@ var sfx_door: AudioStreamPlayer
 
 var _initialized := false
 var _triggers_wired := false
+var paused := false
 
 
 func _ready() -> void:
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	if _initialized:
 		return
 	_initialized = true
@@ -181,6 +183,8 @@ func _setup_touch_controls() -> void:
 		ts.name = "TouchControls"
 		add_child(ts)
 		ts.setup(player)
+		if ts.has_signal("pause_pressed"):
+			ts.pause_pressed.connect(_toggle_pause)
 	if get_node_or_null("MobileControls") == null:
 		var mc = load("res://scripts/mobile_controls.gd").new()
 		mc.name = "MobileControls"
@@ -477,9 +481,31 @@ func _say(path: String) -> void:
 var _dtl_loader_added := false
 
 
+func _toggle_pause() -> void:
+	if not is_inside_tree() or state not in [State.PLAYING, State.BOSS]:
+		return
+	paused = not paused
+	get_tree().paused = paused
+	if paused:
+		overlay.text = "P A U S E D\n\npress ESC or the pause button to resume"
+		overlay.visible = true
+		if DisplayServer.get_name() != "headless":
+			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	else:
+		overlay.visible = false
+		if DisplayServer.get_name() != "headless":
+			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+
+
 # ------------------------------------------------------------- flow
 func _unhandled_input(ev: InputEvent) -> void:
-	if state == State.PLAYING or state == State.BOSS:
+	var cancel := ev.is_action_pressed("ui_cancel")
+	if ev is InputEventKey and ev.pressed and not ev.echo and ev.keycode == KEY_ESCAPE:
+		cancel = true
+	if cancel:
+		_toggle_pause()
+		return
+	if paused or state == State.PLAYING or state == State.BOSS:
 		return
 	var start := false
 	if ev is InputEventMouseButton and ev.pressed:

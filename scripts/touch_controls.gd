@@ -3,6 +3,8 @@ extends Control
 ## right-side drag (look), on-screen FIRE / JUMP / DASH / SLIDE / WPN.
 ## Writes straight into the player's aggregated input vars.
 
+signal pause_pressed
+
 var player: CharacterBody3D
 
 var _stick_id := -1
@@ -108,8 +110,8 @@ func _press(name: String, on: bool) -> void:
 			if on:
 				player.toss_coin()
 		"pause":
-			if on and player and player.has_signal("pause_requested"):
-				player.pause_requested.emit()
+			if on:
+				pause_pressed.emit()
 	if name in buttons:
 		var c: ColorRect = buttons[name].node
 		c.color.a = 0.45 if on else 0.22
