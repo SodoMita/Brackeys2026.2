@@ -10,12 +10,16 @@ signal consumed(pos: Vector3, parried: bool)
 @export var damage := 10.0
 
 
+func _configured_radius() -> float:
+	return float(Cfg.projectile_radius) if Cfg and "projectile_radius" in Cfg else 0.18
+
+
 func _init() -> void:
 	var mi := MeshInstance3D.new()
 	mi.name = "Mesh"
 	var sm := SphereMesh.new()
-	sm.radius = 0.18
-	sm.height = 0.36
+	sm.radius = _configured_radius()
+	sm.height = _configured_radius() * 2.0
 	sm.radial_segments = 8
 	sm.rings = 4
 	var m := StandardMaterial3D.new()
@@ -27,7 +31,7 @@ func _init() -> void:
 	var cs := CollisionShape3D.new()
 	cs.name = "CollisionShape3D"
 	var ss := SphereShape3D.new()
-	ss.radius = 0.25
+	ss.radius = _configured_radius()
 	add_child(cs)
 	cs.shape = ss
 	monitoring = false
@@ -35,6 +39,7 @@ func _init() -> void:
 
 func _ready() -> void:
 	_ensure_nodes()
+	_apply_configured_radius()
 
 
 func _ensure_nodes() -> void:
@@ -86,6 +91,17 @@ func _ensure_nodes() -> void:
 		add_child(cs)
 		cs.shape = ss
 	monitoring = false
+
+
+func _apply_configured_radius() -> void:
+	var radius := _configured_radius()
+	for child in get_children():
+		if child is MeshInstance3D and child.mesh is SphereMesh:
+			var mesh := child.mesh as SphereMesh
+			mesh.radius = radius
+			mesh.height = radius * 2.0
+		elif child is CollisionShape3D and child.shape is SphereShape3D:
+			(child.shape as SphereShape3D).radius = radius
 
 
 func _physics_process(dt: float) -> void:

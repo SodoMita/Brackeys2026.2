@@ -468,7 +468,7 @@ func _play(p: AudioStreamPlayer) -> void:
 		p.play()
 
 
-func _say(path: String) -> void:
+func _say(path: String, timeline: Resource = null) -> void:
 	if not is_inside_tree():
 		return
 	var d := get_node_or_null("/root/Dialogic")
@@ -477,7 +477,9 @@ func _say(path: String) -> void:
 	if not _dtl_loader_added:
 		_dtl_loader_added = true
 		ResourceLoader.add_resource_format_loader(load("res://addons/dialogic/Resources/TimelineResourceLoader.gd").new())
-	if ResourceLoader.exists(path):
+	if timeline != null:
+		d.start(timeline)
+	elif ResourceLoader.exists(path):
 		d.start(load(path))
 
 
@@ -544,7 +546,7 @@ func _start() -> void:
 	_set_door(0, true)
 	_set_door(2, true)
 	_set_door(4, true)
-	_say("res://dialogue/intro.dtl")
+	_say("res://dialogue/intro.dtl", Cfg.intro_timeline)
 	_spawn_wave()
 
 
