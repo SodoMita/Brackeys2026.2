@@ -121,7 +121,7 @@ static func get_indexers(include_custom := true, force_reload := false) -> Array
 
 
 
-## Turns a [param file_path] from `some_file.png` to `Some File`.
+## Turns a [param file_path] from `some_file.webp` to `Some File`.
 static func pretty_name(file_path: String) -> String:
 	var _name := file_path.get_file().trim_suffix("." + file_path.get_extension())
 	_name = _name.replace('_', ' ')

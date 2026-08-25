@@ -2,8 +2,8 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c7klnclq3410i"
-path="res://.godot/imported/preview.webp-4d7ec384daefe7863d44e7d40685f394.ctex"
+uid="uid://h1qtatxnadhj"
+path="res://.godot/imported/preview.webp-ae89c99370d002f2ecf00af8e270d88c.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://addons/dialogic/Modules/DefaultLayoutParts/Layer_VN_Choices/preview.webp"
-dest_files=["res://.godot/imported/preview.webp-4d7ec384daefe7863d44e7d40685f394.ctex"]
+dest_files=["res://.godot/imported/preview.webp-ae89c99370d002f2ecf00af8e270d88c.ctex"]
 
 [params]
 

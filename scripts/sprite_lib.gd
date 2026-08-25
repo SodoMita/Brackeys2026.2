@@ -5,24 +5,24 @@ class_name SpriteLib
 ##
 ## Front / back views:
 ##   Expected files (all optional, fallback to non-directional):
-##     <kind>_front_<action><idx>.png  (e.g. colt_front_walk1.png)
-##     <kind>_back_<action><idx>.png   (e.g. colt_back_walk1.png)
-##     <kind>_<action><idx>_front.png  (alt naming)
-##     <kind>_<action><idx>.png        (legacy, used as both)
+##     <kind>_front_<action><idx>.webp  (e.g. colt_front_walk1.webp)
+##     <kind>_back_<action><idx>.webp   (e.g. colt_back_walk1.webp)
+##     <kind>_<action><idx>_front.webp  (alt naming)
+##     <kind>_<action><idx>.webp        (legacy, used as both)
 ##
 ##   Actions: idle, walk, act (shoot/lunge)
 ##   Directions: front, back, side (side optional)
 ##
 ##   Generator workflow (Seirin):
 ##     1. Complex background reference for identity (optional)
-##     2. White plate: figure on pure white #FFFFFF, e.g. colt_front_walk1_white.png
-##     3. Black plate: SAME pose over pure black #000000, e.g. colt_front_walk1_black.png
+##     2. White plate: figure on pure white #FFFFFF, e.g. colt_front_walk1_white.webp
+##     3. Black plate: SAME pose over pure black #000000, e.g. colt_front_walk1_black.webp
 ##        Generate black as EDIT of white so they register pixel-perfect.
 ##     4. Triangulate: python3 tools/triangulate_matte.py white black out
 ##        Or batch: python3 tools/make_sprites.py
 ##
 ##   Sheets:
-##     colt_front_walk_sheet.png (or _white/_black pair) -> sliced to plates
+##     colt_front_walk_sheet.webp (or _white/_black pair) -> sliced to plates
 ##     python3 tools/slice_sheet.py colt_front_walk_sheet 5
 ##     python3 tools/slice_sheet.py --all
 
@@ -138,7 +138,7 @@ static func _build_frames(kind: String) -> SpriteFrames:
 			sf.add_frame(anim, t)
 
 	# If no directional loaded but fallback exists via alt naming, try alt discovery
-	# (e.g., colt_walk1_front.png)
+	# (e.g., colt_walk1_front.webp)
 	if not any:
 		# fallback: scan BASE for any file starting with kind
 		# This is handled in build() returning null -> capsule fallback

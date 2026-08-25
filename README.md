@@ -114,8 +114,8 @@ github.com/SodoMita/Seirin** (`B=F*a, W=F*a+(1-a) => a=1-(W-B), F=B/a`):
 - Verify: `tools/check_matte.py out --report`
 
 Front and back views are first-class:
-- `colt_front_idle_white/black.png` + `colt_back_idle_white/black.png` -> `colt_front_idle.png` + `colt_back_idle.png`
-- Walk: `colt_front_walk_sheet_white/black.png` (3 frames side-by-side) -> `colt_front_walk1-3.png` + `colt_back_walk1-3.png`
+- `colt_front_idle_white/black.webp` + `colt_back_idle_white/black.webp` -> `colt_front_idle.webp` + `colt_back_idle.webp`
+- Walk: `colt_front_walk_sheet_white/black.webp` (3 frames side-by-side) -> `colt_front_walk1-3.webp` + `colt_back_walk1-3.webp`
 - Same for hound and spitter, with **straight back 180°** (not 3/4) for back view
 - If a sheet already contains front+back (e.g. spitter idle sheet with front left, back right), slice it into front/back
 

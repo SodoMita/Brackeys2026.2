@@ -2,8 +2,8 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cpyiquicyme1y"
-path="res://.godot/imported/pl5 surprise.webp-f69fcfcbe3de9d8f80013a70b405d480.ctex"
+uid="uid://dpvtdr1itkbd7"
+path="res://.godot/imported/pl5 surprise.webp-9f07d67f3c68589bb2cfec738d68b9a7.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://addons/dialogic/Example Assets/portraits/Antonio/pl5 surprise.webp"
-dest_files=["res://.godot/imported/pl5 surprise.webp-f69fcfcbe3de9d8f80013a70b405d480.ctex"]
+dest_files=["res://.godot/imported/pl5 surprise.webp-9f07d67f3c68589bb2cfec738d68b9a7.ctex"]
 
 [params]
 

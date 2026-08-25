@@ -93,7 +93,7 @@ enum AnimationsNewText {NONE, WIGGLE}
 @export var next_indicator_show_on_questions: bool = true
 @export var next_indicator_show_on_autoadvance: bool = false
 @export_enum('bounce', 'blink', 'none') var next_indicator_animation: int = 0
-@export_file("*.png","*.webp","*.svg","*.tres") var next_indicator_texture: String = ''
+@export_file("*.webp","*.webp","*.svg","*.tres") var next_indicator_texture: String = ''
 @export var next_indicator_size: Vector2 = Vector2(25,25)
 @export var next_indicator_position_offset: Vector2 = Vector2(-25,-25)
 

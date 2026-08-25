@@ -2,8 +2,8 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cvi3o6wv851k2"
-path="res://.godot/imported/pl5 plot.webp-d5b81474e2af9a54a8e622ed1cf293b4.ctex"
+uid="uid://1k1be4cqjj4t"
+path="res://.godot/imported/pl5 plot.webp-7c5bbb51327eb4b7b1b78f4597ed6c60.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://addons/dialogic/Example Assets/portraits/Antonio/pl5 plot.webp"
-dest_files=["res://.godot/imported/pl5 plot.webp-d5b81474e2af9a54a8e622ed1cf293b4.ctex"]
+dest_files=["res://.godot/imported/pl5 plot.webp-7c5bbb51327eb4b7b1b78f4597ed6c60.ctex"]
 
 [params]
 

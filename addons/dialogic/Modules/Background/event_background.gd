@@ -171,7 +171,7 @@ func build_event_editor() -> void:
 			}
 		]})
 	add_header_edit('argument', ValueType.FILE,
-			{'file_filter':'*.jpg, *.jpeg, *.png, *.webp, *.tga, *svg, *.bmp, *.dds, *.exr, *.hdr; Supported Image Files',
+			{'file_filter':'*.jpg, *.jpeg, *.webp, *.webp, *.tga, *svg, *.bmp, *.dds, *.exr, *.hdr; Supported Image Files',
 			'placeholder': "No Image",
 			'editor_icon': ["Image", "EditorIcons"],
 			"type":"BackgroundImage, Background, Image, Asset",

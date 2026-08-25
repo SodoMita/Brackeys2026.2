@@ -17,7 +17,7 @@ func _export_file(path: String, type: String, features: PackedStringArray) -> vo
 	
 	for ignored_path: String in IGNORED_PATHS:
 		if path.begins_with(plugin_path + ignored_path):
-			if path.ends_with(".png") or path.ends_with(".webp"):
+			if path.ends_with(".webp") or path.ends_with(".webp"):
 				skip()
 			elif path.ends_with(".tff"):
 				skip()

@@ -2,8 +2,8 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bt5u6o2p383nk"
-path="res://.godot/imported/icon.webp-b1a05ae0e2013ba3425ec44fce329e65.ctex"
+uid="uid://bxorbhnr4o2rj"
+path="res://.godot/imported/icon.webp-5e2e422904d471016252dff8d4bdfa96.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://addons/dialogic/Modules/Signal/icon.webp"
-dest_files=["res://.godot/imported/icon.webp-b1a05ae0e2013ba3425ec44fce329e65.ctex"]
+dest_files=["res://.godot/imported/icon.webp-5e2e422904d471016252dff8d4bdfa96.ctex"]
 
 [params]
 

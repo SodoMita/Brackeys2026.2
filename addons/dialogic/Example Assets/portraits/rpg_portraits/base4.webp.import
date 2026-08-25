@@ -2,8 +2,8 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b8fuc40uhgyan"
-path="res://.godot/imported/base4.webp-8e92049fbc6d0c55fd90f9efaeece1d7.ctex"
+uid="uid://dcm3eo5syiln0"
+path="res://.godot/imported/base4.webp-ea3084656f4403d3ff87bdd890f73843.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://addons/dialogic/Example Assets/portraits/rpg_portraits/base4.webp"
-dest_files=["res://.godot/imported/base4.webp-8e92049fbc6d0c55fd90f9efaeece1d7.ctex"]
+dest_files=["res://.godot/imported/base4.webp-ea3084656f4403d3ff87bdd890f73843.ctex"]
 
 [params]
 

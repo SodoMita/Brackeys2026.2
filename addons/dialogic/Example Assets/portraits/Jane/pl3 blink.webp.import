@@ -2,8 +2,8 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cuj75spjdvhmo"
-path="res://.godot/imported/pl3 blink.webp-17a5f329c4de20c262040d9767c6ec78.ctex"
+uid="uid://khlo6wd16qcd"
+path="res://.godot/imported/pl3 blink.webp-bc002e72d459c371c5ebb5d3d237500e.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://addons/dialogic/Example Assets/portraits/Jane/pl3 blink.webp"
-dest_files=["res://.godot/imported/pl3 blink.webp-17a5f329c4de20c262040d9767c6ec78.ctex"]
+dest_files=["res://.godot/imported/pl3 blink.webp-bc002e72d459c371c5ebb5d3d237500e.ctex"]
 
 [params]
 

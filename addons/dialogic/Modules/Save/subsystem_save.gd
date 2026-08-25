@@ -467,7 +467,7 @@ func take_thumbnail() -> void:
 ## Used to store the latest thumbnail to the given slot.
 func save_slot_thumbnail(slot_name: String) -> Error:
 	if latest_thumbnail:
-		var path := get_slot_path(slot_name).path_join('thumbnail.png')
+		var path := get_slot_path(slot_name).path_join('thumbnail.webp')
 		return latest_thumbnail.save_png(path)
 
 	push_warning("[Dialogic Warning]: No thumbnail has been set yet.")
@@ -479,7 +479,7 @@ func get_slot_thumbnail(slot_name: String) -> ImageTexture:
 	if slot_name.is_empty():
 		slot_name = get_default_slot()
 
-	var path := get_slot_path(slot_name).path_join('thumbnail.png')
+	var path := get_slot_path(slot_name).path_join('thumbnail.webp')
 
 	if FileAccess.file_exists(path):
 		return ImageTexture.create_from_image(Image.load_from_file(path))

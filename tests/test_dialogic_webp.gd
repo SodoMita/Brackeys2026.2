@@ -23,7 +23,7 @@ func test_webp_assets_exist() -> void:
 
 func test_old_png_paths_are_gone() -> void:
 	for path in SAMPLES:
-		var png_path: String = path.trim_suffix(".webp") + ".png"
+		var png_path: String = path.trim_suffix(".webp") + ".webp"
 		assert_false(ResourceLoader.exists(png_path), "stale png still present: %s" % png_path)
 
 
@@ -43,6 +43,6 @@ func test_webp_assets_load_as_textures() -> void:
 func test_event_icon_convention_prefers_webp() -> void:
 	var icon_dir := "res://addons/dialogic/Modules/Background"
 	assert_true(ResourceLoader.exists(icon_dir.path_join("icon.webp")), "module icon.webp")
-	assert_false(ResourceLoader.exists(icon_dir.path_join("icon.png")), "module icon.png removed")
+	assert_false(ResourceLoader.exists(icon_dir.path_join("icon.webp")), "module icon.webp removed")
 	var icon: Resource = load(icon_dir.path_join("icon.webp"))
 	assert_true(icon is Texture2D, "Background icon.webp is a texture")

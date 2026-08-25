@@ -2,8 +2,8 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dg1pr5cfw773e"
-path="res://.godot/imported/shock.webp-6c5973f706ade41d6821c677166d279c.ctex"
+uid="uid://c5aku2g01k6c6"
+path="res://.godot/imported/shock.webp-8c83d26226ef9a4e882afabd3875355f.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://addons/dialogic/Example Assets/portraits/Princess/shock.webp"
-dest_files=["res://.godot/imported/shock.webp-6c5973f706ade41d6821c677166d279c.ctex"]
+dest_files=["res://.godot/imported/shock.webp-8c83d26226ef9a4e882afabd3875355f.ctex"]
 
 [params]
 

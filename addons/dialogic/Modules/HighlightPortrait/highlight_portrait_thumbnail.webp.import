@@ -2,8 +2,8 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://2s0lt76ai7sv"
-path="res://.godot/imported/highlight_portrait_thumbnail.webp-0ef149e59fd8b1d379f6a8d6ed0b1510.ctex"
+uid="uid://dtt0l7qbkknfx"
+path="res://.godot/imported/highlight_portrait_thumbnail.webp-6fa128edf7f6ec29e7a5313b9c3e7412.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://addons/dialogic/Modules/HighlightPortrait/highlight_portrait_thumbnail.webp"
-dest_files=["res://.godot/imported/highlight_portrait_thumbnail.webp-0ef149e59fd8b1d379f6a8d6ed0b1510.ctex"]
+dest_files=["res://.godot/imported/highlight_portrait_thumbnail.webp-6fa128edf7f6ec29e7a5313b9c3e7412.ctex"]
 
 [params]
 

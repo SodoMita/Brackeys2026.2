@@ -2,8 +2,8 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cv6bum8d08krb"
-path="res://.godot/imported/icon_bg.webp-b6d351b5a0a26b2cc435fe5e15452c7e.ctex"
+uid="uid://cvmlp5nxb2rer"
+path="res://.godot/imported/icon_bg.webp-5937ce0a857c4a8a9d624ea9ebf09a97.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://addons/dialogic/Editor/HomePage/icon_bg.webp"
-dest_files=["res://.godot/imported/icon_bg.webp-b6d351b5a0a26b2cc435fe5e15452c7e.ctex"]
+dest_files=["res://.godot/imported/icon_bg.webp-5937ce0a857c4a8a9d624ea9ebf09a97.ctex"]
 
 [params]
 

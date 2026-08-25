@@ -2,8 +2,8 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://da420o6ttlq6d"
-path="res://.godot/imported/neutral.webp-ca82a679da97f1e20db4d7ba599dc543.ctex"
+uid="uid://bu3631ymfqxi3"
+path="res://.godot/imported/neutral.webp-b67f36561d5798f6bdf0e487c71053f7.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://addons/dialogic/Example Assets/portraits/Princess/neutral.webp"
-dest_files=["res://.godot/imported/neutral.webp-ca82a679da97f1e20db4d7ba599dc543.ctex"]
+dest_files=["res://.godot/imported/neutral.webp-b67f36561d5798f6bdf0e487c71053f7.ctex"]
 
 [params]
 

@@ -2,8 +2,8 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://2e85oaksx1w3"
-path="res://.godot/imported/pl5 blink.webp-a626e9804c5f417bdf3d7ad92147afbd.ctex"
+uid="uid://s2jsr1aqiu84"
+path="res://.godot/imported/pl5 blink.webp-dd40283850366d49ae61df7b137ffd77.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://addons/dialogic/Example Assets/portraits/Antonio/pl5 blink.webp"
-dest_files=["res://.godot/imported/pl5 blink.webp-a626e9804c5f417bdf3d7ad92147afbd.ctex"]
+dest_files=["res://.godot/imported/pl5 blink.webp-dd40283850366d49ae61df7b137ffd77.ctex"]
 
 [params]
 

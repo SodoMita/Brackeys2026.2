@@ -2,8 +2,8 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bq0oh2uuftllv"
-path="res://.godot/imported/preview.webp-9440ab3974e7e7c3a2d0f5081a7559a2.ctex"
+uid="uid://x0kxo1qd4jqf"
+path="res://.godot/imported/preview.webp-136e526350ab989f1e1d2ba13d756aaa.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://addons/dialogic/Modules/DefaultLayoutParts/Layer_Textbubble/preview.webp"
-dest_files=["res://.godot/imported/preview.webp-9440ab3974e7e7c3a2d0f5081a7559a2.ctex"]
+dest_files=["res://.godot/imported/preview.webp-136e526350ab989f1e1d2ba13d756aaa.ctex"]
 
 [params]
 

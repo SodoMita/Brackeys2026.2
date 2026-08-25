@@ -1,7 +1,7 @@
 # Godot Thumbstick Plugin - Easy Mobile Controller Module
 
 <div align=center>
-	<img src="/addons/thumbstick_plugin/plugin/plugin_icon.png" style="width: 128px; height: auto;">
+	<img src="/addons/thumbstick_plugin/plugin/plugin_icon.webp" style="width: 128px; height: auto;">
 </div>
 
 <div align=center>
@@ -20,7 +20,7 @@
 > A __Single Scripted__ and <ins>(yet) __most convenient__</ins> mobile controller setup element and connector. This plugin included presets and detailed debug information mainly used for easy mobile controller setup validation.
 
 <div align=center>
-    <img src="/addons/thumbstick_plugin/sample_projects/screenshots/preview_joysticks.png">
+    <img src="/addons/thumbstick_plugin/sample_projects/screenshots/preview_joysticks.webp">
 </div>
 
 ## PLUGIN FEATURES
@@ -57,8 +57,8 @@ You can manually customize yourself by editing or duplicating presets available 
 ---
 
 <div align=center>
-    <img src="/addons/thumbstick_plugin/sample_projects/screenshots/properties_1.png" height=410px/>
-    <img src="/addons/thumbstick_plugin/sample_projects/screenshots/properties_2.png" height=410px/>
+    <img src="/addons/thumbstick_plugin/sample_projects/screenshots/properties_1.webp" height=410px/>
+    <img src="/addons/thumbstick_plugin/sample_projects/screenshots/properties_2.webp" height=410px/>
 </div>
 
 ---
@@ -81,7 +81,7 @@ You can manually customize yourself by editing or duplicating presets available 
 ### **B. MULTITOUCH CONTROLLER**
 
 <div align=center>
-    <img src="/addons/thumbstick_plugin/sample_projects/screenshots/multitouch_controller_preview.png"/>
+    <img src="/addons/thumbstick_plugin/sample_projects/screenshots/multitouch_controller_preview.webp"/>
 </div>
 
 ---
@@ -91,7 +91,7 @@ You can manually customize yourself by editing or duplicating presets available 
 One single control node can handle multiple touch control, that's the definition for this module. Each touch will have it's finger index as an identifier. You can limit and manipulate how much touches will be process in gameplay.
 
 <div align=center>
-    <img src="/addons/thumbstick_plugin/sample_projects/screenshots/finger-picker-test-preview.png"/>
+    <img src="/addons/thumbstick_plugin/sample_projects/screenshots/finger-picker-test-preview.webp"/>
 </div>
 
 You can manually customize yourself by editing or duplicating presets available in `addons` -> `thumbstick_plugin` -> `plugin` -> `controllers` folder.

@@ -2,8 +2,8 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://vvx3jsdjmdka"
-path="res://.godot/imported/icon_position.webp-2fa8e8cf0708591ab1e047bfc553d2d5.ctex"
+uid="uid://cu6cj55m6dr78"
+path="res://.godot/imported/icon_position.webp-221b7c348ec45b22fd4df49fdb92a7aa.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://addons/dialogic/Modules/Character/icon_position.webp"
-dest_files=["res://.godot/imported/icon_position.webp-2fa8e8cf0708591ab1e047bfc553d2d5.ctex"]
+dest_files=["res://.godot/imported/icon_position.webp-221b7c348ec45b22fd4df49fdb92a7aa.ctex"]
 
 [params]
 

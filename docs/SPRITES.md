@@ -23,23 +23,23 @@ Where `a` is alpha, `F` is foreground color. The difference between plates is th
 Plates live in `assets/src/` (PNG white/black pairs for triangulation):
 
 ```
-<kind>_<direction>_<action><idx>_white.png
-<kind>_<direction>_<action><idx>_black.png
+<kind>_<direction>_<action><idx>_white.webp
+<kind>_<direction>_<action><idx>_black.webp
 
 Examples:
-  colt_front_idle_white.png + colt_front_idle_black.png
-  colt_back_idle_white.png  + colt_back_idle_black.png
-  colt_front_walk1_white.png + colt_front_walk1_black.png
-  colt_back_walk1_white.png  + colt_back_walk1_black.png
-  hound_front_walk1_white.png + hound_front_walk1_black.png
-  spitter_back_walk1_white.png + spitter_back_walk1_black.png
+  colt_front_idle_white.webp + colt_front_idle_black.webp
+  colt_back_idle_white.webp  + colt_back_idle_black.webp
+  colt_front_walk1_white.webp + colt_front_walk1_black.webp
+  colt_back_walk1_white.webp  + colt_back_walk1_black.webp
+  hound_front_walk1_white.webp + hound_front_walk1_black.webp
+  spitter_back_walk1_white.webp + spitter_back_walk1_black.webp
 
 Sheets (optional, any layout):
-  <kind>_<direction>_<action>_sheet_white.png + _black.png
-  e.g. colt_front_walk_sheet_white.png (3 frames side-by-side)
-       colt_back_walk_sheet_white.png
-       spitter_front_walk_sheet_white.png (3 frames side-by-side)
-       hound_front_walk_sheet_white.png
+  <kind>_<direction>_<action>_sheet_white.webp + _black.webp
+  e.g. colt_front_walk_sheet_white.webp (3 frames side-by-side)
+       colt_back_walk_sheet_white.webp
+       spitter_front_walk_sheet_white.webp (3 frames side-by-side)
+       hound_front_walk_sheet_white.webp
 ```
 
 Direction tokens: `front` (facing camera), `back` (straight back 180°, not 3/4), `side` optional.
@@ -61,7 +61,7 @@ python3 -m venv .venv
 ### 1. `triangulate_matte.py` — core Seirin implementation
 
 ```bash
-.venv/bin/python tools/triangulate_matte.py white.png black.png out.webp --alpha-out alpha.png
+.venv/bin/python tools/triangulate_matte.py white.webp black.webp out.webp --alpha-out alpha.webp
 .venv/bin/python tools/triangulate_matte.py --check-dir assets/sprites
 ```
 
@@ -74,9 +74,9 @@ Outputs lossy WebP (q=85) with alpha for final sprites.
 ### 2. `check_matte.py` — verification
 
 ```bash
-.venv/bin/python tools/check_matte.py assets/sprites/colt_front_idle.png --report
+.venv/bin/python tools/check_matte.py assets/sprites/colt_front_idle.webp --report
 .venv/bin/python tools/check_matte.py assets/sprites --report
-.venv/bin/python tools/check_matte.py sprite.png --checks --out check.png
+.venv/bin/python tools/check_matte.py sprite.webp --checks --out check.webp
 ```
 
 Checks:
@@ -101,11 +101,11 @@ Pipeline per file:
 3. Triangulate -> RGBA straight alpha
 4. Crop to content (alpha > 12) + 4px padding
 5. Resize to TARGET_H (256) using LANCZOS (smooth) or NEAREST (crunchy)
-6. Write `assets/sprites/<base>.png`
+6. Write `assets/sprites/<base>.webp`
 
 Supports both:
-- Paired: `<base>_white.png` + `<base>_black.png` -> `<base>.png` (proper Seirin, soft edges)
-- Legacy: `<base>.png` alone -> derived black (binary alpha, warns)
+- Paired: `<base>_white.webp` + `<base>_black.webp` -> `<base>.webp` (proper Seirin, soft edges)
+- Legacy: `<base>.webp` alone -> derived black (binary alpha, warns)
 
 ### 4. `slice_sheet.py` — walk-cycle sheet slicer
 
@@ -114,13 +114,13 @@ Uses connected-component analysis, so any layout works (1x3, 3x1, 2x2, etc), rea
 ```bash
 .venv/bin/python tools/slice_sheet.py colt_front_walk_sheet 3
 .venv/bin/python tools/slice_sheet.py hound_back_walk_sheet 3
-.venv/bin/python tools/slice_sheet.py --all   # all *_sheet.png
+.venv/bin/python tools/slice_sheet.py --all   # all *_sheet.webp
 ```
 
-- If sheet has white/black pair (`*_sheet_white.png` + `*_sheet_black.png`), both are sliced identically, producing paired plates.
-- Output: `<base>1_white.png` + `<base>1_black.png` etc.
+- If sheet has white/black pair (`*_sheet_white.webp` + `*_sheet_black.webp`), both are sliced identically, producing paired plates.
+- Output: `<base>1_white.webp` + `<base>1_black.webp` etc.
 
-Example: `colt_front_walk_sheet_white.png` (5 figures) -> `colt_front_walk1_white.png` + black etc.
+Example: `colt_front_walk_sheet_white.webp` (5 figures) -> `colt_front_walk1_white.webp` + black etc.
 
 ## Generating new sprites (image generator)
 
@@ -153,10 +153,10 @@ For enemies:
 
 ```gdscript
 "colt": {
-  "walk_front": ["colt_front_walk1.png", ...],
-  "walk_back": ["colt_back_walk1.png", ...],
-  "idle_front": ["colt_front_idle.png"],
-  "idle_back": ["colt_back_idle.png"],
+  "walk_front": ["colt_front_walk1.webp", ...],
+  "walk_back": ["colt_back_walk1.webp", ...],
+  "idle_front": ["colt_front_idle.webp"],
+  "idle_back": ["colt_back_idle.webp"],
   ...
 }
 ```

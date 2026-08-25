@@ -458,8 +458,8 @@ func _get_icon() -> Resource:
 		_icon_file_name = icon_dir + "/icon.svg"
 	elif ResourceLoader.exists(icon_dir + "/icon.webp"):
 		_icon_file_name = icon_dir + "/icon.webp"
-	elif ResourceLoader.exists(icon_dir + "/icon.png"):
-		_icon_file_name = icon_dir + "/icon.png"
+	elif ResourceLoader.exists(icon_dir + "/icon.webp"):
+		_icon_file_name = icon_dir + "/icon.webp"
 	return load(_icon_file_name)
 
 

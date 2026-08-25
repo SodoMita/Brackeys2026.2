@@ -2,8 +2,8 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dsshlmb852ije"
-path="res://.godot/imported/preview.webp-9b2969cd7afa7a898dabac86e4d56d05.ctex"
+uid="uid://dmlqow4is4acg"
+path="res://.godot/imported/preview.webp-fffb64b5a80dfa536274e4a967369cfc.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://addons/dialogic/Modules/DefaultLayoutParts/Style_SpeakerTextbox/preview.webp"
-dest_files=["res://.godot/imported/preview.webp-9b2969cd7afa7a898dabac86e4d56d05.ctex"]
+dest_files=["res://.godot/imported/preview.webp-fffb64b5a80dfa536274e4a967369cfc.ctex"]
 
 [params]
 

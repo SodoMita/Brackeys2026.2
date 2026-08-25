@@ -2,8 +2,8 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://do5ixe6u2wu7n"
-path="res://.godot/imported/layered_portrait_thumbnail.webp-17084c5d180b8fac981357cc2c6401fa.ctex"
+uid="uid://byo6bboroqw0q"
+path="res://.godot/imported/layered_portrait_thumbnail.webp-107af8817a839c595823f628d8fb18dd.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://addons/dialogic/Modules/LayeredPortrait/layered_portrait_thumbnail.webp"
-dest_files=["res://.godot/imported/layered_portrait_thumbnail.webp-17084c5d180b8fac981357cc2c6401fa.ctex"]
+dest_files=["res://.godot/imported/layered_portrait_thumbnail.webp-107af8817a839c595823f628d8fb18dd.ctex"]
 
 [params]
 

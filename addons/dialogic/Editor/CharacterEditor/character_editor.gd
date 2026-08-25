@@ -314,7 +314,7 @@ func setup_portrait_list_tab() -> void:
 
 func open_portrait_folder_select() -> void:
 	find_parent("EditorView").godot_file_dialog(
-		import_portraits_from_file_list, "*.svg, *.png, *.webp",
+		import_portraits_from_file_list, "*.svg, *.webp, *.webp",
 		EditorFileDialog.FILE_MODE_OPEN_FILES, "Import Images From Folder")
 
 

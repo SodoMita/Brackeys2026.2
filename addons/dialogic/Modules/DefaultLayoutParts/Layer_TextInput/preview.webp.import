@@ -2,8 +2,8 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://duxqforr3u8cr"
-path="res://.godot/imported/preview.webp-38b2fc507fbcd0543be5be1ad258573f.ctex"
+uid="uid://bn2b53n51smoo"
+path="res://.godot/imported/preview.webp-bcceb5d2b7f92c1d0f818071294dc895.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://addons/dialogic/Modules/DefaultLayoutParts/Layer_TextInput/preview.webp"
-dest_files=["res://.godot/imported/preview.webp-38b2fc507fbcd0543be5be1ad258573f.ctex"]
+dest_files=["res://.godot/imported/preview.webp-bcceb5d2b7f92c1d0f818071294dc895.ctex"]
 
 [params]
 

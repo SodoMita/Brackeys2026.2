@@ -2,8 +2,8 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://d0m1kvtceu45y"
-path="res://.godot/imported/pl3 surprise.webp-9a6069cf02bc7c9024fa85ad66077cac.ctex"
+uid="uid://c8ctomgkvxnta"
+path="res://.godot/imported/pl3 surprise.webp-92cfd8f7846a35eec2d62e62d532d7e6.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://addons/dialogic/Example Assets/portraits/Jane/pl3 surprise.webp"
-dest_files=["res://.godot/imported/pl3 surprise.webp-9a6069cf02bc7c9024fa85ad66077cac.ctex"]
+dest_files=["res://.godot/imported/pl3 surprise.webp-92cfd8f7846a35eec2d62e62d532d7e6.ctex"]
 
 [params]
 
