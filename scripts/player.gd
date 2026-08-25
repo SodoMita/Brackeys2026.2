@@ -127,13 +127,14 @@ func _ensure_nodes() -> void:
 		if c is Node3D and c.name == "Head":
 			heads.append(c)
 	if heads.size() > 1:
-		# Keep the last one (scene), remove earlier fallback heads
+		# Keep the last one (scene), remove earlier fallback heads. Resolve the
+		# reference directly because queued nodes still win get_node() lookups
+		# until the end of the frame.
+		head = heads[heads.size() - 1] as Node3D
 		for i in range(heads.size() - 1):
 			var h = heads[i]
 			if is_instance_valid(h):
 				h.queue_free()
-		# Update head reference to the remaining one
-		head = get_node_or_null("Head") as Node3D
 
 	# Resolve references via paths or names
 	if head_path != NodePath():
