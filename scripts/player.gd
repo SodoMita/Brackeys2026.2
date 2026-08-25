@@ -107,7 +107,7 @@ func _ready() -> void:
 func _ensure_nodes() -> void:
 	# Dedupe: if scene provides a node with same name but different instance, keep scene one.
 	# CollisionShape3D
-	var existing_col := get_node_or_null("CollisionShape3D") as CollisionShape3D
+	var _existing_col := get_node_or_null("CollisionShape3D") as CollisionShape3D
 	# If we have multiple CollisionShape3D (fallback + scene), keep first scene-provided? Simplify: if more than 1, remove fallback.
 	var cols: Array = []
 	for c in get_children():

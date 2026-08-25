@@ -75,12 +75,12 @@ func _build_ui() -> void:
 	_build_settings_panel()
 
 
-static func _label(text: String, size: int, color: Color,
+static func _label(text: String, label_size: int, color: Color,
 		align := HORIZONTAL_ALIGNMENT_CENTER) -> Label:
 	var l := Label.new()
 	l.text = text
 	var ls := LabelSettings.new()
-	ls.font_size = size
+	ls.font_size = label_size
 	ls.font_color = color
 	ls.outline_size = 3
 	ls.outline_color = Color.BLACK

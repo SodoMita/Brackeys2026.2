@@ -26,7 +26,7 @@ var back_threshold: float = -0.1
 func _init(sf: SpriteFrames, height: float) -> void:
 	sprite = AnimatedSprite3D.new()
 	sprite.sprite_frames = sf
-	sprite.billboard = 1 # BILLBOARD_ENABLED
+	sprite.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	sprite.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	frames = sf
 

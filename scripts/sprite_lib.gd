@@ -158,7 +158,7 @@ static func build(kind: String) -> AnimatedSprite3D:
 	var h: float = float(SETS[kind].h) if SETS[kind].has("h") else 1.8
 	var as3 := AnimatedSprite3D.new()
 	as3.sprite_frames = sf
-	as3.billboard = 1
+	as3.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	as3.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	# pick first anim
 	var first := ""
