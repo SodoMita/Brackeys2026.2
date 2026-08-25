@@ -13,6 +13,7 @@ const TEST_DIR := "res://tests"
 
 var _passed := 0
 var _failed := 0
+var _exit_code := 0
 
 
 func _initialize() -> void:
