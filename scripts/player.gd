@@ -165,6 +165,7 @@ func _ensure_nodes() -> void:
 		cam.fov = 90.0
 		cam.far = 200.0
 		head.add_child(cam)
+	cam.current = true
 
 	# Muzzle
 	if muzzle_path != NodePath():
