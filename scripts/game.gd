@@ -635,6 +635,8 @@ func _on_enemy_died(pos: Vector3, e: Node3D) -> void:
 	style += Cfg.style_kill
 	if player.sliding:
 		style += Cfg.style_slide_kill
+	if player.dash_t > 0.0:
+		style += Cfg.style_dash_kill
 	_add_scrap_for(e)
 	_spawn_gibs(pos)
 	_spawn_dead(pos, e.kind if e.get("kind") != null else "hound")
