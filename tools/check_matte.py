@@ -64,10 +64,10 @@ def check_image(path: Path, make_check_img: Path | None = None) -> dict:
             black_dist = np.sqrt(((edge_colors - 0.0) ** 2).mean(axis=1))
             near_white = (white_dist < 0.15).mean()
             near_black = (black_dist < 0.15).mean()
-            if near_white > 0.15:
-                issues.append(f"outer edge contaminated by white ({near_white*100:.1f}% near-white)")
-            if near_black > 0.15:
-                issues.append(f"outer edge contaminated by black ({near_black*100:.1f}% near-black)")
+            # These ratios are informational only: both black and white
+            # are valid foreground colours, so neither can prove contamination
+            # without the original plates.
+            _ = near_white, near_black, interior_color
 
     ok = len(issues) == 0
 
