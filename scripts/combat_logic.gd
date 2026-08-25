@@ -51,7 +51,7 @@ static func nearest_targets(from: Vector3, candidates: Array, count: int) -> Arr
 		return []
 	var sorted: Array = []
 	for candidate in candidates:
-		if candidate == null or not is_instance_valid(candidate):
+		if candidate == null or not is_instance_valid(candidate) or not candidate is Node3D:
 			continue
 		# Enemy nodes expose either a dead flag or HP. Plain Node3D test
 		# candidates have neither and are considered living by default.
