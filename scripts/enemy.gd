@@ -157,7 +157,8 @@ func take_damage(d: float, dir: Vector3, knock: float) -> void:
 	velocity += dir * knock
 	if hp <= 0.0:
 		dead = true
-		died.emit(global_position)
+		var death_position := global_position if is_inside_tree() else position
+		died.emit(death_position)
 		queue_free()
 
 
