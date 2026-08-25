@@ -128,13 +128,17 @@ func _input(ev: InputEvent) -> void:
 			if pressed_button != "":
 				_touch_buttons[ev.index] = pressed_button
 				_press(pressed_button, true)
-				get_viewport().set_input_as_handled()
+				var viewport := get_viewport()
+				if viewport:
+					viewport.set_input_as_handled()
 		else:
 			if _touch_buttons.has(ev.index):
 				var released_button: String = _touch_buttons[ev.index]
 				_press(released_button, false)
 				_touch_buttons.erase(ev.index)
-				get_viewport().set_input_as_handled()
+				var viewport := get_viewport()
+				if viewport:
+					viewport.set_input_as_handled()
 	elif ev is InputEventScreenDrag and _touch_buttons.has(ev.index):
 		# A held FIRE/SLIDE button remains held while its finger drags.
 		var viewport := get_viewport()
