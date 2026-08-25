@@ -551,7 +551,7 @@ func _start() -> void:
 
 
 func _enter_room(r: int) -> void:
-	if state != State.PLAYING:
+	if state != State.PLAYING or r < 0 or r >= ROOMS.size():
 		return
 	room = r
 	wave_in_room = 0
@@ -683,7 +683,7 @@ func _on_player_died() -> void:
 func _on_fired(enemy: Node3D, headshot: bool, airborne: bool, damage: float, ricochet: bool) -> void:
 	if state not in [State.PLAYING, State.BOSS] or enemy == null or not is_instance_valid(enemy):
 		return
-	if enemy.get("dead") == true:
+	if enemy.get("dead") == true or not enemy.has_method("take_damage"):
 		return
 	var dir := (enemy.global_position - player.global_position).normalized()
 	enemy.take_damage(damage, dir, 4.0)
