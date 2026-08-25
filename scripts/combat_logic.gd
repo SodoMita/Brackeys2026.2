@@ -17,6 +17,8 @@ const THRESHOLDS_DEFAULT := [0.0, 40.0, 100.0, 180.0, 280.0, 400.0, 550.0]
 static func rank_for_points(points: float,
 		thresholds: Array = THRESHOLDS_DEFAULT,
 		ranks: Array = RANKS_DEFAULT) -> String:
+	if ranks.is_empty():
+		return ""
 	var rank := String(ranks[0])
 	for i in mini(thresholds.size(), ranks.size()):
 		if points >= thresholds[i]:
@@ -45,7 +47,20 @@ static func _pos(n: Node3D) -> Vector3:
 
 
 static func nearest_targets(from: Vector3, candidates: Array, count: int) -> Array:
-	var sorted := candidates.duplicate()
+	if count <= 0:
+		return []
+	var sorted: Array = []
+	for candidate in candidates:
+		if candidate == null or not is_instance_valid(candidate):
+			continue
+		# Enemy nodes expose either a dead flag or HP. Plain Node3D test
+		# candidates have neither and are considered living by default.
+		if candidate.get("dead") == true:
+			continue
+		var hp = candidate.get("hp")
+		if (hp is float or hp is int) and float(hp) <= 0.0:
+			continue
+		sorted.append(candidate)
 	sorted.sort_custom(func(a, b):
 		return _pos(a).distance_squared_to(from) < _pos(b).distance_squared_to(from))
 	return sorted.slice(0, mini(count, sorted.size()))
