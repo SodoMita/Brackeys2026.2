@@ -774,11 +774,11 @@ func _spawn_dead(at: Vector3, kind: String) -> void:
 	var actor = SpriteLib.build_actor(kind)
 	var dead_tex: Texture2D = null
 	if actor and actor.frames:
-		# try dead animation
+		# try dead animation, then the best available idle frame
 		if actor.frames.has_animation("dead"):
 			dead_tex = actor.frames.get_frame_texture("dead", 0)
-			elif actor.frames.has_animation("idle"):
-				dead_tex = actor.frames.get_frame_texture("idle", 0)
+		elif actor.frames.has_animation("idle"):
+			dead_tex = actor.frames.get_frame_texture("idle", 0)
 	if actor != null:
 		actor.free()
 	# fallback: direct load of dead webp
@@ -789,9 +789,9 @@ func _spawn_dead(at: Vector3, kind: String) -> void:
 			"res://assets/sprites/hound_dead.webp",
 			"res://assets/sprites/spitter_dead.webp",
 		]
-		for p in candidates:
-			if ResourceLoader.exists(p):
-				dead_tex = load(p)
+		for candidate in candidates:
+			if ResourceLoader.exists(candidate):
+				dead_tex = load(candidate)
 				break
 	if dead_tex == null:
 		return
