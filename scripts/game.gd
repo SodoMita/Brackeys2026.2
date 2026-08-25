@@ -826,6 +826,8 @@ func _spawn_dead(at: Vector3, kind: String) -> void:
 
 # ------------------------------------------------------------- loop
 func _process(dt: float) -> void:
+	if paused:
+		return
 	hitmarker_t = maxf(hitmarker_t - dt, 0.0)
 	for c in crosshair:
 		c.color = Color(1, 0, 0, 0.8) if hitmarker_t > 0.0 else Color(1, 1, 1, 0.9)
