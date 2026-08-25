@@ -681,7 +681,9 @@ func _on_player_died() -> void:
 
 
 func _on_fired(enemy: Node3D, headshot: bool, airborne: bool, damage: float, ricochet: bool) -> void:
-	if state not in [State.PLAYING, State.BOSS]:
+	if state not in [State.PLAYING, State.BOSS] or enemy == null or not is_instance_valid(enemy):
+		return
+	if enemy.get("dead") == true:
 		return
 	var dir := (enemy.global_position - player.global_position).normalized()
 	enemy.take_damage(damage, dir, 4.0)
