@@ -17,6 +17,7 @@ signal volley(dir: Vector3, origin: Vector3)
 
 var hp: float = 60.0
 var speed := 7.5
+var dead := false
 var atk_cd := 0.0
 var windup_t := -1.0
 var stagger_t := 0.0
@@ -150,9 +151,12 @@ func stagger(t: float) -> void:
 
 
 func take_damage(d: float, dir: Vector3, knock: float) -> void:
+	if dead:
+		return
 	hp -= d
 	velocity += dir * knock
 	if hp <= 0.0:
+		dead = true
 		died.emit(global_position)
 		queue_free()
 
@@ -200,9 +204,15 @@ func _physics_process(dt: float) -> void:
 			if windup_t <= 0.0:
 				windup_t = -1.0
 				_set_telegraph(false)
-				if d < Cfg.enemy_attack_range + 0.6:
-					attacked.emit()
-				atk_cd = Cfg.enemy_strike_cooldown
+				if ranged:
+					var volley_dir := to.normalized()
+					if d > 0.01:
+						volley.emit(volley_dir, global_position + Vector3(0.0, 1.0, 0.0))
+					atk_cd = Cfg.spitter_cd
+				else:
+					if d < Cfg.enemy_attack_range + 0.6:
+						attacked.emit()
+					atk_cd = Cfg.enemy_strike_cooldown
 		elif ranged:
 			var dir := to.normalized()
 			var want := 13.0
