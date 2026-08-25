@@ -1,11 +1,13 @@
-[gd_scene format=3 uid="uid://cgasa1ne6li6h"]
+[gd_scene load_steps=6 format=3 uid="uid://cgasa1ne6li6h"]
 
+[ext_resource type="Script" uid="uid://d8vokumcfld6l" path="res://scripts/game_root.gd" id="1_root"]
 [ext_resource type="PackedScene" uid="uid://wxw4l5sr1wpw" path="res://scenes/player.tscn" id="3_player"]
 [ext_resource type="PackedScene" uid="uid://c1in672ctfy7p" path="res://scenes/companion.tscn" id="4_comp"]
 [ext_resource type="PackedScene" uid="uid://t2qqqkl1ncfn" path="res://scenes/level_1.tscn" id="4_iywne"]
 [ext_resource type="PackedScene" uid="uid://b4qjatl1fjjm2" path="res://scenes/hud.tscn" id="5_hud"]
 
 [node name="Game" type="Node3D" unique_id=661237962]
+script = ExtResource("1_root")
 
 [node name="Enemies" type="Node3D" parent="." unique_id=349126791]
 
