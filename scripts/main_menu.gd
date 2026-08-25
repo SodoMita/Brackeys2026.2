@@ -499,10 +499,19 @@ func _on_start_pressed() -> void:
 
 
 func start_game() -> void:
+	var tree := get_tree()
+	if tree == null or not is_inside_tree():
+		return
 	var target_scene := GAME_SCENE
 	if not ResourceLoader.exists(target_scene):
 		target_scene = "res://scenes/main.tscn"
-	get_tree().change_scene_to_file(target_scene)
+	tree.change_scene_to_file(target_scene)
+
+
+func _mark_input_handled() -> void:
+	var viewport := get_viewport()
+	if viewport != null:
+		viewport.set_input_as_handled()
 
 
 func _on_quit_pressed() -> void:
@@ -513,7 +522,7 @@ func _unhandled_input(ev: InputEvent) -> void:
 	if not _binding_action.is_empty():
 		if (ev is InputEventKey or ev is InputEventMouseButton or ev is InputEventJoypadButton) and ev.is_pressed():
 			_finish_rebind(ev)
-			get_viewport().set_input_as_handled()
+			_mark_input_handled()
 		return
 	if settings_open:
 		var back: bool = ev is InputEventKey and ev.pressed and not ev.echo \
@@ -521,11 +530,11 @@ func _unhandled_input(ev: InputEvent) -> void:
 		var joy: InputEventJoypadButton = ev as InputEventJoypadButton
 		if back or (joy != null and joy.pressed and joy.button_index == JOY_BUTTON_B):
 			close_settings()
-			get_viewport().set_input_as_handled()
+			_mark_input_handled()
 	else:
 		if _is_start_trigger(ev):
 			start_game()
-			get_viewport().set_input_as_handled()
+			_mark_input_handled()
 
 
 func _is_start_trigger(ev: InputEvent) -> bool:
