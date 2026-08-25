@@ -15,7 +15,8 @@ Arena shooter.
 ├── tests/
 │   ├── test_runner.gd      # Headless runner (SceneTree script, no addons)
 │   ├── test_base.gd        # Assertion helpers
-│   ├── test_game_logic.gd  # Unit tests
+│   ├── test_combat.gd      # Combat math unit tests
+│   ├── test_input_map.gd   # Direct-launch input initialization
 │   └── test_scene.gd       # Scene integration tests
 ├── assets/                 # Art/audio go here
 ├── addons/                 # Third-party addons go here
