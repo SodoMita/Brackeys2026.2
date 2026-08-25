@@ -777,8 +777,10 @@ func _spawn_dead(at: Vector3, kind: String) -> void:
 		# try dead animation
 		if actor.frames.has_animation("dead"):
 			dead_tex = actor.frames.get_frame_texture("dead", 0)
-		elif actor.frames.has_animation("idle"):
-			dead_tex = actor.frames.get_frame_texture("idle", 0)
+			elif actor.frames.has_animation("idle"):
+				dead_tex = actor.frames.get_frame_texture("idle", 0)
+	if actor != null:
+		actor.free()
 	# fallback: direct load of dead webp
 	if dead_tex == null:
 		var candidates := [
