@@ -104,6 +104,8 @@ static func reset_defaults() -> void:
 	save(current)
 
 static func rebind(action: String, event: InputEvent) -> void:
+	if not ACTIONS.has(action) or event == null:
+		return
 	_ensure_actions()
 	InputMap.action_erase_events(action)
 	InputMap.action_add_event(action, event)
@@ -113,6 +115,8 @@ static func rebind(action: String, event: InputEvent) -> void:
 	cf.save(path)
 
 static func binding_text(action: String) -> String:
+	if not ACTIONS.has(action):
+		return "Unbound"
 	_ensure_actions()
 	var events := InputMap.action_get_events(action)
 	return events[0].as_text() if not events.is_empty() else "Unbound"
