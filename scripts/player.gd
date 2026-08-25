@@ -204,7 +204,13 @@ func is_parry_active() -> bool:
 
 
 func cycle_weapon() -> void:
-	weapon = 0 if weapon == 1 else 1
+	# Cycle through weapons the player actually owns; newly purchased weapons
+	# should not get skipped or leave the player on an unavailable slot.
+	for step in range(1, weapons.size() + 1):
+		var next := (weapon + step) % weapons.size()
+		if weapons[next]:
+			weapon = next
+			return
 
 
 func toss_coin() -> void:
