@@ -76,7 +76,8 @@ func _anchor_rect(c: Control, anchor: Vector2, off: Vector2, size: Vector2) -> v
 
 
 func _button_at(pos: Vector2) -> String:
-	var sz := get_viewport().get_visible_rect().size
+	var viewport := get_viewport()
+	var sz := viewport.get_visible_rect().size if viewport else Vector2(1280, 720)
 	for name in buttons:
 		var b: Dictionary = buttons[name]
 		var anchor: Vector2 = b.anchor
@@ -136,4 +137,6 @@ func _input(ev: InputEvent) -> void:
 				get_viewport().set_input_as_handled()
 	elif ev is InputEventScreenDrag and _touch_buttons.has(ev.index):
 		# A held FIRE/SLIDE button remains held while its finger drags.
-		get_viewport().set_input_as_handled()
+		var viewport := get_viewport()
+		if viewport:
+			viewport.set_input_as_handled()
