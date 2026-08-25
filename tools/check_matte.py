@@ -49,20 +49,25 @@ def check_image(path: Path, make_check_img: Path | None = None) -> dict:
     opaque_mask = a > 0.95
     if opaque_mask.any():
         interior_color = rgb[opaque_mask].mean(axis=0)
-        edge_mask = (a >= 0.1) & (a < 0.9)
+        # Only inspect the outer image border. Dark foreground details are
+        # valid sprite colours; treating every partial-alpha dark pixel as
+        # black-plate contamination produces false positives on characters.
+        border = np.zeros_like(a, dtype=bool)
+        border[:2, :] = True
+        border[-2:, :] = True
+        border[:, :2] = True
+        border[:, -2:] = True
+        edge_mask = (a >= 0.1) & (a < 0.9) & border
         if edge_mask.any():
             edge_colors = rgb[edge_mask]
-            # distance from interior
-            dist = np.sqrt(((edge_colors - interior_color) ** 2).mean(axis=1))
-            # if many edge pixels are near white or black, contamination
             white_dist = np.sqrt(((edge_colors - 1.0) ** 2).mean(axis=1))
             black_dist = np.sqrt(((edge_colors - 0.0) ** 2).mean(axis=1))
             near_white = (white_dist < 0.15).mean()
             near_black = (black_dist < 0.15).mean()
             if near_white > 0.15:
-                issues.append(f"edge contaminated by white ({near_white*100:.1f}% near-white edges)")
+                issues.append(f"outer edge contaminated by white ({near_white*100:.1f}% near-white)")
             if near_black > 0.15:
-                issues.append(f"edge contaminated by black ({near_black*100:.1f}% near-black edges)")
+                issues.append(f"outer edge contaminated by black ({near_black*100:.1f}% near-black)")
 
     ok = len(issues) == 0
 
