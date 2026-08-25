@@ -166,9 +166,15 @@ func _on_trigger_body(body: Node3D, index: int) -> void:
 	if body != player:
 		return
 	var trigger_name := String(trigger_nodes[index].name).to_lower() if index < trigger_nodes.size() else ""
-	if trigger_name.contains("room2") or (not trigger_name.contains("room3") and index == 0):
+	if trigger_name.contains("boss"):
+		_betrayal()
+	elif trigger_name.contains("room3"):
+		_enter_room(2)
+	elif trigger_name.contains("room2"):
 		_enter_room(1)
-	elif trigger_name.contains("room3") or (not trigger_name.contains("boss") and index == 1):
+	elif index == 0:
+		_enter_room(1)
+	elif index == 1:
 		_enter_room(2)
 	else:
 		_betrayal()
