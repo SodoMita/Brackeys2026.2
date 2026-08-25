@@ -4,10 +4,11 @@ extends Node3D
 
 enum State { MENU, PLAYING, BOSS, END, DEAD }
 
-const ROOM_W := 28.0
-const CORR_W := 8.0
+var doors: Array[Node3D] = []
+var terminals: Array[Node3D] = []
+var trigger_nodes: Array[Area3D] = []
+
 const ROOMS := [Vector2(0.0, -28.0), Vector2(-36.0, -64.0), Vector2(-72.0, -100.0)]
-const DOOR_Z := [-28.0, -36.0, -64.0, -72.0, -100.0]
 const ROOM_WAVES := [2, 2, 3]
 
 var state: int = State.MENU
@@ -16,8 +17,7 @@ var companion: CharacterBody3D
 var enemies: Node3D
 var projectiles: Array = []
 var debris: Array = []
-var doors: Array = []
-var terminals: Array = []
+
 
 var room := 0
 var wave_in_room := 0
@@ -54,15 +54,29 @@ var sfx_door: AudioStreamPlayer
 
 
 func _ready() -> void:
-	_build_environment()
-	_build_level()
+	var level_scene = load("res://scenes/level_1.tscn")
+	var level = level_scene.instantiate()
+	
+	doors = level.doors
+	terminals = level.terminals
+	trigger_nodes = level.trigger_nodes
+	
+	add_child(level)
 	enemies = Node3D.new()
 	enemies.name = "Enemies"
 	add_child(enemies)
+	
 	_build_player()
 	_build_companion()
 	_build_hud()
 	_build_audio()
+	
+	# Hook up manually placed triggers in the editor
+	if trigger_nodes.size() >= 3:
+		trigger_nodes[0].body_entered.connect(func(b): if b == player: _enter_room(1))
+		trigger_nodes[1].body_entered.connect(func(b): if b == player: _enter_room(2))
+		trigger_nodes[2].body_entered.connect(func(b): if b == player: _betrayal())
+
 	if DisplayServer.is_touchscreen_available():
 		Input.set_emulate_mouse_from_touch(false)
 		var ts = load("res://scripts/touch_controls.gd").new()
@@ -74,175 +88,12 @@ func _ready() -> void:
 	_show_menu()
 
 
-# ------------------------------------------------------------- world
-func _build_environment() -> void:
-	var env := Environment.new()
-	env.background_mode = Environment.BG_COLOR
-	env.background_color = Color(0.12, 0.07, 0.03)
-	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color(0.8, 0.6, 0.4)
-	env.ambient_light_energy = 0.6
-	env.fog_enabled = true
-	env.fog_light_color = Color(0.5, 0.3, 0.12)
-	env.fog_density = 0.010
-	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
-	var we := WorldEnvironment.new()
-	we.environment = env
-	add_child(we)
-	var sun := DirectionalLight3D.new()
-	sun.rotation_degrees = Vector3(-55.0, 20.0, 0.0)
-	sun.light_color = Color(1.0, 0.85, 0.6)
-	sun.light_energy = 1.1
-	add_child(sun)
-
-
-func _sand_texture() -> ImageTexture:
-	var img := Image.create_empty(128, 128, true, Image.FORMAT_RGBA8)
-	for y in 128:
-		for x in 128:
-			var dark := ((x / 32) + (y / 32)) % 2 == 0
-			var c := Color(0.45, 0.32, 0.16) if dark else Color(0.36, 0.25, 0.12)
-			if x % 32 == 0 or y % 32 == 0:
-				c = Color(0.9, 0.55, 0.2)
-			img.set_pixel(x, y, c)
-	img.generate_mipmaps()
-	return ImageTexture.create_from_image(img)
-
-
-func _wall_mat() -> StandardMaterial3D:
-	var m := StandardMaterial3D.new()
-	m.albedo_color = Color(0.16, 0.1, 0.06)
-	m.emission_enabled = true
-	m.emission = Color(1.0, 0.5, 0.15)
-	m.emission_energy_multiplier = 0.2
-	return m
-
-
-func _segment(z0: float, z1: float, width: float) -> void:
-	var length := absf(z1 - z0)
-	var zc := (z0 + z1) / 2.0
-	var fm := StandardMaterial3D.new()
-	fm.albedo_texture = _sand_texture()
-	fm.roughness = 0.9
-	var floor_mi := MeshInstance3D.new()
-	var pm := PlaneMesh.new()
-	pm.size = Vector2(width, length)
-	pm.material = fm
-	floor_mi.mesh = pm
-	floor_mi.position = Vector3(0, 0, zc)
-	add_child(floor_mi)
-	var wm := _wall_mat()
-	for sx in [-1.0, 1.0]:
-		var w := StaticBody3D.new()
-		var cs := CollisionShape3D.new()
-		var bs := BoxShape3D.new()
-		bs.size = Vector3(1.0, 6.0, length)
-		cs.shape = bs
-		w.add_child(cs)
-		var mi := MeshInstance3D.new()
-		var bm := BoxMesh.new()
-		bm.size = Vector3(1.0, 6.0, length)
-		bm.material = wm
-		mi.mesh = bm
-		w.add_child(mi)
-		w.position = Vector3(sx * (width / 2.0 + 0.5), 3.0, zc)
-		add_child(w)
-
-
-func _make_door(z: float, width: float) -> Node3D:
-	var d := Node3D.new()
-	d.position = Vector3(0, 0, z)
-	var sb := StaticBody3D.new()
-	var cs := CollisionShape3D.new()
-	var bs := BoxShape3D.new()
-	bs.size = Vector3(width, 5.0, 1.0)
-	cs.shape = bs
-	sb.add_child(cs)
-	var mi := MeshInstance3D.new()
-	var bm := BoxMesh.new()
-	bm.size = Vector3(width, 5.0, 1.0)
-	var m := StandardMaterial3D.new()
-	m.albedo_color = Color(0.2, 0.12, 0.07)
-	m.emission_enabled = true
-	m.emission = Color(1.0, 0.4, 0.1)
-	m.emission_energy_multiplier = 0.5
-	bm.material = m
-	mi.mesh = bm
-	mi.position = Vector3(0, 2.5, 0)
-	sb.add_child(mi)
-	d.add_child(sb)
-	add_child(d)
-	d.set_meta("body", sb)
-	d.set_meta("mesh", mi)
-	return d
-
 
 func door_set(d: Node3D, closed: bool) -> void:
-	var sb: StaticBody3D = d.get_meta("body")
-	var mi: MeshInstance3D = d.get_meta("mesh")
-	sb.set_deferred("disabled", not closed)
-	var tw := create_tween()
-	tw.tween_property(mi, "position:y", 2.5 if closed else 6.5, 0.6)
+	d.door_set(closed)
 	_play(sfx_door)
 
 
-func _make_trigger(z: float, width: float, cb: Callable) -> void:
-	var a := Area3D.new()
-	var cs := CollisionShape3D.new()
-	var bs := BoxShape3D.new()
-	bs.size = Vector3(width, 4.0, 1.0)
-	cs.shape = bs
-	a.add_child(cs)
-	a.position = Vector3(0, 2.0, z)
-	a.body_entered.connect(func(b):
-		if b == player:
-			cb.call())
-	add_child(a)
-
-
-func _build_level() -> void:
-	var sb := StaticBody3D.new()
-	var fcs := CollisionShape3D.new()
-	fcs.shape = WorldBoundaryShape3D.new()
-	sb.add_child(fcs)
-	add_child(sb)
-	_segment(6.0, -28.0, ROOM_W)          # room 1
-	_segment(-28.0, -36.0, CORR_W)        # corridor 1
-	_segment(-36.0, -64.0, ROOM_W)        # room 2
-	_segment(-64.0, -72.0, CORR_W)        # corridor 2
-	_segment(-72.0, -100.0, ROOM_W)       # room 3
-	_segment(-100.0, -130.0, ROOM_W)      # plaza
-	# end walls
-	var wm := _wall_mat()
-	for z in [6.0, -130.0]:
-		var w := StaticBody3D.new()
-		var cs := CollisionShape3D.new()
-		var bs := BoxShape3D.new()
-		bs.size = Vector3(ROOM_W + 2.0, 6.0, 1.0)
-		cs.shape = bs
-		w.add_child(cs)
-		var mi := MeshInstance3D.new()
-		var bm := BoxMesh.new()
-		bm.size = Vector3(ROOM_W + 2.0, 6.0, 1.0)
-		bm.material = wm
-		mi.mesh = bm
-		w.add_child(mi)
-		w.position = Vector3(0, 3.0, z)
-		add_child(w)
-	for i in DOOR_Z.size():
-		var width := ROOM_W if i == DOOR_Z.size() - 1 else CORR_W
-		doors.append(_make_door(DOOR_Z[i], width))
-	_make_trigger(-40.0, CORR_W, _enter_room.bind(1))
-	_make_trigger(-76.0, CORR_W, _enter_room.bind(2))
-	_make_trigger(-105.0, ROOM_W, _betrayal)
-	# shop terminals in corridors
-	var st1 = load("res://scripts/shop_terminal.gd").new()
-	st1.position = Vector3(2.6, 0.0, -32.0)
-	add_child(st1)
-	var st2 = load("res://scripts/shop_terminal.gd").new()
-	st2.position = Vector3(-2.6, 0.0, -68.0)
-	add_child(st2)
-	terminals = [st1, st2]
 
 
 func _build_player() -> void:
