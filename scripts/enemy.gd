@@ -162,10 +162,10 @@ func take_damage(d: float, dir: Vector3, knock: float) -> void:
 		dead = true
 		var death_position := global_position if is_inside_tree() else position
 		died.emit(death_position)
-		if queue_free().is_inside_tree():
-			queue_free().queue_free()
+		if is_inside_tree():
+			queue_free()
 		else:
-			queue_free().free()
+			free()
 
 
 func _set_telegraph(on: bool) -> void:

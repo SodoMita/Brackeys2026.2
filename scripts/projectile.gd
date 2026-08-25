@@ -93,7 +93,7 @@ func _physics_process(dt: float) -> void:
 	position += vel * dt
 	if life <= 0.0:
 		consumed.emit(position, false)
-		if queue_free().is_inside_tree():
-			queue_free().queue_free()
+		if is_inside_tree():
+			queue_free()
 		else:
-			queue_free().free()
+			free()
