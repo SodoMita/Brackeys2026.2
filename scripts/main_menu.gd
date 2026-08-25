@@ -499,8 +499,10 @@ func _on_start_pressed() -> void:
 
 
 func start_game() -> void:
+	if not is_inside_tree():
+		return
 	var tree := get_tree()
-	if tree == null or not is_inside_tree():
+	if tree == null:
 		return
 	var target_scene := GAME_SCENE
 	if not ResourceLoader.exists(target_scene):
