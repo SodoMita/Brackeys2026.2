@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dp7np6b4ipm0a"
-path="res://.godot/imported/preview_character_speaker.webp-c0667c648e2901adcbe8bf93ddda7f06.ctex"
+path="res://.godot/imported/preview_character_speaker.webp-26145c81e03264cb7419a4e702b8339b.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://addons/dialogic/Editor/Images/preview_character_speaker.webp"
-dest_files=["res://.godot/imported/preview_character_speaker.webp-c0667c648e2901adcbe8bf93ddda7f06.ctex"]
+dest_files=["res://.godot/imported/preview_character_speaker.webp-26145c81e03264cb7419a4e702b8339b.ctex"]
 
 [params]
 
