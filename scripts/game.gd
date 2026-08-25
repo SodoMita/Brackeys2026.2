@@ -381,6 +381,8 @@ func _build_hud() -> void:
 
 
 func _show_menu() -> void:
+	if player:
+		player.disabled = true
 	overlay.text = "S T E E L   K N I F E\n\nmission 1: clear the site with COLT.\nrooms lock when you cross the line. scrap buys upgrades.\n\nF parry · RMB coin · E shop · 1/2/3 weapons\n\nclick / tap / A to start"
 	overlay.visible = true
 
@@ -528,6 +530,8 @@ func _set_door(index: int, closed: bool) -> void:
 
 
 func _start() -> void:
+	if player:
+		player.disabled = false
 	if paused and is_inside_tree():
 		get_tree().paused = false
 		paused = false

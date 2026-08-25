@@ -241,7 +241,7 @@ func toss_coin() -> void:
 
 
 func _unhandled_input(ev: InputEvent) -> void:
-	if dead:
+	if dead or disabled:
 		return
 	if ev is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		_apply_look(-ev.relative.x * Cfg.mouse_sensitivity, -ev.relative.y * Cfg.mouse_sensitivity)
