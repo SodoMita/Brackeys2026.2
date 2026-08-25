@@ -1,7 +1,5 @@
-# Brackeys Game Jam 2026.2 — Godot Project Template
-
-Godot **4.7.x** project scaffold for the jam: example game, headless test suite,
-export presets for five platforms, and GitHub Actions CI.
+# SteelKnife
+Arena shooter.
 
 ## Repository layout
 
