@@ -587,8 +587,8 @@ func _spawn_enemy(ranged: bool, at := Vector3.ZERO, boss := false) -> CharacterB
 	e.target = player
 	e.ranged = ranged
 	if boss:
-		e.hp = Cfg.boss_hp
-		e.speed = Cfg.boss_speed
+		e.custom_hp = Cfg.boss_hp
+		e.custom_speed = Cfg.boss_speed
 		e.scale = Vector3(1.5, 1.5, 1.5)
 		e.set_meta("scrap", Cfg.scrap_boss)
 	elif ranged:
