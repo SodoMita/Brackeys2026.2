@@ -519,10 +519,10 @@ func _unhandled_input(ev: InputEvent) -> void:
 			and ev.button_index in [JOY_BUTTON_A, JOY_BUTTON_START]:
 		start = true
 	if start:
-		if state == State.MENU:
-			_start()
-		elif state in [State.DEAD, State.END]:
-			get_tree().reload_current_scene()
+			if state == State.MENU:
+				_start()
+			elif state in [State.DEAD, State.END] and is_inside_tree():
+				get_tree().reload_current_scene()
 
 
 func _set_door(index: int, closed: bool) -> void:
