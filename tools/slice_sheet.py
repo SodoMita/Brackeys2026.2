@@ -22,9 +22,9 @@ Naming conventions supported:
 
 Usage:
   python3 tools/slice_sheet.py <sheet_name> [frames=5]
-    sheet_name without .png, e.g. colt_front_walk_sheet
+    sheet_name without an extension, e.g. colt_front_walk_sheet
   python3 tools/slice_sheet.py colt_front_walk_sheet 5
-  python3 tools/slice_sheet.py --all   # slice all *_sheet.png in src
+  python3 tools/slice_sheet.py --all   # slice all *_sheet.(png|webp) in src
 """
 
 from __future__ import annotations
@@ -93,6 +93,35 @@ def find_components(im_rgb: Image.Image):
     return ordered
 
 
+IMAGE_EXTENSIONS = (".png", ".webp")
+
+
+def find_image(stem: str) -> Path | None:
+    """Find a source image by stem, accepting PNG and WebP plates."""
+    for ext in IMAGE_EXTENSIONS:
+        candidate = SRC / f"{stem}{ext}"
+        if candidate.exists():
+            return candidate
+    return None
+
+
+def sibling_with_stem(path: Path, stem: str) -> Path | None:
+    """Find a sibling image while preserving the requested stem."""
+    for ext in IMAGE_EXTENSIONS:
+        candidate = path.parent / f"{stem}{ext}"
+        if candidate.exists():
+            return candidate
+    return None
+
+
+def save_image(image: Image.Image, path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if path.suffix.lower() == ".webp":
+        image.save(path, "WEBP", lossless=True, method=4)
+    else:
+        image.save(path)
+
+
 def slice_one_sheet(sheet_path: Path, frames: int = 5, paired_black: Path | None = None):
     """Slice sheet_path, output frames to SRC."""
     im = Image.open(sheet_path).convert("RGB")
@@ -116,6 +145,7 @@ def slice_one_sheet(sheet_path: Path, frames: int = 5, paired_black: Path | None
 
     # limit to frames
     ordered = boxes[:frames]
+    out_ext = sheet_path.suffix.lower() if sheet_path.suffix.lower() in IMAGE_EXTENSIONS else ".png"
 
     print(f"slicing {sheet_path.name}: found {len(boxes)} comps, using {len(ordered)} -> base {base}")
 
@@ -137,123 +167,87 @@ def slice_one_sheet(sheet_path: Path, frames: int = 5, paired_black: Path | None
             sub_b = im_black.crop((x0, y0, x1, y1))
             out_b = Image.new("RGB", sub_b.size, (0, 0, 0))
             out_b.paste(sub_b, (0, 0))
-            out_b.save(SRC / f"{base}{idx + 1}_black.png")
-            out.save(SRC / f"{base}{idx + 1}_white.png")
+            save_image(out_b, SRC / f"{base}{idx + 1}_black{out_ext}")
+            save_image(out, SRC / f"{base}{idx + 1}_white{out_ext}")
             print(f"  ok {base}{idx + 1}_white/black: {out.size}")
         else:
             # legacy single plate
             # if input was white plate, output as white? Keep simple: output as <base><idx>.png
             # but also support _white output if original had _white suffix
             if "_white" in sheet_path.stem:
-                out.save(SRC / f"{base}{idx + 1}_white.png")
+                save_image(out, SRC / f"{base}{idx + 1}_white{out_ext}")
                 print(f"  ok {base}{idx + 1}_white: {out.size}")
             else:
-                out.save(SRC / f"{base}{idx + 1}.png")
+                save_image(out, SRC / f"{base}{idx + 1}{out_ext}")
                 print(f"  ok {base}{idx + 1}: {out.size}")
 
 
 def main():
-    ap = argparse.ArgumentParser(description="Slice walk-cycle sheets (front/back aware)")
-    ap.add_argument("sheet", nargs="?", help="sheet name without .png (e.g. colt_front_walk_sheet)")
+    ap = argparse.ArgumentParser(description="Slice walk-cycle sheets (front/back aware; PNG and WebP)")
+    ap.add_argument("sheet", nargs="?", help="sheet stem or path, with or without .png/.webp")
     ap.add_argument("frames", nargs="?", type=int, default=5, help="number of frames")
-    ap.add_argument("--all", action="store_true", help="slice all *_sheet.png")
+    ap.add_argument("--all", action="store_true", help="slice all *_sheet.(png|webp) files")
     args = ap.parse_args()
 
+    if args.frames <= 0:
+        ap.error("frames must be positive")
+
     if args.all:
-        sheets = sorted(SRC.glob("*_sheet.png"))
-        # also white variants
-        sheets_white = sorted(SRC.glob("*_sheet_white.png"))
-        # deduplicate base
+        sheets = sorted(
+            [p for ext in IMAGE_EXTENSIONS for p in SRC.glob(f"*_sheet{ext}")]
+            + [p for ext in IMAGE_EXTENSIONS for p in SRC.glob(f"*_sheet_white{ext}")]
+        )
         processed_bases = set()
-        for s in sheets + sheets_white:
-            # skip black sheets — they are handled as pair
-            if s.stem.endswith("_sheet_black"):
+        for sheet in sheets:
+            if sheet.stem.endswith("_sheet_black"):
                 continue
-            stem = s.stem
-            # base without _white
-            base_stem = re.sub(r"_(white)$", "", stem)
+            base_stem = re.sub(r"_(white)$", "", sheet.stem)
             if base_stem in processed_bases:
                 continue
             processed_bases.add(base_stem)
-
-            # check for black pair
-            if s.stem.endswith("_sheet_white"):
-                black_candidate = SRC / f"{base_stem.replace('_white','')}_sheet_black.png"
-                # actually original white sheet is like colt_front_walk_sheet_white.png
-                # base_stem = colt_front_walk_sheet
-                # black = colt_front_walk_sheet_black.png
-                black_path = SRC / f"{base_stem}_black.png"
-                if not black_path.exists():
-                    # try alternative naming
-                    black_path = SRC / f"{re.sub(r'_sheet$','',base_stem)}_sheet_black.png"
-                    if not black_path.exists():
-                        black_path = None
-                slice_one_sheet(s, args.frames, black_path)
+            if sheet.stem.endswith("_sheet_white"):
+                black = sibling_with_stem(sheet, f"{base_stem}_black")
+                slice_one_sheet(sheet, args.frames, black)
+                continue
+            white = sibling_with_stem(sheet, f"{sheet.stem}_white")
+            black = sibling_with_stem(sheet, f"{sheet.stem}_black")
+            if white and black:
+                slice_one_sheet(white, args.frames, black)
             else:
-                # white sheet without suffix? check black pair
-                black_path = SRC / f"{stem}_black.png"
-                # also check <base>_sheet_black.png if stem is <base>_sheet
-                if not black_path.exists():
-                    # if s is colt_front_walk_sheet.png, black is colt_front_walk_sheet_black.png?
-                    # Actually we look for colt_front_walk_sheet_black.png
-                    alt = SRC / f"{stem}_black.png"
-                    # stem already is _sheet, so alt = _sheet_black
-                    # But we already have that
-                    if alt.exists():
-                        black_path = alt
-                    else:
-                        # check white+black pair exists as separate files?
-                        # if s is colt_front_walk_sheet.png, maybe pair is colt_front_walk_sheet_white.png + _black.png
-                        white_variant = SRC / f"{stem}_white.png"
-                        if white_variant.exists():
-                            # then we should slice white variant, not this
-                            continue
-                        black_path = None
-                # if this sheet itself is the plain sheet (no white suffix) and there's no black pair,
-                # slice it alone
-                # But if there is a white/black pair with same base, prefer those
-                white_pair = SRC / f"{stem}_white.png"
-                black_pair = SRC / f"{stem}_black.png"
-                if white_pair.exists() and black_pair.exists():
-                    slice_one_sheet(white_pair, args.frames, black_pair)
-                else:
-                    slice_one_sheet(s, args.frames, black_path if black_path and black_path.exists() else None)
+                slice_one_sheet(sheet, args.frames, black)
         return
 
     if not args.sheet:
-        print(__doc__)
+        ap.print_help()
         return
 
-    name = args.sheet.replace(".png", "")
-    # support passing full path or just stem
-    sheet_path = SRC / f"{name}.png"
-    if not sheet_path.exists():
-        # try with _white
-        sheet_path_white = SRC / f"{name}_white.png"
-        if sheet_path_white.exists():
-            black_path = SRC / f"{name}_black.png"
-            slice_one_sheet(sheet_path_white, args.frames, black_path if black_path.exists() else None)
-            return
-        print(f"not found: {sheet_path} nor {sheet_path_white}")
-        sys.exit(1)
+    requested = Path(args.sheet)
+    if requested.is_file():
+        sheet_path = requested
+    else:
+        name = args.sheet
+        for ext in IMAGE_EXTENSIONS:
+            if name.lower().endswith(ext):
+                name = name[:-len(ext)]
+                break
+        sheet_path = find_image(name)
+        if sheet_path is None:
+            print(f"not found: {name}.png nor {name}.webp in {SRC}")
+            sys.exit(1)
 
-    # check for black pair with same base
-    black_path = None
-    # if sheet_path is ..._sheet.png, check ..._sheet_black.png exists?
-    # Actually if user gave colt_front_walk_sheet, we check colt_front_walk_sheet_black.png
-    # But typical pair is colt_front_walk_sheet_white.png + _black.png
-    # So also check _white variant
-    white_variant = SRC / f"{name}_white.png"
-    black_variant = SRC / f"{name}_black.png"
-    if white_variant.exists() and black_variant.exists():
+    stem = sheet_path.stem
+    if stem.endswith("_sheet_white"):
+        base_stem = stem.removesuffix("_white")
+        black_path = sibling_with_stem(sheet_path, f"{base_stem}_black")
+        slice_one_sheet(sheet_path, args.frames, black_path)
+        return
+
+    white_variant = sibling_with_stem(sheet_path, f"{stem}_white")
+    black_variant = sibling_with_stem(sheet_path, f"{stem}_black")
+    if white_variant and black_variant:
         slice_one_sheet(white_variant, args.frames, black_variant)
     else:
-        # check if sheet_path itself has a black counterpart (sheet + _black.png?)
-        # e.g. colt_front_walk_sheet.png + colt_front_walk_sheet_black.png — unlikely
-        maybe_black = SRC / f"{name}_black.png"
-        if maybe_black.exists():
-            black_path = maybe_black
-        slice_one_sheet(sheet_path, args.frames, black_path)
+        slice_one_sheet(sheet_path, args.frames, black_variant)
 
 
 if __name__ == "__main__":
