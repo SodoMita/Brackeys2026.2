@@ -76,8 +76,13 @@ text/autoadvance_fixed_delay=0.0
 
 [display]
 
+window/size/viewport_width=1280
+window/size/viewport_height=720
+window/size/window_width_override=1280
+window/size/window_height_override=720
 window/size/mode=4
 window/stretch/mode="viewport"
+window/stretch/aspect="keep"
 
 [editor_plugins]
 
