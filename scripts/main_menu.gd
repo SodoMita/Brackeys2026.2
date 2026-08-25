@@ -9,7 +9,7 @@ const CYAN := Color(0.4, 0.95, 1.0)
 const PAPER := Color(0.92, 0.86, 0.85)
 const MUTED := Color(0.66, 0.56, 0.56)
 const DIM := Color(0.05, 0.03, 0.01, 0.88)
-const GAME_SCENE := "res://scenes/game.tscn"
+const GAME_SCENE := "res://scenes/level_1.tscn"
 
 var main_panel: Control
 var settings_panel: Control
