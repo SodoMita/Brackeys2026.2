@@ -522,14 +522,23 @@ func _unhandled_input(ev: InputEvent) -> void:
 			get_tree().reload_current_scene()
 
 
+func _set_door(index: int, closed: bool) -> void:
+	if index >= 0 and index < doors.size():
+		door_set(doors[index], closed)
+
+
 func _start() -> void:
+	if paused and is_inside_tree():
+		get_tree().paused = false
+		paused = false
 	state = State.PLAYING
-	overlay.visible = false
+	if overlay:
+		overlay.visible = false
 	if DisplayServer.get_name() != "headless":
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-	door_set(doors[0], true)
-	door_set(doors[2], true)
-	door_set(doors[4], true)
+	_set_door(0, true)
+	_set_door(2, true)
+	_set_door(4, true)
 	_say("res://dialogue/intro.dtl")
 	_spawn_wave()
 
@@ -539,7 +548,7 @@ func _enter_room(r: int) -> void:
 		return
 	room = r
 	wave_in_room = 0
-	door_set(doors[1 if r == 1 else 3], true)
+	_set_door(1 if r == 1 else 3, true)
 	hud_wave.text = "ROOM %d" % (r + 1)
 	_spawn_wave()
 
@@ -597,8 +606,9 @@ func _betrayal() -> void:
 	if state != State.PLAYING:
 		return
 	state = State.BOSS
-	door_set(doors[4], true)
-	companion.vanish()
+	_set_door(4, true)
+	if companion and is_instance_valid(companion):
+		companion.vanish()
 	_say("res://dialogue/betrayal.dtl")
 	boss_delay = 3.5
 
@@ -640,11 +650,11 @@ func _on_enemy_died(pos: Vector3, e: Node3D) -> void:
 func _room_cleared() -> void:
 	if room == 0:
 		_say("res://dialogue/quip1.dtl")
-		door_set(doors[0], false)
+		_set_door(0, false)
 	elif room == 1:
-		door_set(doors[2], false)
+		_set_door(2, false)
 	elif room == 2:
-		door_set(doors[4], false)
+		_set_door(4, false)
 
 
 func _end_mission() -> void:
@@ -712,6 +722,8 @@ func _on_attacked(e: Node3D) -> void:
 
 
 func _on_purchase(item: int) -> void:
+	if item < -1 or item > 2 or player == null:
+		return
 	if item == -1:
 		for t in terminals:
 			t.refresh_panel(scrap, player.weapons[2])
