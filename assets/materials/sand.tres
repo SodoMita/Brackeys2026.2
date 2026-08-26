@@ -1,0 +1,29 @@
+[gd_resource type="ShaderMaterial" format=3 uid="uid://qf31lh7mae6"]
+
+[ext_resource type="Shader" uid="uid://c83d1y2j5iu26" path="res://assets/materials/sand.gdshader" id="1_yqtc1"]
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_yqtc1")
+shader_parameter/col_deep = Color(0.055, 0.028, 0.018, 1)
+shader_parameter/col_low = Color(0.335, 0.155, 0.068, 1)
+shader_parameter/col_mid = Color(0.76, 0.47, 0.215, 1)
+shader_parameter/col_high = Color(0.976, 0.845, 0.6, 1)
+shader_parameter/col_vein = Color(1, 0.61, 0.24, 1)
+shader_parameter/sample_object_space = false
+shader_parameter/world_grid = 0.0
+shader_parameter/grid_size = 1.0
+shader_parameter/strata_freq = 2.35
+shader_parameter/dune_freq = 1.6
+shader_parameter/grit_strength = 1.0
+shader_parameter/band_strength = 0.5
+shader_parameter/relief = 0.05
+shader_parameter/vein_amount = 0.9
+shader_parameter/vein_scale = 0.55
+shader_parameter/vein_pulse_speed = 1.7
+shader_parameter/underground_darkness = 1.0
+shader_parameter/dark_height = -9.0
+shader_parameter/lit_height = 3.5
+shader_parameter/colour_levels = 22.0
+shader_parameter/dither = 1.0
+shader_parameter/voxel_size = 1.0

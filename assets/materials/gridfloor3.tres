@@ -1,0 +1,9 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://cwul46th333ja"]
+
+[ext_resource type="Texture2D" uid="uid://dcj534ee13h7r" path="res://scripts/sand_texture.tres" id="1_ul1lt"]
+
+[resource]
+albedo_texture = ExtResource("1_ul1lt")
+uv1_triplanar = true
+uv1_world_triplanar = true
+texture_filter = 0
