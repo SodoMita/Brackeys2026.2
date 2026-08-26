@@ -495,7 +495,7 @@ func _reset_defaults() -> void:
 
 
 func _on_start_pressed() -> void:
-	start_game()
+	start_game.call_deferred()
 
 
 func start_game() -> void:
@@ -507,7 +507,7 @@ func start_game() -> void:
 	var target_scene := GAME_SCENE
 	if not ResourceLoader.exists(target_scene):
 		target_scene = "res://scenes/main.tscn"
-	tree.change_scene_to_file(target_scene)
+	tree.change_scene_to_file.call_deferred(target_scene)
 
 
 func _mark_input_handled() -> void:
@@ -535,7 +535,7 @@ func _unhandled_input(ev: InputEvent) -> void:
 			_mark_input_handled()
 	else:
 		if _is_start_trigger(ev):
-			start_game()
+			start_game.call_deferred()
 			_mark_input_handled()
 
 

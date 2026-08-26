@@ -79,11 +79,11 @@ static func apply(values: Dictionary) -> void:
 	var type_bus := AudioServer.get_bus_index(type_bus_name)
 	if type_bus >= 0: AudioServer.set_bus_volume_db(type_bus, linear_to_db(maxf(float(current.typing_volume), 0.001)))
 	ProjectSettings.set_setting("dialogic/audio/dialogue_volume", float(current.dialogue_volume))
-	if DisplayServer.get_name() != "headless" and not OS.has_feature("web"):
-		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN if bool(current.fullscreen) else DisplayServer.WINDOW_MODE_WINDOWED)
-		DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_BORDERLESS, bool(current.borderless))
-		DisplayServer.window_set_size(current.resolution)
-		DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_ENABLED if int(current.vsync) else DisplayServer.VSYNC_DISABLED)
+	if DisplayServer.get_name() != "headless" and not OS.has_feature("web") and not OS.get_name() == "macOS":
+		DisplayServer.window_set_mode.call_deferred(DisplayServer.WINDOW_MODE_FULLSCREEN if bool(current.fullscreen) else DisplayServer.WINDOW_MODE_WINDOWED)
+		DisplayServer.window_set_flag.call_deferred(DisplayServer.WINDOW_FLAG_BORDERLESS, bool(current.borderless))
+		DisplayServer.window_set_size.call_deferred(current.resolution)
+		DisplayServer.window_set_vsync_mode.call_deferred(DisplayServer.VSYNC_ENABLED if int(current.vsync) else DisplayServer.VSYNC_DISABLED)
 	var tree := Engine.get_main_loop() as SceneTree
 	if tree != null:
 		var aa := clampi(int(current.aa_mode), 0, 3)
