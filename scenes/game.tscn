@@ -1,5 +1,27 @@
 [gd_scene format=3 uid="uid://cgasa1ne6li6h"]
 
+<<<<<<< HEAD
+[ext_resource type="Script" uid="uid://bjd3s0sfg2joj" path="res://scripts/game.gd" id="1_game"]
+[ext_resource type="PackedScene" uid="uid://c66431x373584" path="res://scenes/level.tscn" id="2_level"]
+[ext_resource type="PackedScene" uid="uid://wxw4l5sr1wpw" path="res://scenes/player.tscn" id="3_player"]
+[ext_resource type="PackedScene" uid="uid://c1in672ctfy7p" path="res://scenes/companion.tscn" id="4_comp"]
+[ext_resource type="PackedScene" uid="uid://b4qjatl1fjjm2" path="res://scenes/hud.tscn" id="5_hud"]
+
+[node name="Game" type="Node3D" unique_id=88482836]
+script = ExtResource("1_game")
+
+[node name="Level" parent="." unique_id=656842946 instance=ExtResource("2_level")]
+
+[node name="Enemies" type="Node3D" parent="." unique_id=104537701]
+
+[node name="Player" parent="." unique_id=1907396401 instance=ExtResource("3_player")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -4)
+
+[node name="Companion" parent="." unique_id=1309734888 instance=ExtResource("4_comp")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0, -2)
+
+[node name="HUD" parent="." unique_id=1613735597 instance=ExtResource("5_hud")]
+=======
 [ext_resource type="PackedScene" uid="uid://wxw4l5sr1wpw" path="res://scenes/player.tscn" id="3_player"]
 [ext_resource type="PackedScene" uid="uid://c1in672ctfy7p" path="res://scenes/companion.tscn" id="4_comp"]
 [ext_resource type="PackedScene" uid="uid://t2qqqkl1ncfn" path="res://scenes/level_1.tscn" id="4_iywne"]
@@ -18,3 +40,4 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0, -2)
 [node name="Level1" parent="." unique_id=211465128 instance=ExtResource("4_iywne")]
 
 [node name="HUD" parent="." unique_id=1910638183 instance=ExtResource("5_hud")]
+>>>>>>> main

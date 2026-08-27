@@ -1,0 +1,41 @@
+join Narrator center
+join me center
+[background arg="res://assets/cutscene/panel00.png" fade="0.0"]
+[wait time="2.0"]
+Narrator:  we don't see world the same right ? The world had changed.
+me: What did I miss? I don't know anything about myself. Why the hell am I here?\
+\
+......\
+\
+Who are you?
+[wait time="2.0"]
+Narrator: Science has changed so far. We have achieved peak development in AI and robotics, but did we lose something along the way? Humanity. We have become robots, losing our human side...
+me: Hey, %$%$@ man, answer me first.
+[wait time="2.0"]
+Narrator: Hey... fine, where were we? What do I call you?\
+\
+Wait, Narrator? Such a weird name to choose. I guess the dev ran out of time finding you a name.\
+\
+I wish the dev had given me one too... lol.
+[wait time="2.0"]
+me: hey .......... fine , were we ? what i call you.... \
+wait Narrator such weird name choose , i guess dev out time finding you name. \
+i wish dev had give me tho... lol
+[background arg="res://assets/cutscene/panel01.png" fade="0.0"]
+[wait time="2.0"]
+Narrator: Funny, but we don't have time for this. Listen carefully. Inside a neighboring country, there is a secret organization called P.I.T. They were conducting medical research in the Sahara Desert. They were trying to find medicine for the virus. News arrived that they had failed badly. However, there is a large amount of government activity in the area. We don't have any idea about what is happening, but you chose to take this mission on.
+[wait time="2.0"]
+Narrator: The mission is simple\: enter the country and get close to Ryan, whose lawyer is fighting a case against P.I.T. Because of him, everyone knows about that failed experiment. His goal is to question P.I.T.'s false promise that they can find a cure. Sooner or later, he will be controlled by the power of money. Remember my last word\: you will get...
+[wait time="2.0"]
+me: just like spyXfamily \
+\
+ wait, what to get back ? \
+\
+sandwitch
+[wait time="2.0"]
+me:  He’s gone right. \
+\
+Damn, my jokes are bad.\
+
+[wait time="2.0"]
+me: What's next, Dev? Another backstory? Where is the game? \:)

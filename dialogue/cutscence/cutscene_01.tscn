@@ -1,0 +1,12 @@
+[gd_scene format=3 uid="uid://c6yotuvd7i0yb"]
+
+[ext_resource type="Script" uid="uid://beoj8mwom1thx" path="res://dialogue/cutscence/cutscene_01.gd" id="1_w3dm1"]
+
+[node name="Cutscene01" type="Control" unique_id=1618772385]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_w3dm1")
