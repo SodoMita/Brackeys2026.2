@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3 uid="uid://vgru73698jwfv"]
+[gd_scene format=3 uid="uid://b4qjatl1fjjm2"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_hp"]
 font_size = 20
@@ -36,50 +36,50 @@ font_color = Color(1, 0.75, 0.4, 1)
 outline_size = 3
 outline_color = Color(0, 0, 0, 1)
 
-[node name="HUD" type="CanvasLayer"]
+[node name="HUD" type="CanvasLayer" unique_id=369731198]
 
-[node name="HP" type="Label" parent="."]
+[node name="HP" type="Label" parent="." unique_id=191388293]
 offset_left = 8.0
 offset_top = 128.0
 offset_right = 80.0
 offset_bottom = 154.0
-label_settings = SubResource("LabelSettings_hp")
 text = "100"
+label_settings = SubResource("LabelSettings_hp")
 
-[node name="Rank" type="Label" parent="."]
+[node name="Rank" type="Label" parent="." unique_id=1196779164]
 offset_left = 272.0
 offset_top = 8.0
 offset_right = 320.0
 offset_bottom = 40.0
-label_settings = SubResource("LabelSettings_rank")
 text = "D"
+label_settings = SubResource("LabelSettings_rank")
 
-[node name="Wave" type="Label" parent="."]
+[node name="Wave" type="Label" parent="." unique_id=825730158]
 offset_left = 8.0
 offset_top = 8.0
 offset_right = 120.0
 offset_bottom = 26.0
-label_settings = SubResource("LabelSettings_wave")
 text = "ROOM 1"
+label_settings = SubResource("LabelSettings_wave")
 
-[node name="Scrap" type="Label" parent="."]
+[node name="Scrap" type="Label" parent="." unique_id=203473011]
 offset_left = 130.0
 offset_top = 8.0
 offset_right = 230.0
 offset_bottom = 26.0
-label_settings = SubResource("LabelSettings_scrap")
 text = "SCRAP 0"
+label_settings = SubResource("LabelSettings_scrap")
 
-[node name="Weapon" type="Label" parent="."]
+[node name="Weapon" type="Label" parent="." unique_id=1777537728]
 offset_left = 8.0
 offset_top = 152.0
 offset_right = 100.0
 offset_bottom = 170.0
-label_settings = SubResource("LabelSettings_wpn")
 text = "REVOLVER"
+label_settings = SubResource("LabelSettings_wpn")
 
-[node name="Crosshair" type="Control" parent="."]
-layout_mode = 0
+[node name="Crosshair" type="Control" parent="." unique_id=1259614646]
+layout_mode = 3
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
@@ -89,43 +89,41 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="H1" type="ColorRect" parent="Crosshair"]
+[node name="H1" type="ColorRect" parent="Crosshair" unique_id=827490958]
+visible = false
 layout_mode = 0
 offset_left = -4.0
 offset_top = -6.0
 offset_right = 4.0
 offset_bottom = -4.0
 color = Color(1, 1, 1, 0.9)
-visible = false
 
-[node name="H2" type="ColorRect" parent="Crosshair"]
+[node name="H2" type="ColorRect" parent="Crosshair" unique_id=1428765157]
+visible = false
 layout_mode = 0
 offset_left = -4.0
 offset_top = 4.0
 offset_right = 4.0
 offset_bottom = 6.0
 color = Color(1, 1, 1, 0.9)
-visible = false
 
-[node name="V1" type="ColorRect" parent="Crosshair"]
+[node name="V1" type="ColorRect" parent="Crosshair" unique_id=1854136909]
+visible = false
 layout_mode = 0
 offset_left = -2.0
 offset_top = -8.0
-offset_right = 0.0
 offset_bottom = -2.0
 color = Color(1, 1, 1, 0.9)
-visible = false
 
-[node name="V2" type="ColorRect" parent="Crosshair"]
+[node name="V2" type="ColorRect" parent="Crosshair" unique_id=1407932091]
+visible = false
 layout_mode = 0
-offset_left = 0.0
 offset_top = 2.0
 offset_right = 2.0
 offset_bottom = 8.0
 color = Color(1, 1, 1, 0.9)
-visible = false
 
-[node name="HurtFlash" type="ColorRect" parent="."]
+[node name="HurtFlash" type="ColorRect" parent="." unique_id=829238685]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -134,13 +132,13 @@ grow_vertical = 2
 mouse_filter = 2
 color = Color(1, 0, 0.1, 0)
 
-[node name="Overlay" type="Label" parent="."]
+[node name="Overlay" type="Label" parent="." unique_id=917482122]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-label_settings = SubResource("LabelSettings_overlay")
 text = "S T E E L   K N I F E"
+label_settings = SubResource("LabelSettings_overlay")
 horizontal_alignment = 1
 vertical_alignment = 1

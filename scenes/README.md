@@ -33,14 +33,14 @@ Previously `game.gd` built everything in code. Now it checks if nodes exist:
 
 ```gdscript
 if get_node_or_null("Level") != null:
-    _collect_from_level(Level)  # finds Doors, Terminals, Triggers
+	_collect_from_level(Level)  # finds Doors, Terminals, Triggers
 else:
-    _build_level()  # fallback
+	_build_level()  # fallback
 
 if get_node_or_null("Player") != null:
-    _wire_player(Player)
+	_wire_player(Player)
 else:
-    _build_player()
+	_build_player()
 ```
 
 So you can:
