@@ -30,7 +30,7 @@ func _ready() -> void:
 		return
 	if dialogic.has_signal("timeline_ended"):
 		dialogic.timeline_ended.connect(_on_timeline_ended)
-	if _has_timeline(dialogic):
+	if _has_timeline():
 		dialogic.call("start", TIMELINE)
 	else:
 		# No timeline authored yet: do not strand the player.
@@ -55,12 +55,12 @@ func _dialogic() -> Node:
 	return get_node_or_null("/root/Dialogic")
 
 
-static func _has_timeline(dialogic: Node) -> bool:
-	# Dialogic exposes authored timelines through its resource util; fall back
-	# to a plain exists() check so a version change cannot crash the boot.
-	var util: Variant = Engine.get_singleton("DialogicResourceUtil") \
-		if Engine.has_singleton("DialogicResourceUtil") else null
-	if util != null and util.has_method("get_timeline"):
+## Dialogic registers authored timelines by short name in its `.dtl` directory
+## (see the `directories/dtl_directory` map in project.godot). Asking its own
+## resource util is the only reliable check — a bare ResourceLoader.exists()
+## misses timelines whose runtime loader the addon registers lazily.
+static func _has_timeline() -> bool:
+	if DialogicResourceUtil.timeline_resource_exists(TIMELINE):
 		return true
 	return ResourceLoader.exists("res://dialogue/cutscence/cutscene_01.dtl")
 
