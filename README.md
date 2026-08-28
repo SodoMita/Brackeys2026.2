@@ -39,6 +39,7 @@ Arena shooter.
 │   ├── test_level_director.gd # Progression integration tests
 │   ├── test_input_map.gd   # Direct-launch input initialization
 │   ├── test_scene.gd       # Scene integration tests
+│   ├── test_settings.gd    # Options persistence + subtitles visibility rule
 │   └── test_ui.gd          # UI layer / pause / dialog-state tests
 ├── assets/                 # Art/audio go here
 ├── addons/                 # Third-party addons go here

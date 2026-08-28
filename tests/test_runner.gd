@@ -84,7 +84,13 @@ func _run_suite(fname: String) -> void:
 			methods.append(m["name"])
 	for mname in methods:
 		var before: int = suite.failures.size()
+		# ::notice marks are GitHub annotations — they survive in the run page
+		# even when the raw log cannot be downloaded. A test that aborts on a
+		# script error shows START without END, which would otherwise be
+		# silently counted as a pass.
+		print("::notice file=%s::START %s :: %s" % [TEST_DIR.path_join(fname), fname, mname])
 		suite.call(mname)
+		print("::notice file=%s::END %s :: %s" % [TEST_DIR.path_join(fname), fname, mname])
 		if suite.failures.size() == before:
 			_passed += 1
 			print("[PASS] %s :: %s" % [fname, mname])
