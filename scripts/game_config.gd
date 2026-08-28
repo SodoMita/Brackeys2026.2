@@ -105,7 +105,42 @@ extends Node
 @export var ending_timeline_name := "ending"
 
 
+var _dtl_loader: ResourceFormatLoader = null
+
+
+func _enter_tree() -> void:
+	# Earliest possible hook: Cfg is the first autoload in project.godot, so
+	# this runs before anything can try to load a .dtl.
+	_register_dtl_loader()
+
+
+func _exit_tree() -> void:
+	if _dtl_loader != null:
+		ResourceLoader.remove_resource_format_loader(_dtl_loader)
+		_dtl_loader = null
+
+
+## Dialogic 2 ships `DialogicTimelineFormatLoader` but never registers it, so
+## `ResourceLoader` cannot resolve `res://**.dtl` and every timeline in the
+## project is unloadable. The deleted game.gd used to register it at boot; this
+## restores that. Without it no dialogue plays — intro, cutscene, quips, ending.
+func _register_dtl_loader() -> void:
+	if _dtl_loader != null:
+		return
+	const LOADER := "res://addons/dialogic/Resources/TimelineResourceLoader.gd"
+	if not ResourceLoader.exists(LOADER):
+		return
+	var script: GDScript = load(LOADER)
+	if script == null:
+		return
+	_dtl_loader = script.new() as ResourceFormatLoader
+	if _dtl_loader == null:
+		return
+	ResourceLoader.add_resource_format_loader(_dtl_loader)
+
+
 func _ready() -> void:
+	_register_dtl_loader()
 	if intro_timeline == null:
 		intro_timeline = timeline_by_name(intro_timeline_name)
 	if quip_timeline == null:

@@ -205,9 +205,12 @@ Assign them via the `Dialogue` group on `Cfg` in the inspector —
 `intro_timeline` (level start), `quip_timeline` (room clear) and
 `ending_timeline` (victory, before the result card).
 
-Note: the Dialogic 2 alpha never registers its `.dtl` runtime loader, so the
-addon's own `DialogicTimelineFormatLoader` class is wired up at boot, and
-`*.dtl` is added to the export include filters.
+Note: Dialogic 2 ships `DialogicTimelineFormatLoader` but never registers it,
+so `ResourceLoader` cannot resolve `res://**.dtl` at all. `game_config.gd`
+(the first autoload) registers it in `_enter_tree()` and unregisters it in
+`_exit_tree()`; without that, every timeline in the project is unloadable and
+the game boots silently dialogue-free. `*.dtl` is also in the export include
+filters for all five presets. `tests/test_dialogue.gd` covers both.
 
 ## History
 
