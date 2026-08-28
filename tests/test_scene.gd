@@ -121,11 +121,11 @@ func test_style_events_feed_the_meter() -> void:
 	var scene := _boot()
 	scene._ready()
 	scene._on_player_fired(null, true, false, 10.0, false)
-	var headshot := scene.stats.style
+	var headshot: float = float(scene.stats.style)
 	assert_gt(headshot, 0.0, "headshot scored")
 	scene.stats.style = 0.0
 	scene._on_player_parried()
-	assert_gt(scene.stats.style, headshot, "parry outscores a headshot")
+	assert_gt(float(scene.stats.style), headshot, "parry outscores a headshot")
 	scene.free()
 
 

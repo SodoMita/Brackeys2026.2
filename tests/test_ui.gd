@@ -2,6 +2,8 @@ extends TestBase
 ## UI system tests: layer ordering contract, UIManager state machine,
 ## touch-control gating, pause menu intents. All headless-safe (nodes are
 ## exercised outside the tree; tree-dependent effects are guarded).
+## Several tests instantiate player.tscn as a test double on purpose.
+# gdlint: disable=duplicated-load
 
 
 func test_layer_stack_ordering() -> void:
@@ -59,6 +61,155 @@ func test_touch_button_single_touch_ownership() -> void:
 	b._gui_input(r0)
 	assert_eq(ups[0], 1, "owning finger releases")
 	b.free()
+
+
+func test_joystick_drives_movement() -> void:
+	var tc := TouchControls.new()
+	var p: CharacterBody3D = (load("res://scenes/player.tscn") as PackedScene).instantiate()
+	tc.setup(p)
+	tc.set_active(true)
+	# A touch on the left half spawns the floating stick.
+	var t := InputEventScreenTouch.new()
+	t.index = 0
+	t.pressed = true
+	t.position = Vector2(120, 360)
+	tc._input(t)
+	assert_eq(tc._stick_finger, 0, "left-half touch spawns the stick")
+	# Push the knob straight up (screen -y => forward, +player touch y).
+	var d := InputEventScreenDrag.new()
+	d.index = 0
+	d.position = Vector2(120, 276)
+	tc._input(d)
+	assert_gt(p.touch_move.y, 0.9, "full deflection = full forward")
+	assert_near(p.touch_move.x, 0.0, 0.001, "no sideways input")
+	# Release stops the player.
+	var r := InputEventScreenTouch.new()
+	r.index = 0
+	r.pressed = false
+	r.position = Vector2(120, 276)
+	tc._input(r)
+	assert_eq(tc._stick_finger, -1, "stick released")
+	assert_eq(p.touch_move, Vector2.ZERO, "movement zeroed on release")
+	tc.free()
+	p.free()
+
+
+func test_joystick_deadzone_blocks_tiny_drags() -> void:
+	var tc := TouchControls.new()
+	var p: CharacterBody3D = (load("res://scenes/player.tscn") as PackedScene).instantiate()
+	tc.setup(p)
+	tc.set_active(true)
+	var t := InputEventScreenTouch.new()
+	t.index = 0
+	t.pressed = true
+	t.position = Vector2(120, 360)
+	tc._input(t)
+	var d := InputEventScreenDrag.new()
+	d.index = 0
+	d.position = Vector2(125, 364)
+	tc._input(d)
+	assert_eq(p.touch_move, Vector2.ZERO, "sub-deadzone drags stay still")
+	tc.free()
+	p.free()
+
+
+func test_look_surface_accumulates_drag() -> void:
+	var tc := TouchControls.new()
+	var p: CharacterBody3D = (load("res://scenes/player.tscn") as PackedScene).instantiate()
+	tc.setup(p)
+	tc.set_active(true)
+	var t := InputEventScreenTouch.new()
+	t.index = 0
+	t.pressed = true
+	t.position = Vector2(900, 360)
+	tc._input(t)
+	assert_true(tc._look_fingers.has(0), "right-half touch tracked for look")
+	var d := InputEventScreenDrag.new()
+	d.index = 0
+	d.position = Vector2(980, 360)
+	tc._input(d)
+	assert_near(p.touch_look.x, 80.0, 0.001, "horizontal look delta accumulated")
+	assert_eq(p.touch_look.y, 0.0, "no vertical delta yet")
+	var d2 := InputEventScreenDrag.new()
+	d2.index = 0
+	d2.position = Vector2(960, 330)
+	tc._input(d2)
+	assert_near(p.touch_look.x, 60.0, 0.001, "later deltas accumulate, not replace")
+	assert_lt(p.touch_look.y, 0.0, "upward drag (finger moves up) looks up")
+	var r := InputEventScreenTouch.new()
+	r.index = 0
+	r.pressed = false
+	r.position = Vector2(960, 330)
+	tc._input(r)
+	assert_false(tc._look_fingers.has(0), "look finger released")
+	tc.free()
+	p.free()
+
+
+func test_input_routes_button_touches() -> void:
+	var tc := TouchControls.new()
+	var p: CharacterBody3D = (load("res://scenes/player.tscn") as PackedScene).instantiate()
+	tc.setup(p)
+	tc.set_active(true)
+	var rect := tc._button_rect("fire")
+	var t := InputEventScreenTouch.new()
+	t.index = 0
+	t.pressed = true
+	t.position = rect.get_center()
+	tc._input(t)
+	assert_true(p.touch_fire, "fire held while touched")
+	var d := InputEventScreenDrag.new()
+	d.index = 0
+	d.position = rect.get_center() + Vector2(12, 0)
+	tc._input(d)
+	assert_true(p.touch_fire, "fire stays held while the finger wiggles")
+	var r := InputEventScreenTouch.new()
+	r.index = 0
+	r.pressed = false
+	r.position = rect.get_center()
+	tc._input(r)
+	assert_false(p.touch_fire, "fire released")
+	tc.free()
+	p.free()
+
+
+func test_pause_button_emits_intent() -> void:
+	var tc := TouchControls.new()
+	var p: CharacterBody3D = (load("res://scenes/player.tscn") as PackedScene).instantiate()
+	tc.setup(p)
+	tc.set_active(true)
+	var got := [false]
+	tc.pause_pressed.connect(func(): got[0] = true)
+	var center := tc._button_rect("pause").get_center()
+	var t := InputEventScreenTouch.new()
+	t.index = 0
+	t.pressed = true
+	t.position = center
+	tc._input(t)
+	assert_true(got[0], "pause button emits intent")
+	var r := InputEventScreenTouch.new()
+	r.index = 0
+	r.pressed = false
+	r.position = center
+	tc._input(r)
+	assert_true(got[0], "release does not re-emit")
+	tc.free()
+	p.free()
+
+
+func test_dash_button_dims_on_cooldown() -> void:
+	var tc := TouchControls.new()
+	var p: CharacterBody3D = (load("res://scenes/player.tscn") as PackedScene).instantiate()
+	tc.setup(p)
+	tc.set_active(true)
+	p.dash_cd = 0.5
+	tc._process(0.016)
+	assert_true(tc.buttons["dash"].node._disabled, "dash dims while on cooldown")
+	p.dash_cd = 0.0
+	tc._process(0.016)
+	assert_false(tc.buttons["dash"].node._disabled, "dash re-enabled after cooldown")
+	tc.free()
+	p.free()
 
 
 func test_ui_manager_pause_state_machine() -> void:

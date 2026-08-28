@@ -126,16 +126,21 @@ This is the most involved. You can build it entirely in editor, or instance the 
 You can also use CSGBoxes for walls for easier editing, then convert to StaticBody.
 
 ### 7. HUD (`hud.tscn`)
-1. `CanvasLayer` named `HUD`
-2. Children:
-   - `Label` `HP` at (8,128) font 20 color (1,0.7,0.3) text "100"
-   - `Label` `Rank` at (272,8) font 26 color (0.7,0.7,0.7) text "D"
-   - `Label` `Wave` at (8,8) font 12 color (0.9,0.8,0.6) text "ROOM 1"
-   - `Label` `Scrap` at (130,8) font 12 color (1,0.85,0.4) text "SCRAP 0"
-   - `Label` `Weapon` at (8,152) font 9 color (0.8,0.8,0.8) text "REVOLVER"
-   - `Node` `Crosshair` with 4 `ColorRect` at center (156,84,8,2) etc, visible false, color (1,1,1,0.9)
+1. `CanvasLayer` named `HUD` (layer 1, passive — no input)
+2. Children (mobile-friendly: large fonts, safe margins, no overlapping rows):
+   - `Label` `Wave` at (14,12) font 17 color (0.9,0.82,0.62) text "ROOM 1"
+   - `Label` `Scrap` at (14,44) font 17 color (1,0.85,0.4) text "SCRAP 0"
+   - `Label` `HP` at (14,80) font 24 color (1,0.72,0.32) text "100"
+   - `ColorRect` `HPBarBack` at (14,114) size 240×18, dark fill, mouse_filter Ignore
+   - `ColorRect` `HPFill` at (16,116) size 236×14 — width/color driven by
+     `hud_controller.gd` (green→red as HP drops), mouse_filter Ignore
+   - `Label` `Weapon` at (14,140) font 14 color (0.85,0.85,0.88) text "REVOLVER"
+   - `Label` `Rank` top-center font 30 color (0.78,0.78,0.82) text "D"
+   - `Node` `Crosshair` centered with 4 visible `ColorRect` ticks (9×4 with a
+     5px gap) + center `Dot` — always on, essential on touch devices
    - `ColorRect` `HurtFlash` full rect, color (1,0,0.1,0), mouse_filter Ignore
-   - `Label` `Overlay` full rect, centered, font 14 color (1,0.75,0.4), text "S T E E L   K N I F E"
+   - `Label` `Overlay` full rect, centered, font 22 color (1,0.78,0.45),
+     text "S T E E L   K N I F E"
 3. Save
 
 ### 8. Game (`game.tscn`)

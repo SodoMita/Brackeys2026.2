@@ -152,12 +152,48 @@ func _ready() -> void:
 ## Resolve a Dialogic timeline identifier to its resource, or null when the
 ## addon (or that timeline) is unavailable. Never raises — a missing timeline
 ## must degrade to "no dialogue", not a boot failure.
+##
+## Falls back to scanning the dialogue folder when the identifier is unknown
+## to Dialogic: a headless editor import wipes `directories/dtl_directory`
+## from project.godot, so relying on it alone silently killed the intro,
+## quips and ending in any build made after an import.
 static func timeline_by_name(identifier: String) -> Resource:
 	if identifier.is_empty():
 		return null
-	if not DialogicResourceUtil.timeline_resource_exists(identifier):
+	if identifier.ends_with(".dtl"):
+		return load(identifier) if ResourceLoader.exists(identifier) else null
+	if DialogicResourceUtil.timeline_resource_exists(identifier):
+		return DialogicResourceUtil.get_timeline_resource(identifier)
+	var path := _find_timeline_path(identifier)
+	if path == "" or not ResourceLoader.exists(path):
 		return null
-	return DialogicResourceUtil.get_timeline_resource(identifier)
+	return load(path)
+
+
+## Recursive scan for `res://dialogue/<identifier>.dtl`. Small tree, called
+## only when Dialogic's own directory misses an identifier.
+static func _find_timeline_path(identifier: String) -> String:
+	return _scan_dir("res://dialogue", identifier)
+
+
+static func _scan_dir(dir_path: String, identifier: String) -> String:
+	var dir := DirAccess.open(dir_path)
+	if dir == null:
+		return ""
+	dir.list_dir_begin()
+	var file_name := dir.get_next()
+	while file_name != "":
+		var full := dir_path.path_join(file_name)
+		if dir.current_is_dir():
+			if not file_name.begins_with("."):
+				var found := _scan_dir(full, identifier)
+				if found != "":
+					return found
+		elif file_name == identifier + ".dtl":
+			return full
+		file_name = dir.get_next()
+	dir.list_dir_end()
+	return ""
 
 
 func heal_on_damage(current_hp: float, damage: float) -> float:

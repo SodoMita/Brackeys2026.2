@@ -1,4 +1,4 @@
-class_name Sfx
+class_name SfxSynth
 extends Node
 ## Procedural sound effects.
 ##

@@ -12,6 +12,8 @@ extends Node
 const WEAPON_NAMES := ["REVOLVER", "SHOTGUN", "NAILGUN"]
 const HURT_FLASH_COLOR := Color(0.75, 0.06, 0.06, 0.42)
 const HURT_FLASH_DECAY := 2.6
+const HP_FULL_COLOR := Color(0.35, 0.95, 0.45)
+const HP_LOW_COLOR := Color(1.0, 0.25, 0.15)
 
 var hud: CanvasLayer = null
 var player: Node3D = null
@@ -25,6 +27,8 @@ var _scrap: Label
 var _weapon: Label
 var _overlay: Label
 var _hurt_flash: ColorRect
+var _hp_fill: ColorRect
+var _hp_fill_width := 0.0
 var _overlay_t := 0.0
 var _flash := 0.0
 
@@ -47,6 +51,9 @@ func bind(p_hud: CanvasLayer, p_player: Node3D, p_stats: RunStats,
 	if _hurt_flash != null:
 		_hurt_flash.color = HURT_FLASH_COLOR
 		_hurt_flash.modulate.a = 0.0
+	_hp_fill = hud.get_node_or_null("HPFill") as ColorRect
+	if _hp_fill != null:
+		_hp_fill_width = _hp_fill.size.x
 	_refresh()
 
 
@@ -73,6 +80,10 @@ func _refresh() -> void:
 		var hp := float(player.hp)
 		var max_hp := _max_hp()
 		_hp.text = "HP %d / %d" % [int(ceil(hp)), int(max_hp)]
+		if _hp_fill != null:
+			var frac := clampf(hp / maxf(max_hp, 1.0), 0.0, 1.0)
+			_hp_fill.size.x = _hp_fill_width * frac
+			_hp_fill.color = HP_LOW_COLOR.lerp(HP_FULL_COLOR, frac)
 	if _rank != null:
 		_rank.text = stats.rank()
 	if _scrap != null:

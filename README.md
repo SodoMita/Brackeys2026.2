@@ -115,8 +115,12 @@ Blood heals, style decays, parry everything.
 | Gamepad | left stick | right stick | A | LB | RB | RT | d-pad / Y |
 | Touch | left stick | right drag | JMP | DSH | SLD | FIRE | WPN |
 
-Touch controls appear automatically on touch devices (virtual stick + button
-cluster); gamepad and keyboard work everywhere, including web exports.
+Touch controls appear automatically on touch devices: a floating joystick on
+the left half of the screen, a drag-to-look surface on the right, and a
+thumb-reach cluster of buttons (FIRE / JUMP / DASH / SLIDE / WPN / PARRY /
+COIN / pause). Dash and parry buttons dim while their cooldown runs, and the
+HUD shows an always-on crosshair plus an HP bar. Gamepad and keyboard work
+everywhere, including web exports.
 They exist only in the GAMEPLAY UI state — `scripts/ui/ui_manager.gd` hides
 and mutes them while a Dialogic timeline or the pause menu is on screen, so
 screen-half look/move surfaces never swallow dialogue or menu taps.

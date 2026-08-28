@@ -1,84 +1,105 @@
 [gd_scene format=3 uid="uid://b4qjatl1fjjm2"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_hp"]
-font_size = 20
-font_color = Color(1, 0.7, 0.3, 1)
+font_size = 24
+font_color = Color(1, 0.72, 0.32, 1)
 outline_size = 3
 outline_color = Color(0, 0, 0, 1)
 
 [sub_resource type="LabelSettings" id="LabelSettings_rank"]
-font_size = 26
-font_color = Color(0.7, 0.7, 0.7, 1)
+font_size = 30
+font_color = Color(0.78, 0.78, 0.82, 1)
 outline_size = 3
 outline_color = Color(0, 0, 0, 1)
 
 [sub_resource type="LabelSettings" id="LabelSettings_wave"]
-font_size = 12
-font_color = Color(0.9, 0.8, 0.6, 1)
+font_size = 17
+font_color = Color(0.9, 0.82, 0.62, 1)
 outline_size = 3
 outline_color = Color(0, 0, 0, 1)
 
 [sub_resource type="LabelSettings" id="LabelSettings_scrap"]
-font_size = 12
+font_size = 17
 font_color = Color(1, 0.85, 0.4, 1)
 outline_size = 3
 outline_color = Color(0, 0, 0, 1)
 
 [sub_resource type="LabelSettings" id="LabelSettings_wpn"]
-font_size = 9
-font_color = Color(0.8, 0.8, 0.8, 1)
+font_size = 14
+font_color = Color(0.85, 0.85, 0.88, 1)
 outline_size = 3
 outline_color = Color(0, 0, 0, 1)
 
 [sub_resource type="LabelSettings" id="LabelSettings_overlay"]
-font_size = 14
-font_color = Color(1, 0.75, 0.4, 1)
+font_size = 22
+font_color = Color(1, 0.78, 0.45, 1)
 outline_size = 3
 outline_color = Color(0, 0, 0, 1)
 
-[node name="HUD" type="CanvasLayer" unique_id=369731198]
+[node name="HUD" type="CanvasLayer"]
 
-[node name="HP" type="Label" parent="." unique_id=191388293]
-offset_left = 8.0
-offset_top = 128.0
-offset_right = 80.0
-offset_bottom = 154.0
-text = "100"
-label_settings = SubResource("LabelSettings_hp")
-
-[node name="Rank" type="Label" parent="." unique_id=1196779164]
-offset_left = 272.0
-offset_top = 8.0
-offset_right = 320.0
+[node name="Wave" type="Label" parent="."]
+offset_left = 14.0
+offset_top = 12.0
+offset_right = 360.0
 offset_bottom = 40.0
-text = "D"
-label_settings = SubResource("LabelSettings_rank")
-
-[node name="Wave" type="Label" parent="." unique_id=825730158]
-offset_left = 8.0
-offset_top = 8.0
-offset_right = 120.0
-offset_bottom = 26.0
 text = "ROOM 1"
 label_settings = SubResource("LabelSettings_wave")
 
-[node name="Scrap" type="Label" parent="." unique_id=203473011]
-offset_left = 130.0
-offset_top = 8.0
-offset_right = 230.0
-offset_bottom = 26.0
+[node name="Scrap" type="Label" parent="."]
+offset_left = 14.0
+offset_top = 44.0
+offset_right = 360.0
+offset_bottom = 72.0
 text = "SCRAP 0"
 label_settings = SubResource("LabelSettings_scrap")
 
-[node name="Weapon" type="Label" parent="." unique_id=1777537728]
-offset_left = 8.0
-offset_top = 152.0
-offset_right = 100.0
-offset_bottom = 170.0
+[node name="HP" type="Label" parent="."]
+offset_left = 14.0
+offset_top = 80.0
+offset_right = 360.0
+offset_bottom = 110.0
+text = "100"
+label_settings = SubResource("LabelSettings_hp")
+
+[node name="HPBarBack" type="ColorRect" parent="."]
+offset_left = 14.0
+offset_top = 114.0
+offset_right = 254.0
+offset_bottom = 132.0
+mouse_filter = 2
+color = Color(0, 0, 0, 0.45)
+
+[node name="HPFill" type="ColorRect" parent="."]
+offset_left = 16.0
+offset_top = 116.0
+offset_right = 252.0
+offset_bottom = 130.0
+mouse_filter = 2
+color = Color(0.35, 0.95, 0.45, 1)
+
+[node name="Weapon" type="Label" parent="."]
+offset_left = 14.0
+offset_top = 140.0
+offset_right = 360.0
+offset_bottom = 164.0
 text = "REVOLVER"
 label_settings = SubResource("LabelSettings_wpn")
 
-[node name="Crosshair" type="Control" parent="." unique_id=1259614646]
+[node name="Rank" type="Label" parent="."]
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -60.0
+offset_top = 10.0
+offset_right = 60.0
+offset_bottom = 48.0
+grow_horizontal = 2
+text = "D"
+label_settings = SubResource("LabelSettings_rank")
+horizontal_alignment = 1
+
+[node name="Crosshair" type="Control" parent="."]
 layout_mode = 3
 anchors_preset = 8
 anchor_left = 0.5
@@ -89,41 +110,42 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="H1" type="ColorRect" parent="Crosshair" unique_id=827490958]
-visible = false
-layout_mode = 0
-offset_left = -4.0
-offset_top = -6.0
-offset_right = 4.0
-offset_bottom = -4.0
+[node name="H1" type="ColorRect" parent="Crosshair"]
+offset_left = -15.0
+offset_top = -2.0
+offset_right = -6.0
+offset_bottom = 2.0
 color = Color(1, 1, 1, 0.9)
 
-[node name="H2" type="ColorRect" parent="Crosshair" unique_id=1428765157]
-visible = false
-layout_mode = 0
-offset_left = -4.0
-offset_top = 4.0
-offset_right = 4.0
-offset_bottom = 6.0
+[node name="H2" type="ColorRect" parent="Crosshair"]
+offset_left = 6.0
+offset_top = -2.0
+offset_right = 15.0
+offset_bottom = 2.0
 color = Color(1, 1, 1, 0.9)
 
-[node name="V1" type="ColorRect" parent="Crosshair" unique_id=1854136909]
-visible = false
-layout_mode = 0
+[node name="V1" type="ColorRect" parent="Crosshair"]
 offset_left = -2.0
-offset_top = -8.0
-offset_bottom = -2.0
-color = Color(1, 1, 1, 0.9)
-
-[node name="V2" type="ColorRect" parent="Crosshair" unique_id=1407932091]
-visible = false
-layout_mode = 0
-offset_top = 2.0
+offset_top = -15.0
 offset_right = 2.0
-offset_bottom = 8.0
+offset_bottom = -6.0
 color = Color(1, 1, 1, 0.9)
 
-[node name="HurtFlash" type="ColorRect" parent="." unique_id=829238685]
+[node name="V2" type="ColorRect" parent="Crosshair"]
+offset_left = -2.0
+offset_top = 6.0
+offset_right = 2.0
+offset_bottom = 15.0
+color = Color(1, 1, 1, 0.9)
+
+[node name="Dot" type="ColorRect" parent="Crosshair"]
+offset_left = -2.0
+offset_top = -2.0
+offset_right = 2.0
+offset_bottom = 2.0
+color = Color(1, 1, 1, 0.6)
+
+[node name="HurtFlash" type="ColorRect" parent="."]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -132,7 +154,7 @@ grow_vertical = 2
 mouse_filter = 2
 color = Color(1, 0, 0.1, 0)
 
-[node name="Overlay" type="Label" parent="." unique_id=917482122]
+[node name="Overlay" type="Label" parent="."]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
