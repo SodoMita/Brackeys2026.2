@@ -97,11 +97,13 @@ extends Node
 ## `directories/dtl_directory`). Names are the safe default because Dialogic
 ## registers its .dtl loader late, so a .tscn ext_resource to a .dtl can fail
 ## to parse before the addon is up.
-@export var intro_timeline: Resource = null   # plays once on level start
-@export var quip_timeline: Resource = null    # plays on room clear
-@export var ending_timeline: Resource = null  # plays on victory, before the result card
+@export var intro_timeline: Resource = null    # plays once on level start
+@export var quip_timeline: Resource = null     # plays on room clear
+@export var betrayal_timeline: Resource = null # plays before the boss spawns
+@export var ending_timeline: Resource = null   # plays on victory, before the result card
 @export var intro_timeline_name := "intro"
 @export var quip_timeline_name := "quip1"
+@export var betrayal_timeline_name := "betrayal"
 @export var ending_timeline_name := "ending"
 
 
@@ -145,6 +147,8 @@ func _ready() -> void:
 		intro_timeline = timeline_by_name(intro_timeline_name)
 	if quip_timeline == null:
 		quip_timeline = timeline_by_name(quip_timeline_name)
+	if betrayal_timeline == null:
+		betrayal_timeline = timeline_by_name(betrayal_timeline_name)
 	if ending_timeline == null:
 		ending_timeline = timeline_by_name(ending_timeline_name)
 

@@ -15,6 +15,7 @@ Arena shooter.
 │   ├── run_stats.gd        # Pure scoreboard (scrap, style, ranks) — no nodes
 │   ├── combat_director.gd  # Damage, healing, stagger, bullet hell
 │   ├── sfx.gd              # Procedural sound (autoload) — no audio assets
+│   ├── camera_shake.gd     # Trauma shake, honours the screen_shake option
 │   ├── level_director.gd   # trigger -> seal -> spawn -> clear -> open
 │   ├── hud_controller.gd   # Binds the authored HUD to live run state
 │   └── ui/
@@ -31,6 +32,7 @@ Arena shooter.
 │   ├── test_combat.gd      # Combat math unit tests
 │   ├── test_combat_director.gd # Damage / parry / volley integration tests
 │   ├── test_sfx.gd         # Synthesis maths unit tests
+│   ├── test_camera_shake.gd # Shake trauma, clamping, settings gate
 │   ├── test_dialogue.gd    # .dtl loader registration + timeline resolution
 │   ├── test_room_plan.gd   # Wave table / door wiring unit tests
 │   ├── test_run_stats.gd   # Scrap / style / purchase unit tests
@@ -133,6 +135,8 @@ main_menu.tscn ──START──▶ cutscene_01.tscn ──timeline ends / skip�
                     LevelDirector: trigger ▶ seal doors ▶ spawn wave
                                clear ▶ open next doors ▶ next room
                                             │
+                    boss trigger ──▶ INTERLUDE ▶ betrayal.dtl ▶ COLT vanishes
+                                            │           └──▶ release_room() ▶ boss
                     boss room cleared ──────┴──▶ ending timeline ▶ ResultScreen
                     player.hp <= 0 ────────────▶ ResultScreen (defeat)
 ```
@@ -148,6 +152,7 @@ separate files so each can be changed (or tested) on its own:
 | `scripts/run_stats.gd` | scrap, style meter, kill counters, purchases | no |
 | `scripts/combat_director.gd` | damage, healing, stagger, bullet-hell resolution | yes |
 | `scripts/level_director.gd` | *when* a fight happens | yes |
+| `scripts/camera_shake.gd` | trauma shake, driven by the `screen_shake` option | yes |
 | `scripts/hud_controller.gd` | writing run state into `scenes/hud.tscn` | yes |
 | `scripts/game_root.gd` | connecting all of the above | yes |
 
@@ -167,6 +172,36 @@ player, spawns the wave, and clearing the room opens the next pair. The last
 door is the boss gate: it starts shut and beating the boss completes the level.
 To change the waves, edit the `ROOMS` table in `scripts/room_plan.gd`; to
 change the counts, edit `wave_base_count` on `Cfg`.
+
+### The betrayal
+
+The GDD's ending is "the colleague betrays the player → boss fight", and
+`dialogue/betrayal.dtl` was already written for it — it just played nowhere.
+The boss room now opens with it: crossing the last trigger seals the gate and
+puts `LevelDirector` in `Phase.INTERLUDE`, `companion.vanish()` walks COLT off
+the map, the timeline plays, and `on_dialogue_ended()` calls `release_room()`
+to spawn the boss — which deliberately reuses the corrupted COLT sprite set in
+`sprite_lib.gd`, so the fight reads as the same character.
+
+The hold is opt-in through `LevelDirector.start_gate`, a
+`func(room_index) -> bool` that `game_root.gd` installs. If it returns `false`
+the room spawns immediately, so a room can never be stranded behind sealed
+doors with nothing to fight. `_gate_room_start()` returns `false` when the
+betrayal timeline fails to load, and only ever fires once.
+
+### Options that now actually do something
+
+Three entries in the settings menu were stored and read by nothing:
+
+| Option | Was | Now |
+|--------|-----|-----|
+| `screen_shake` | dead slider | scales trauma shake in `camera_shake.gd` |
+| `controller_vibration` | dead toggle | gates `Input.start_joy_vibration` |
+| `subtitles` | dead toggle | still unwired — needs Dialogic text capture |
+
+Shake reads the setting on every kick rather than caching it, so dragging the
+slider to zero silences it immediately. Rumble fires on damage taken, on a
+landed parry, and lightly on every shot.
 
 ## Audio
 

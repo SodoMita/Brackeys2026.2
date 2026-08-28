@@ -20,7 +20,7 @@ signal room_cleared(room_index: int)
 signal level_complete
 signal enemy_spawned(enemy: Node3D, room_index: int)
 
-enum Phase { IDLE, FIGHTING, CLEARED, FINISHED }
+enum Phase { IDLE, FIGHTING, INTERLUDE, CLEARED, FINISHED }
 
 const ENEMY_SCENES := {
 	"hound": "res://scenes/enemies/hound.tscn",
@@ -38,6 +38,13 @@ var spawned_total := 0
 var level: Node3D = null
 var enemy_pool: Node3D = null
 var player: Node3D = null
+
+## Optional `func(room_index) -> bool`. Returning true holds the spawn in
+## Phase.INTERLUDE so the host can play a cutscene first; the host must then
+## call release_room() or the level stalls. Kept as a Callable rather than a
+## signal because exactly one owner may gate a room, and a forgotten
+## disconnect would silently freeze progression.
+var start_gate: Callable = Callable()
 
 var _doors: Array = []
 var _triggers: Array = []
@@ -90,15 +97,32 @@ func _on_trigger_body(body: Node3D, index: int) -> void:
 
 
 ## Seal the room and spawn its wave. Callable directly (tests, debug warps).
+##
+## If `start_gate` returns true the doors still seal but the spawn is held in
+## Phase.INTERLUDE until release_room() — that is how the boss room waits for
+## the betrayal cutscene instead of dropping COLT mid-sentence.
 func start_room(index: int) -> void:
 	if index < 0 or index >= RoomPlan.room_count():
 		return
-	if phase == Phase.FIGHTING:
+	if phase == Phase.FIGHTING or phase == Phase.INTERLUDE:
 		return
 	room_index = index
-	phase = Phase.FIGHTING
 	_set_door(RoomPlan.seal_doors(index), true)
+	if start_gate.is_valid() and bool(start_gate.call(index)):
+		phase = Phase.INTERLUDE
+		return
+	_spawn_wave(index)
 
+
+## Resume a room held by start_gate. Safe to call when nothing is held.
+func release_room() -> void:
+	if phase != Phase.INTERLUDE:
+		return
+	_spawn_wave(room_index)
+
+
+func _spawn_wave(index: int) -> void:
+	phase = Phase.FIGHTING
 	var base := _wave_base_count()
 	var kinds: Array = RoomPlan.composition(index, base)
 	var points: Array = RoomPlan.spawn_points(index, kinds.size())

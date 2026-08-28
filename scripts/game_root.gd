@@ -19,9 +19,12 @@ var combat: CombatDirector
 var stats: RunStats
 var hud_controller: HudController
 var result_screen: ResultScreen
+var shake: CameraShake
 
 var _run_over := false
 var _awaiting_ending := false
+var _awaiting_betrayal := false
+var _betrayal_played := false
 
 
 func _ready() -> void:
@@ -59,6 +62,8 @@ func _ready() -> void:
 	director.name = "Director"
 	add_child(director)
 	director.setup(level, enemies, player)
+	# The boss room holds its spawn so the betrayal can play first.
+	director.start_gate = _gate_room_start
 	director.enemy_spawned.connect(_on_enemy_spawned)
 	director.room_started.connect(_on_room_started)
 	director.room_cleared.connect(_on_room_cleared)
@@ -74,6 +79,12 @@ func _ready() -> void:
 	add_child(result_screen)
 	result_screen.retry_requested.connect(_retry)
 	result_screen.menu_requested.connect(_quit_to_menu)
+
+	shake = CameraShake.new()
+	shake.name = "CameraShake"
+	add_child(shake)
+	if player != null:
+		shake.setup(player.cam)
 
 	_connect_player()
 
@@ -147,6 +158,28 @@ func _play_shot() -> void:
 			2:
 				sound = "nailgun"
 	_play(sound, randf_range(0.94, 1.06))
+	_shake(0.10)
+	_rumble(0.12, 0.0, 0.06)
+
+
+func _shake(amount: float) -> void:
+	if shake != null:
+		shake.add(amount)
+
+
+## Gamepad rumble. The `controller_vibration` option had no consumer before
+## this, so the toggle did nothing.
+func _rumble(weak: float, strong: float, duration: float) -> void:
+	if not _vibration_enabled():
+		return
+	for device in Input.get_connected_joypads():
+		Input.start_joy_vibration(device, weak, strong, duration)
+
+
+static func _vibration_enabled() -> bool:
+	if Settings == null or not ("current" in Settings):
+		return true
+	return bool(Settings.current.get("controller_vibration", true))
 
 
 func _on_enemy_hit(_enemy: Node3D, _amount: float, headshot: bool) -> void:
@@ -155,6 +188,7 @@ func _on_enemy_hit(_enemy: Node3D, _amount: float, headshot: bool) -> void:
 
 func _on_enemy_died_sfx() -> void:
 	_play("die", randf_range(0.9, 1.1))
+	_shake(0.16)
 
 
 ## Bound to enemy.volley(dir, origin); only the sound is wanted here, the
@@ -165,6 +199,8 @@ func _on_volley_sfx(_dir: Vector3, _origin: Vector3) -> void:
 
 func _on_player_hit(_amount: float) -> void:
 	_play("hurt")
+	_shake(0.55)
+	_rumble(0.5, 1.0, 0.22)
 	if hud_controller != null:
 		hud_controller.flash_hurt()
 
@@ -194,6 +230,8 @@ func _on_player_fired(enemy: Node3D, headshot: bool, airborne: bool,
 
 func _on_player_parried() -> void:
 	_play("parry")
+	_shake(0.30)
+	_rumble(0.25, 0.55, 0.14)
 	if stats != null:
 		stats.add_style(_cfg_float("style_parry", 25.0))
 
@@ -247,6 +285,31 @@ func _scrap_value(enemy: Node3D, kind: String) -> int:
 # --- progression -----------------------------------------------------------
 
 
+## LevelDirector calls this before a room spawns. Returning true holds the
+## spawn in Phase.INTERLUDE until on_dialogue_ended() releases it.
+##
+## Only the boss room gates, and only once, and only when the betrayal
+## timeline is actually loadable — a missing timeline must never stall the
+## level with the doors sealed and nothing to fight.
+func _gate_room_start(index: int) -> bool:
+	if _betrayal_played or not RoomPlan.is_boss_room(index):
+		return false
+	var timeline: Resource = _cfg_timeline("betrayal_timeline")
+	if timeline == null:
+		return false
+	_betrayal_played = true
+	# COLT walks out on the line "It's just scrap" — the boss that spawns next
+	# reuses the corrupted COLT sprite set.
+	var companion := get_node_or_null("Companion")
+	if companion != null and companion.has_method("vanish"):
+		companion.call("vanish")
+	var started := _say_timeline(timeline)
+	# Only wait for a callback if the timeline really started; otherwise the
+	# director spawns immediately and there is nothing to release later.
+	_awaiting_betrayal = started
+	return started
+
+
 func _on_room_started(index: int) -> void:
 	# The intro timeline already played at boot; a room opening only needs the
 	# HUD callout, otherwise the two would talk over each other.
@@ -289,6 +352,9 @@ func _end_run(won: bool) -> void:
 	if DisplayServer.get_name() != "headless":
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	_play("victory" if won else "defeat")
+	# One final impact, left to decay on its own — resetting here would cancel
+	# the very shake just added.
+	_shake(0.4 if won else 0.85)
 	run_ended.emit(won)
 	if won:
 		# Let the ending play before the card covers it; the card waits for the
@@ -373,6 +439,12 @@ func _stop_dialogue() -> void:
 ## Dialogic fires this when any timeline finishes; only the ending one gates
 ## the victory card, everything else is left to UIManager's state machine.
 func on_dialogue_ended() -> void:
+	if _awaiting_betrayal:
+		_awaiting_betrayal = false
+		# Whatever happens next, never leave the level waiting on a release.
+		if director != null:
+			director.release_room()
+		return
 	if not _awaiting_ending:
 		return
 	_awaiting_ending = false

@@ -181,3 +181,73 @@ static func _base() -> int:
 	if Cfg != null and "wave_base_count" in Cfg:
 		return int(Cfg.wave_base_count)
 	return 2
+
+
+func test_start_gate_holds_the_spawn() -> void:
+	var r := _rig()
+	var d := LevelDirector.new()
+	_track(d)
+	d.setup(r["level"], r["pool"], r["player"])
+	d.start_gate = func(_i: int) -> bool: return true
+	d._on_trigger_body(r["player"], 0)
+	assert_eq(d.phase, LevelDirector.Phase.INTERLUDE, "room is held, not fighting")
+	assert_eq(float(d.alive), 0.0, "nothing spawned yet")
+	assert_true(r["doors"][0].closed, "but the doors already sealed")
+	d.release_room()
+	assert_eq(d.phase, LevelDirector.Phase.FIGHTING, "release starts the fight")
+	assert_gt(float(d.alive), 0.0, "and the wave appears")
+	_teardown()
+
+
+func test_gate_returning_false_spawns_immediately() -> void:
+	var r := _rig()
+	var d := LevelDirector.new()
+	_track(d)
+	d.setup(r["level"], r["pool"], r["player"])
+	d.start_gate = func(_i: int) -> bool: return false
+	d._on_trigger_body(r["player"], 0)
+	assert_eq(d.phase, LevelDirector.Phase.FIGHTING, "no hold requested, no hold taken")
+	assert_gt(float(d.alive), 0.0, "wave spawned")
+	_teardown()
+
+
+func test_gate_receives_the_room_index() -> void:
+	var r := _rig()
+	var d := LevelDirector.new()
+	_track(d)
+	d.setup(r["level"], r["pool"], r["player"])
+	var seen := [-1]
+	d.start_gate = func(i: int) -> bool:
+		seen[0] = i
+		return false
+	d._on_trigger_body(r["player"], 0)
+	assert_eq(float(seen[0]), 0.0, "gate is asked about the room being entered")
+	_teardown()
+
+
+func test_release_without_a_hold_is_a_noop() -> void:
+	var r := _rig()
+	var d := LevelDirector.new()
+	_track(d)
+	d.setup(r["level"], r["pool"], r["player"])
+	d.release_room()
+	assert_eq(d.phase, LevelDirector.Phase.IDLE, "nothing to release, nothing happens")
+	_teardown()
+
+
+func test_held_room_cannot_be_retriggered() -> void:
+	var r := _rig()
+	var d := LevelDirector.new()
+	_track(d)
+	d.setup(r["level"], r["pool"], r["player"])
+	d.start_gate = func(_i: int) -> bool: return true
+	d._on_trigger_body(r["player"], 0)
+	assert_eq(d.phase, LevelDirector.Phase.INTERLUDE, "held")
+	# Standing in the trigger must not start a second room or double-spawn.
+	d._on_trigger_body(r["player"], 0)
+	assert_eq(d.phase, LevelDirector.Phase.INTERLUDE, "still held, not restarted")
+	d.release_room()
+	var first := d.alive
+	d.release_room()
+	assert_eq(float(d.alive), float(first), "release is idempotent")
+	_teardown()

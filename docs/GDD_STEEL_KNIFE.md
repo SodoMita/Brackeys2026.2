@@ -19,5 +19,6 @@ and upgrades at terminals.
 - Rooms/doors/triggers: `scripts/room_plan.gd` (`ROOMS` table) driven by `scripts/level_director.gd`
 - Bullet hell: spitter volleys + parryable projectiles (`projectile.gd`)
 - Scrap & shop: `shop_terminal.gd` (nailgun / plating / overclock)
-- Companion & betrayal: `companion.gd`, `dialogue/*.dtl`
+- Companion & betrayal: `companion.gd`, `dialogue/betrayal.dtl`, gated by
+  `LevelDirector.start_gate` in the boss room
 - All tuning values: `Cfg` autoload (`scripts/game_config.tscn`)

@@ -173,3 +173,73 @@ func test_hud_labels_are_bound() -> void:
 	var scrap: Label = hud.get_node_or_null("Scrap")
 	assert_true(scrap.text.find("42") >= 0, "scrap rendered from RunStats")
 	scene.free()
+
+
+func test_betrayal_gate_ignores_ordinary_rooms() -> void:
+	var scene := _boot()
+	scene._ready()
+	for room in range(RoomPlan.room_count() - 1):
+		assert_false(scene._gate_room_start(room), "only the boss room gates")
+	assert_false(scene._betrayal_played, "and the betrayal has not been spent")
+	scene.free()
+
+
+func test_betrayal_gate_vanishes_colt() -> void:
+	var scene := _boot()
+	scene._ready()
+	var companion: Node = scene.get_node("Companion")
+	assert_false(companion.hidden, "COLT is present at the start")
+	scene._gate_room_start(RoomPlan.room_count() - 1)
+	assert_true(scene._betrayal_played, "the betrayal has now been spent")
+	assert_true(companion.hidden, "COLT walks out before the boss appears")
+	scene.free()
+
+
+func test_betrayal_gate_only_fires_once() -> void:
+	var scene := _boot()
+	scene._ready()
+	var boss := RoomPlan.room_count() - 1
+	scene._gate_room_start(boss)
+	assert_false(scene._gate_room_start(boss), "re-entering does not replay it")
+	scene.free()
+
+
+func test_gate_without_dialogic_does_not_stall_the_level() -> void:
+	# Headless has no Dialogic node, so _say_timeline cannot start anything.
+	# The gate must report false so the director spawns instead of holding the
+	# player behind sealed doors with nothing to fight.
+	var scene := _boot()
+	scene._ready()
+	assert_false(scene._gate_room_start(RoomPlan.room_count() - 1),
+		"no dialogue available, no hold")
+	assert_false(scene._awaiting_betrayal, "and nothing is awaited")
+	scene.free()
+
+
+func test_dialogue_end_releases_a_held_room() -> void:
+	var scene := _boot()
+	scene._ready()
+	scene.director.start_gate = func(_i: int) -> bool: return true
+	scene.director.start_room(0)
+	assert_eq(scene.director.phase, LevelDirector.Phase.INTERLUDE, "room is held")
+	assert_eq(float(scene.director.alive), 0.0, "nothing has spawned")
+	scene._awaiting_betrayal = true
+	scene.on_dialogue_ended()
+	assert_false(scene._awaiting_betrayal, "the pending betrayal is consumed")
+	assert_eq(scene.director.phase, LevelDirector.Phase.FIGHTING, "the fight begins")
+	assert_gt(float(scene.director.alive), 0.0, "and the wave spawns")
+	scene.free()
+
+
+func test_dialogue_end_does_not_double_release() -> void:
+	var scene := _boot()
+	scene._ready()
+	scene.director.start_gate = func(_i: int) -> bool: return true
+	scene.director.start_room(0)
+	assert_eq(scene.director.phase, LevelDirector.Phase.INTERLUDE, "held")
+	scene._awaiting_betrayal = true
+	scene.on_dialogue_ended()
+	var alive := scene.director.alive
+	scene.on_dialogue_ended()
+	assert_eq(float(scene.director.alive), float(alive), "second call spawns nothing new")
+	scene.free()

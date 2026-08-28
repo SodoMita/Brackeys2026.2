@@ -96,7 +96,7 @@ func _wave_text() -> String:
 			return "ROOM CLEAR"
 		LevelDirector.Phase.FINISHED:
 			return "SITE SECURED"
-	return ""
+	return "..."
 
 
 ## Transient centred message (room cleared, boss incoming, ...).
