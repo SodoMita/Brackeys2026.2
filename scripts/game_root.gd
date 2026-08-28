@@ -53,17 +53,22 @@ func _ready() -> void:
 		if "enemy_pool" in companion:
 			companion.enemy_pool = enemies
 	var hud := get_node_or_null("HUD") as CanvasLayer
+	_boot_trace.append("hud-node")
 	var level := get_node_or_null("Level1")
+	_boot_trace.append("level-node")
 	if level != null and hud != null and "terminals" in level:
+		_boot_trace.append("has-terminals")
 		for terminal in level.terminals:
 			if terminal == null:
 				continue
+			_boot_trace.append("terminal-loop")
 			terminal.player_ref = player
+			_boot_trace.append("terminal-player-ref")
 			terminal.setup_ui(hud)
+			_boot_trace.append("terminal-setup-ui")
 			if terminal.has_signal("purchase_requested"):
-				# Bind the terminal so purchase/refresh requests can write back
-				# to the panel that sent them.
 				terminal.purchase_requested.connect(_on_purchase.bind(terminal))
+				_boot_trace.append("terminal-connected")
 	_boot_trace.append("terminals")
 
 	stats = RunStats.new()
