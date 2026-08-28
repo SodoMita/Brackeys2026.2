@@ -39,6 +39,8 @@ extends Node
 @export var coin_lifetime := 1.4
 @export var ricochet_damage_mult := 1.5 # per-target damage when shooting the coin
 @export var ricochet_targets := 3
+@export var headshot_mult := 2.0        # damage multiplier on a headshot
+@export var knockback_scale := 0.35     # impulse per point of damage
 
 @export_group("Style")
 @export var style_hit := 5.0
@@ -90,9 +92,37 @@ extends Node
 @export var boss_speed := 9.0
 
 @export_group("Dialogue")
-@export var intro_timeline: Resource = null  # plays once on level start
-@export var quip_timeline: Resource = null   # plays on room clear
-@export var ending_timeline: Resource = null # plays on victory, before the result card
+## Explicit resources win; when left null the matching *_name identifier is
+## resolved at runtime through Dialogic's own directory (project.godot's
+## `directories/dtl_directory`). Names are the safe default because Dialogic
+## registers its .dtl loader late, so a .tscn ext_resource to a .dtl can fail
+## to parse before the addon is up.
+@export var intro_timeline: Resource = null   # plays once on level start
+@export var quip_timeline: Resource = null    # plays on room clear
+@export var ending_timeline: Resource = null  # plays on victory, before the result card
+@export var intro_timeline_name := "intro"
+@export var quip_timeline_name := "quip1"
+@export var ending_timeline_name := "ending"
+
+
+func _ready() -> void:
+	if intro_timeline == null:
+		intro_timeline = timeline_by_name(intro_timeline_name)
+	if quip_timeline == null:
+		quip_timeline = timeline_by_name(quip_timeline_name)
+	if ending_timeline == null:
+		ending_timeline = timeline_by_name(ending_timeline_name)
+
+
+## Resolve a Dialogic timeline identifier to its resource, or null when the
+## addon (or that timeline) is unavailable. Never raises — a missing timeline
+## must degrade to "no dialogue", not a boot failure.
+static func timeline_by_name(identifier: String) -> Resource:
+	if identifier.is_empty():
+		return null
+	if not DialogicResourceUtil.timeline_resource_exists(identifier):
+		return null
+	return DialogicResourceUtil.get_timeline_resource(identifier)
 
 
 func heal_on_damage(current_hp: float, damage: float) -> float:

@@ -13,6 +13,7 @@ Arena shooter.
 │   ├── combat_logic.gd     # Pure combat math — unit-testable, no nodes
 │   ├── room_plan.gd        # Pure wave/door table — unit-testable, no nodes
 │   ├── run_stats.gd        # Pure scoreboard (scrap, style, ranks) — no nodes
+│   ├── combat_director.gd  # Damage, healing, stagger, bullet hell
 │   ├── level_director.gd   # trigger -> seal -> spawn -> clear -> open
 │   ├── hud_controller.gd   # Binds the authored HUD to live run state
 │   └── ui/
@@ -27,6 +28,7 @@ Arena shooter.
 │   ├── test_runner.gd      # Headless runner (SceneTree script, no addons)
 │   ├── test_base.gd        # Assertion helpers
 │   ├── test_combat.gd      # Combat math unit tests
+│   ├── test_combat_director.gd # Damage / parry / volley integration tests
 │   ├── test_room_plan.gd   # Wave table / door wiring unit tests
 │   ├── test_run_stats.gd   # Scrap / style / purchase unit tests
 │   ├── test_level_director.gd # Progression integration tests
@@ -141,9 +143,19 @@ separate files so each can be changed (or tested) on its own:
 | `scripts/combat_logic.gd` | damage / style / rank maths | no |
 | `scripts/room_plan.gd` | which doors seal, what each room spawns, where | no |
 | `scripts/run_stats.gd` | scrap, style meter, kill counters, purchases | no |
+| `scripts/combat_director.gd` | damage, healing, stagger, bullet-hell resolution | yes |
 | `scripts/level_director.gd` | *when* a fight happens | yes |
 | `scripts/hud_controller.gd` | writing run state into `scenes/hud.tscn` | yes |
 | `scripts/game_root.gd` | connecting all of the above | yes |
+
+Combat resolution is separated the same way. `player.gd` only *reports* what it
+hit (`fired`) and `enemy.gd` only *reports* its attacks (`attacked`, `volley`) —
+neither calls `take_damage`. `scripts/combat_director.gd` is the single place
+that turns those signals into consequences: it points each spawned enemy at the
+player (its whole AI block is gated on `target`), applies headshot-multiplied
+damage with knockback, heals the shooter (blood heals), staggers on a landed
+parry, and spawns + hit-tests the spitter bullet-hell. Style is *not* awarded
+there — `game_root.gd` owns the scoreboard and listens for the same events.
 
 Rooms are derived from the authored geometry in `scenes/level_1.tscn` — the
 three `Area3D` triggers and five `Door` instances already there. Each trigger

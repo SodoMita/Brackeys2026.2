@@ -15,6 +15,7 @@ const MENU_SCENE := "res://scenes/main_menu.tscn"
 var player: CharacterBody3D
 var ui: UIManager
 var director: LevelDirector
+var combat: CombatDirector
 var stats: RunStats
 var hud_controller: HudController
 var result_screen: ResultScreen
@@ -46,6 +47,12 @@ func _ready() -> void:
 
 	stats = RunStats.new()
 	_configure_stats()
+
+	combat = CombatDirector.new()
+	combat.name = "Combat"
+	add_child(combat)
+	combat.setup(player, enemies, stats)
+	combat.player_hit.connect(_on_player_hit)
 
 	director = LevelDirector.new()
 	director.name = "Director"
@@ -96,21 +103,34 @@ func _connect_player() -> void:
 	if player == null:
 		return
 	if player.has_signal("fired"):
+		# Two independent listeners: CombatDirector applies the damage, this
+		# script scores the style. Neither depends on the other's ordering.
 		player.fired.connect(_on_player_fired)
+		if combat != null:
+			player.fired.connect(combat.on_player_fired)
 	if player.has_signal("parried"):
 		player.parried.connect(_on_player_parried)
 	if player.has_signal("player_died"):
 		player.player_died.connect(_on_player_died)
 
 
+func _on_player_hit(_amount: float) -> void:
+	if hud_controller != null:
+		hud_controller.flash_hurt()
+
+
 # --- style & scrap ---------------------------------------------------------
 
 
-func _on_player_fired(_enemy: Node3D, headshot: bool, airborne: bool,
+func _on_player_fired(enemy: Node3D, headshot: bool, airborne: bool,
 		_damage: float, ricochet: bool) -> void:
 	if stats == null:
 		return
 	stats.record_shot()
+	# A shot into an already-defeated enemy scores nothing, matching
+	# CombatDirector which also refuses to apply the damage.
+	if enemy != null and is_instance_valid(enemy) and enemy.get("dead") == true:
+		return
 	if ricochet:
 		stats.add_style(_cfg_float("style_ricochet", 18.0))
 	elif airborne:
@@ -127,7 +147,13 @@ func _on_player_parried() -> void:
 
 
 func _on_enemy_spawned(enemy: Node3D, _room_index: int) -> void:
-	if enemy == null or not enemy.has_signal("died"):
+	if enemy == null:
+		return
+	# Targeting + attack consequences live in CombatDirector; without this the
+	# spawned enemy has no target and its AI block never runs.
+	if combat != null:
+		combat.register(enemy)
+	if not enemy.has_signal("died"):
 		return
 	# Bound per-enemy so the kill can be scored against this enemy's own kind.
 	enemy.died.connect(_on_enemy_killed.bind(enemy))
