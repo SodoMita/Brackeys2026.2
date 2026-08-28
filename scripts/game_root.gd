@@ -29,10 +29,16 @@ var _betrayal_played := false
 ## A timeline that started but never ends (Dialogic failure, a skipped signal)
 ## must not leave the player trapped behind sealed doors with nothing to fight.
 var _betrayal_deadline := 0.0
+## Progress tags appended by _ready(). Only useful for diagnosing boot
+## failures — the headless test rig calls _ready() manually, and a script
+## error halfway through would otherwise leave no record of how far it got.
+var _boot_trace: Array = []
 
 
 func _ready() -> void:
+	_boot_trace.clear()
 	player = get_node_or_null("Player") as CharacterBody3D
+	_boot_trace.append("wiring")
 
 	# Wire cross-references that the scene file cannot express.
 	var enemies := get_node_or_null("Enemies") as Node3D
@@ -58,10 +64,13 @@ func _ready() -> void:
 				# Bind the terminal so purchase/refresh requests can write back
 				# to the panel that sent them.
 				terminal.purchase_requested.connect(_on_purchase.bind(terminal))
+	_boot_trace.append("terminals")
 
 	stats = RunStats.new()
+	_boot_trace.append("stats")
 	_configure_stats()
 
+	_boot_trace.append("combat")
 	combat = CombatDirector.new()
 	combat.name = "Combat"
 	add_child(combat)
@@ -69,6 +78,7 @@ func _ready() -> void:
 	combat.player_hit.connect(_on_player_hit)
 	combat.enemy_hit.connect(_on_enemy_hit)
 
+	_boot_trace.append("director")
 	director = LevelDirector.new()
 	director.name = "Director"
 	add_child(director)
@@ -80,11 +90,13 @@ func _ready() -> void:
 	director.room_cleared.connect(_on_room_cleared)
 	director.level_complete.connect(_on_level_complete)
 
+	_boot_trace.append("hud")
 	hud_controller = HudController.new()
 	hud_controller.name = "HUDController"
 	add_child(hud_controller)
 	hud_controller.bind(hud, player, stats, director)
 
+	_boot_trace.append("result")
 	result_screen = ResultScreen.new()
 	result_screen.name = "ResultScreen"
 	add_child(result_screen)
@@ -97,14 +109,17 @@ func _ready() -> void:
 	if player != null:
 		shake.setup(player.cam)
 
+	_boot_trace.append("player")
 	_connect_player()
 
+	_boot_trace.append("ui")
 	ui = UIManager.new()
 	ui.name = "UI"
 	add_child(ui)
 	if player != null:
 		ui.setup(player)
 
+	_boot_trace.append("intro")
 	_connect_dialogic_end()
 	_play_intro()
 

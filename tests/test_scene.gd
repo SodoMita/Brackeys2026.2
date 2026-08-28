@@ -300,3 +300,14 @@ func test_betrayal_deadline_releases_the_boss_room() -> void:
 	assert_true(director.phase != LevelDirector.Phase.INTERLUDE,
 		"boss room released from the interlude")
 	scene.free()
+
+
+func test_boot_reaches_the_intro_stage() -> void:
+	# _ready() records its progress so a script error halfway through boot is
+	# visible in the failure message (headless rigs call _ready() manually and
+	# an abort would otherwise be silent).
+	var scene := _boot()
+	scene._ready()
+	assert_eq(String(scene._boot_trace.back() if scene._boot_trace.size() > 0 else "empty"),
+		"intro", "boot stages: %s" % [str(scene._boot_trace)])
+	scene.free()
