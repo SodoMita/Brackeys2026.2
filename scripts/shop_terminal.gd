@@ -134,8 +134,10 @@ func _process(_dt: float) -> void:
 
 func _unhandled_input(ev: InputEvent) -> void:
 	if ev is InputEventKey and ev.pressed and not ev.echo:
-		var e_pressed := ev.keycode == KEY_E
-		if (e_pressed and prompt != null and prompt.visible) or (open and e_pressed):
+		# E toggles the shop: opens when the prompt is visible, closes when
+		# already open. (Parentheses make the precedence explicit.)
+		if (ev.keycode == KEY_E and prompt and prompt.visible) \
+				or (open and ev.keycode == KEY_E):
 			if open:
 				close()
 			else:
