@@ -19,6 +19,7 @@ config/icon="res://icon.svg"
 [autoload]
 
 Cfg="*res://scripts/game_config.tscn"
+Sfx="*res://scripts/sfx.gd"
 Dialogic="*uid://ds2q0uclmolvu"
 
 [dialogic]

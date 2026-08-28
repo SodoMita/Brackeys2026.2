@@ -53,6 +53,7 @@ func _ready() -> void:
 	add_child(combat)
 	combat.setup(player, enemies, stats)
 	combat.player_hit.connect(_on_player_hit)
+	combat.enemy_hit.connect(_on_enemy_hit)
 
 	director = LevelDirector.new()
 	director.name = "Director"
@@ -112,9 +113,58 @@ func _connect_player() -> void:
 		player.parried.connect(_on_player_parried)
 	if player.has_signal("player_died"):
 		player.player_died.connect(_on_player_died)
+	# Movement/action feedback. These have no gameplay consequence, so the
+	# sound hookup is the only listener they get.
+	for sig in ["dashed", "slid", "coin_tossed"]:
+		if player.has_signal(sig):
+			player.connect(sig, _play.bind(sig if sig != "coin_tossed" else "coin"))
+
+
+## Central sound entry point. `Sfx` is an autoload that no-ops when there is no
+## audio driver, so callers never need to guard for headless or a missing node.
+func _play(sound: String, pitch := 1.0) -> void:
+	var bus := _sfx()
+	if bus != null:
+		bus.play(sound, pitch)
+
+
+static func _sfx() -> Node:
+	var tree := Engine.get_main_loop() as SceneTree
+	if tree == null or tree.root == null:
+		return null
+	return tree.root.get_node_or_null("Sfx")
+
+
+## A shotgun fires 7 pellets per trigger pull and `fired` reports every hit, so
+## the pitch is jittered: identical samples stacked in phase read as one louder
+## thud rather than a spread of shots.
+func _play_shot() -> void:
+	var sound := "shot"
+	if player != null and is_instance_valid(player) and "weapon" in player:
+		match int(player.weapon):
+			1:
+				sound = "shotgun"
+			2:
+				sound = "nailgun"
+	_play(sound, randf_range(0.94, 1.06))
+
+
+func _on_enemy_hit(_enemy: Node3D, _amount: float, headshot: bool) -> void:
+	_play("headshot" if headshot else "hit", randf_range(0.96, 1.04))
+
+
+func _on_enemy_died_sfx() -> void:
+	_play("die", randf_range(0.9, 1.1))
+
+
+## Bound to enemy.volley(dir, origin); only the sound is wanted here, the
+## projectile spawning is CombatDirector's job.
+func _on_volley_sfx(_dir: Vector3, _origin: Vector3) -> void:
+	_play("spit", randf_range(0.92, 1.08))
 
 
 func _on_player_hit(_amount: float) -> void:
+	_play("hurt")
 	if hud_controller != null:
 		hud_controller.flash_hurt()
 
@@ -124,6 +174,7 @@ func _on_player_hit(_amount: float) -> void:
 
 func _on_player_fired(enemy: Node3D, headshot: bool, airborne: bool,
 		_damage: float, ricochet: bool) -> void:
+	_play_shot()
 	if stats == null:
 		return
 	stats.record_shot()
@@ -142,6 +193,7 @@ func _on_player_fired(enemy: Node3D, headshot: bool, airborne: bool,
 
 
 func _on_player_parried() -> void:
+	_play("parry")
 	if stats != null:
 		stats.add_style(_cfg_float("style_parry", 25.0))
 
@@ -153,6 +205,10 @@ func _on_enemy_spawned(enemy: Node3D, _room_index: int) -> void:
 	# spawned enemy has no target and its AI block never runs.
 	if combat != null:
 		combat.register(enemy)
+	if enemy.has_signal("windup"):
+		enemy.windup.connect(_play.bind("windup"))
+	if enemy.has_signal("volley"):
+		enemy.volley.connect(_on_volley_sfx)
 	if not enemy.has_signal("died"):
 		return
 	# Bound per-enemy so the kill can be scored against this enemy's own kind.
@@ -160,6 +216,7 @@ func _on_enemy_spawned(enemy: Node3D, _room_index: int) -> void:
 
 
 func _on_enemy_killed(_pos: Vector3, enemy: Node3D) -> void:
+	_on_enemy_died_sfx()
 	if stats == null:
 		return
 	var kind := "hound"
@@ -231,6 +288,7 @@ func _end_run(won: bool) -> void:
 		ui.touch_controls.set_active(false)
 	if DisplayServer.get_name() != "headless":
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	_play("victory" if won else "defeat")
 	run_ended.emit(won)
 	if won:
 		# Let the ending play before the card covers it; the card waits for the
@@ -259,6 +317,7 @@ func _on_purchase(request: Variant) -> void:
 	if not stats.spend(cost):
 		return
 	stats.mark_owned(index)
+	_play("buy")
 	match index:
 		RunStats.Purchase.NAILGUN:
 			if "weapons" in player and player.weapons.size() > 2:

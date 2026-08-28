@@ -14,6 +14,7 @@ Arena shooter.
 │   ├── room_plan.gd        # Pure wave/door table — unit-testable, no nodes
 │   ├── run_stats.gd        # Pure scoreboard (scrap, style, ranks) — no nodes
 │   ├── combat_director.gd  # Damage, healing, stagger, bullet hell
+│   ├── sfx.gd              # Procedural sound (autoload) — no audio assets
 │   ├── level_director.gd   # trigger -> seal -> spawn -> clear -> open
 │   ├── hud_controller.gd   # Binds the authored HUD to live run state
 │   └── ui/
@@ -29,6 +30,8 @@ Arena shooter.
 │   ├── test_base.gd        # Assertion helpers
 │   ├── test_combat.gd      # Combat math unit tests
 │   ├── test_combat_director.gd # Damage / parry / volley integration tests
+│   ├── test_sfx.gd         # Synthesis maths unit tests
+│   ├── test_dialogue.gd    # .dtl loader registration + timeline resolution
 │   ├── test_room_plan.gd   # Wave table / door wiring unit tests
 │   ├── test_run_stats.gd   # Scrap / style / purchase unit tests
 │   ├── test_level_director.gd # Progression integration tests
@@ -164,6 +167,24 @@ player, spawns the wave, and clearing the room opens the next pair. The last
 door is the boss gate: it starts shut and beating the boss completes the level.
 To change the waves, edit the `ROOMS` table in `scripts/room_plan.gd`; to
 change the counts, edit `wave_base_count` on `Cfg`.
+
+## Audio
+
+There are no audio assets in this repo, and none are needed: `scripts/sfx.gd`
+(autoloaded as `Sfx`) synthesises every effect at runtime from a `RECIPES`
+table of `{freq, dur, wave, vol, decay}`. Waveforms are sine, square, saw and
+a deterministic hashed noise, rendered to 16-bit mono PCM under an exponential
+decay envelope.
+
+`sfx.gd:RECIPES` covers shot / shotgun / nailgun / hit / headshot / die / hurt
+/ dash / slide / parry / coin / windup / spit / buy / door / click / move /
+victory / defeat. To retune a sound, edit that one table — there is nothing to
+import. An 8-voice pool steals the quietest voice when all are busy, so a
+shotgun's seven pellets do not cut each other off, and shot pitches are jittered
+so stacked samples do not phase-cancel into one louder thud.
+
+The synthesis maths (`synth_pcm`) is a pure static with no AudioServer
+dependency, so it is unit-tested headless where there is no audio driver.
 
 ## Art: DOOM-style billboard sprites with front/back + Seirin triangulation
 

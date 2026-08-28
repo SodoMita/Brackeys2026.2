@@ -52,7 +52,21 @@ static func button(text: String, width := 128) -> Button:
 	b.add_theme_stylebox_override("hover", stylebox(Color(0.17, 0.03, 0.05, 0.95), ACCENT))
 	b.add_theme_stylebox_override("pressed", stylebox(Color(0.05, 0.01, 0.01, 0.95), CYAN))
 	b.add_theme_stylebox_override("focus", stylebox(Color(0.0, 0.0, 0.0, 0.0), Color(1.0, 1.0, 1.0, 0.85)))
+	# One place to give every screen in the game consistent menu feedback.
+	b.focus_entered.connect(_ui_sound.bind("move"))
+	b.pressed.connect(_ui_sound.bind("click"))
 	return b
+
+
+## UIKit is a static factory used by tests too, where the Sfx autoload may not
+## exist — so the lookup is defensive and silently does nothing without it.
+static func _ui_sound(sound: String) -> void:
+	var tree := Engine.get_main_loop() as SceneTree
+	if tree == null or tree.root == null:
+		return
+	var bus := tree.root.get_node_or_null("Sfx")
+	if bus != null:
+		bus.play(sound)
 
 
 static func slider(minv: float, maxv: float, stepv: float) -> HSlider:
