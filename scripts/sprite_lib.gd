@@ -50,7 +50,7 @@ const SETS := {
 		"h": 1.8,
 	},
 	"boss": {
-		# Boss reuses COLT cyborg but corrupted - front/back with tint in game.gd
+		# Boss reuses COLT cyborg but corrupted - front/back, tinted by enemy.gd
 		"walk_front": ["colt_front_walk1.webp", "colt_front_walk2.webp", "colt_front_walk3.webp"],
 		"walk_back": ["colt_back_walk1.webp", "colt_back_walk2.webp", "colt_back_walk3.webp"],
 		"idle_front": ["colt_front_idle.webp"],

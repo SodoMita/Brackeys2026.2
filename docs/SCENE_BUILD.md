@@ -20,12 +20,12 @@ scenes/
   level.tscn            # Full arena: floors, walls, doors, triggers, shop terminals, environment
   hud.tscn              # CanvasLayer HUD: HP, Rank, Wave, Scrap, Weapon, Crosshair, HurtFlash, Overlay
   environment.tscn      # WorldEnvironment + Sun (reuse if you want separate)
-  game.tscn             # Main gameplay scene: Level + Enemies + Player + Companion + HUD + Game script
-  main.tscn             # Legacy: empty Node3D with game.gd (procedural fallback)
-  main_menu.tscn        # Menu (UI built procedurally in main_menu.gd)
+  game.tscn             # Main gameplay scene: Level + Enemies + Player + Companion + HUD, scripted by game_root.gd
+  main.tscn             # Thin wrapper that instances game.tscn
+  main_menu.tscn        # Menu (UI built procedurally from scripts/ui/ui_kit.gd)
 ```
 
-`game.tscn` is the new recommended main gameplay scene. `main_menu.tscn` loads it first (`res://scenes/game.tscn`), falling back to `main.tscn`.
+Boot order: `main_menu.tscn` (the project's main scene) → `dialogue/cutscence/cutscene_01.tscn` (intro, skippable) → `game.tscn`.
 
 ## How Scripts Were Made Scene-Friendly
 
@@ -43,7 +43,9 @@ This pattern is applied to:
 - `companion.gd` — same
 - `shop_terminal.gd` — looks for `Mesh` + `CollisionShape3D`
 - `projectile.gd` — looks for `Mesh` + `CollisionShape3D`
-- `game.gd` — if `Level`, `Player`, `Companion`, `Enemies`, `HUD`, `SFX` exist, reuse them; else call `_build_*()`.
+- `game_root.gd` — resolves `Player`, `Companion`, `Enemies`, `HUD`, `Level1` with
+  `get_node_or_null`, so a missing node degrades gracefully instead of erroring.
+  (It has no procedural `_build_*` fallback — the old root's builder is gone.)
 
 Exports were added:
 - `enemy.gd`: `@export_enum("hound","spitter","boss","colt") var kind`, `@export var ranged`, `custom_hp`, `custom_speed`, `is_boss`
@@ -137,43 +139,47 @@ You can also use CSGBoxes for walls for easier editing, then convert to StaticBo
 3. Save
 
 ### 8. Game (`game.tscn`)
-1. `Node3D` named `Game`, attach `res://scripts/game.gd`
+1. `Node3D` named `Game`, attach `res://scripts/game_root.gd`
 2. Instance `Level` as child named `Level`
 3. Add `Node3D` `Enemies`
 4. Instance `Player` at (0,0,-4)
 5. Instance `Companion` at (2,0,-2)
 6. Instance `HUD` as child
-7. (Optional) Add `Node` `SFX` with `AudioStreamPlayer` children named `Shot`, `Hit`, `Headshot`, `Die`, `Hurt`, `Dash`, `Slide`, `Parry`, `Coin`, `Windup`, `Spit`, `Buy`, `Door`. If you don't add them, `game.gd` builds procedural tones at runtime (sine/square/noise).
+7. (Optional) Add `Node` `SFX` with `AudioStreamPlayer` children named `Shot`, `Hit`, `Headshot`, `Die`, `Hurt`, `Dash`, `Slide`, `Parry`, `Coin`, `Windup`, `Spit`, `Buy`, `Door`.
+   The runtime tone synthesiser lived in the old procedural root and is not wired up yet — audio is currently silent.
 8. Save as `res://scenes/game.tscn`
-9. Set as load target in `main_menu.gd` (already does: tries `game.tscn` first)
+9. `cutscene_01.gd` targets `game.tscn` (falling back to `main.tscn`); `main_menu.gd` targets the cutscene
 
 ## Wiring Logic (How Game Finds Scene Nodes)
 
-`game.gd::_ready()` does:
+`game_root.gd::_ready()` does:
 
 ```
-if WorldEnvironment exists -> don't build environment
-if Level exists -> _collect_from_level(Level) finds Doors (by name Door_* or child Body/Mesh), Terminals (has method setup_ui), Triggers (Area3D named Trigger_*)
-if Enemies exists -> reuse
-if Player exists -> _wire_player (sets enemy_pool, connects signals)
-if Companion exists -> _wire_companion
-if HUD exists -> _collect_hud (finds HP,RANK,WAVE,SCRAP,WEAPON,Overlay,HurtFlash,Crosshair)
-if SFX/Audio exists -> _collect_audio (finds Shot,Hit,...), else _build_audio()
+Player exists  -> sets enemy_pool, connects fired / parried / player_died
+Companion      -> sets player_ref
+Level1         -> hands doors + trigger_nodes to LevelDirector, terminals get player_ref + setup_ui
+Enemies        -> LevelDirector spawn pool
+HUD            -> HudController binds HP / Rank / Wave / Scrap / Weapon / Overlay / HurtFlash
+(always)       -> creates RunStats, LevelDirector, HudController, ResultScreen, UIManager
 ```
 
-Triggers: `_find_and_wire_triggers_recursive` connects `body_entered` to `_on_trigger_room2` etc., which call `_enter_room(1)`, `_enter_room(2)`, `_betrayal()`.
+Triggers: `level_director.gd` connects each authored `Area3D`'s `body_entered`
+and arms rooms strictly in order — crossing trigger *i* seals the doors listed
+in `RoomPlan.ROOMS[i].seal`, spawns that room's wave, and opening happens on
+clear via `RoomPlan.ROOMS[i].open`.
 
-Doors: `door_set(door, closed)` looks for `Body` child and `Body/Mesh`, disables collision via `CollisionShape3D.disabled` and tweens mesh Y from 2.5 to 6.5.
+Doors: `door.gd::door_set(closed)` disables `CollisionShape3D` and tweens the
+mesh Y between 2.5 (shut) and 6.5 (open).
 
 ## Testing
 
 - Open `res://scenes/game.tscn` and press F6 (Run Current Scene)
 - Or run main menu: `res://scenes/main_menu.tscn` → Start → loads `game.tscn`
-- Legacy `main.tscn` still works (procedural fallback)
+- `main.tscn` instances `game.tscn`
 
 ## Extending
 
-- Add spawn markers: create `Node3D` `SpawnPoints/Room1` with children `Marker3D` at desired positions, then in `game.gd` replace random spawn with marker positions
+- Spawn positions come from `RoomPlan.spawn_points()` (an even spread across each room's band). To place enemies by hand instead, add `Marker3D` nodes and read them in `level_director.gd::_spawn()`
 - Add lights: instance `OmniLight3D` in corridors for scrap terminal glow
 - Add decals: `Decal` nodes on walls for grit
 - Replace floor `PlaneMesh` with `CSGBox` or imported `glTF` from Blender
@@ -184,12 +190,12 @@ Doors: `door_set(door, closed)` looks for `Body` child and `Body/Mesh`, disables
 - No need for a separate "scene build script" — scenes are editor-editable, version-controlled, and can be opened by level designers
 - Hybrid fallback means you can delete any part of the scene and it will still run (procedural creation)
 - All tuning remains in `Cfg` autoload (`scripts/game_config.tscn`) — edit in inspector
-- Dialogic timelines still work via `game.gd::_say()`
+- Dialogic timelines are started by `game_root.gd::_say_timeline()` and by the intro cutscene
 
 ## Checklist for New Level
 
 - [ ] Create new `Level2.tscn` inheriting `Level` or from scratch
-- [ ] Define ROOMS constant in `game.gd` or make it export
+- [ ] Extend the `ROOMS` table in `scripts/room_plan.gd` (seal/open door indices + spawn band)
 - [ ] Place `Door_*` nodes and `Trigger_*` areas
 - [ ] Place `ShopTerminal` instances
 - [ ] Instance Player/Companion/HUD

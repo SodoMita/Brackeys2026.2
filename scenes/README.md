@@ -23,30 +23,26 @@ This folder now contains proper `.tscn` scenes instead of only procedural buildi
 - `level.tscn` — arena geometry + doors + triggers + terminals + environment
 - `hud.tscn` — HUD CanvasLayer
 - `environment.tscn` — WorldEnvironment + Sun (standalone)
-- `game.tscn` — assembles Level + Player + Companion + Enemies + HUD + game.gd logic
-- `main.tscn` — legacy procedural (still works)
-- `main_menu.tscn` — menu that loads `game.tscn`
+- `game.tscn` — assembles Level + Player + Companion + Enemies + HUD; scripted by `scripts/game_root.gd`
+- `main.tscn` — thin wrapper that instances `game.tscn`
+- `main_menu.tscn` — menu that loads the intro cutscene, which loads `game.tscn`
 
 ## No Build Script Needed
 
-Previously `game.gd` built everything in code. Now it checks if nodes exist:
+The old procedural `game.gd` is gone. `scripts/level_director.gd` reads
+whatever the level scene actually authored, through `level_1.gd`'s exports:
 
 ```gdscript
-if get_node_or_null("Level") != null:
-	_collect_from_level(Level)  # finds Doors, Terminals, Triggers
-else:
-	_build_level()  # fallback
-
-if get_node_or_null("Player") != null:
-	_wire_player(Player)
-else:
-	_build_player()
+if "doors" in level:
+	for d in level.doors: ...        # finds the Door instances
+if "trigger_nodes" in level:
+	for t in level.trigger_nodes: ... # finds the Area3D triggers
 ```
 
 So you can:
-- Delete a node in the scene → it gets recreated procedurally (safe fallback)
-- Add new nodes in editor → they are used
-- Move doors/triggers visually → game logic follows
+- Add new doors/triggers in the editor and add them to the exported arrays
+- Move doors/triggers visually — the director follows the node, not a coordinate
+- Remove a door and the director simply skips the missing index
 
 ## Adding a New Room
 
@@ -54,7 +50,8 @@ So you can:
 2. Duplicate 2 wall `StaticBody3D` and adjust
 3. Add a new `Door_-XX` in `Doors` container
 4. Add a new `Trigger_RoomX` in `Triggers` container
-5. Update `ROOMS` and `DOOR_Z` in `game.gd` if you want wave logic, or keep manual spawning
+5. Add the new door/trigger to `level_1.gd`'s exported arrays, then extend the
+   `ROOMS` table in `scripts/room_plan.gd` (seal/open indices + spawn band)
 
 ## Sprite Setup
 

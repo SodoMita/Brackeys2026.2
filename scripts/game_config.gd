@@ -90,7 +90,9 @@ extends Node
 @export var boss_speed := 9.0
 
 @export_group("Dialogue")
-@export var intro_timeline: Resource = null  # assign a DialogicTimeline in the inspector
+@export var intro_timeline: Resource = null  # plays once on level start
+@export var quip_timeline: Resource = null   # plays on room clear
+@export var ending_timeline: Resource = null # plays on victory, before the result card
 
 
 func heal_on_damage(current_hp: float, damage: float) -> float:

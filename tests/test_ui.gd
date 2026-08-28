@@ -128,6 +128,35 @@ func test_pause_menu_emits_intents() -> void:
 	pm.free()
 
 
+func test_result_screen_layer_and_intents() -> void:
+	# The end-of-run card must sit above the pause menu, or a stale pause
+	# overlay could cover the RETRY button.
+	assert_gt(float(UILayers.RESULT), float(UILayers.PAUSE), "result above pause")
+	var rs := ResultScreen.new()
+	assert_eq(rs.layer, UILayers.RESULT, "result screen on the result layer")
+	assert_false(rs.visible, "hidden until the run ends")
+	var retries := [0]
+	var menus := [0]
+	rs.retry_requested.connect(func(): retries[0] += 1)
+	rs.menu_requested.connect(func(): menus[0] += 1)
+	var stats := RunStats.new()
+	stats.scrap = 30
+	stats.record_kill("hound", 10)
+	rs.show_result(true, stats)
+	assert_true(rs.visible, "show_result() reveals the card")
+	assert_true(rs.is_won(), "victory variant")
+	assert_true(rs._summary.text.find("SCRAP") >= 0, "summary renders the scoreboard")
+	rs.btn_retry.pressed.emit()
+	rs.btn_menu.pressed.emit()
+	assert_eq(float(retries[0]), 1.0, "retry intent emitted")
+	assert_eq(float(menus[0]), 1.0, "menu intent emitted")
+	rs.show_result(false, stats)
+	assert_false(rs.is_won(), "defeat variant")
+	rs.hide_result()
+	assert_false(rs.visible, "hide_result() hides it")
+	rs.free()
+
+
 func test_settings_panel_standalone() -> void:
 	Settings.apply_saved()
 	var sp := SettingsPanel.new()

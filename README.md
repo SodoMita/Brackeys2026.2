@@ -7,21 +7,29 @@ Arena shooter.
 ├── project.godot           # Engine config (GL Compatibility renderer, 1280×720)
 ├── scenes/game.tscn        # Main gameplay scene (main.tscn wraps it)
 ├── scripts/
-│   ├── game_root.gd        # Thin root: wires references, owns UIManager
+│   ├── game_root.gd        # Thin root: wires references, owns the run systems
 │   ├── player.gd           # FPS controller (keyboard+mouse / gamepad / touch)
 │   ├── enemy.gd            # Melee chaser AI
 │   ├── combat_logic.gd     # Pure combat math — unit-testable, no nodes
+│   ├── room_plan.gd        # Pure wave/door table — unit-testable, no nodes
+│   ├── run_stats.gd        # Pure scoreboard (scrap, style, ranks) — no nodes
+│   ├── level_director.gd   # trigger -> seal -> spawn -> clear -> open
+│   ├── hud_controller.gd   # Binds the authored HUD to live run state
 │   └── ui/
-│       ├── ui_layers.gd    # CanvasLayer stack contract (hud<touch<dialog<pause)
+│       ├── ui_layers.gd    # CanvasLayer stack contract (hud<touch<dialog<pause<result)
 │       ├── ui_manager.gd   # UI state machine: GAMEPLAY / DIALOG / PAUSED
 │       ├── ui_kit.gd       # Shared procedural widget factory (colors, buttons)
 │       ├── touch_controls.gd # Virtual stick + on-screen buttons (touch devices)
 │       ├── settings_panel.gd # Settings screen (shared by main menu + pause)
-│       └── pause_menu.gd   # Pause menu (ESC / START / touch ||)
+│       ├── pause_menu.gd   # Pause menu (ESC / START / touch ||)
+│       └── result_screen.gd # Victory / game-over card
 ├── tests/
 │   ├── test_runner.gd      # Headless runner (SceneTree script, no addons)
 │   ├── test_base.gd        # Assertion helpers
 │   ├── test_combat.gd      # Combat math unit tests
+│   ├── test_room_plan.gd   # Wave table / door wiring unit tests
+│   ├── test_run_stats.gd   # Scrap / style / purchase unit tests
+│   ├── test_level_director.gd # Progression integration tests
 │   ├── test_input_map.gd   # Direct-launch input initialization
 │   ├── test_scene.gd       # Scene integration tests
 │   └── test_ui.gd          # UI layer / pause / dialog-state tests
@@ -110,6 +118,41 @@ screen-half look/move surfaces never swallow dialogue or menu taps.
 CanvasLayer ordering is centralized in `scripts/ui/ui_layers.gd`
 (HUD < touch < dialogue < pause) — never hardcode `layer` numbers.
 
+## Game flow & progression
+
+```
+main_menu.tscn ──START──▶ cutscene_01.tscn ──timeline ends / skip──▶ game.tscn
+                                                                     │
+                                            ┌────────────────────────┘
+                                            ▼
+                    LevelDirector: trigger ▶ seal doors ▶ spawn wave
+                               clear ▶ open next doors ▶ next room
+                                            │
+                    boss room cleared ──────┴──▶ ending timeline ▶ ResultScreen
+                    player.hp <= 0 ────────────▶ ResultScreen (defeat)
+```
+
+The layering is deliberate — the numbers, the schedule and the nodes live in
+separate files so each can be changed (or tested) on its own:
+
+| File | Owns | Nodes? |
+|------|------|--------|
+| `scripts/game_config.gd` | every tunable number | no |
+| `scripts/combat_logic.gd` | damage / style / rank maths | no |
+| `scripts/room_plan.gd` | which doors seal, what each room spawns, where | no |
+| `scripts/run_stats.gd` | scrap, style meter, kill counters, purchases | no |
+| `scripts/level_director.gd` | *when* a fight happens | yes |
+| `scripts/hud_controller.gd` | writing run state into `scenes/hud.tscn` | yes |
+| `scripts/game_root.gd` | connecting all of the above | yes |
+
+Rooms are derived from the authored geometry in `scenes/level_1.tscn` — the
+three `Area3D` triggers and five `Door` instances already there. Each trigger
+sits just past the doors it gates, so crossing it seals the pair behind the
+player, spawns the wave, and clearing the room opens the next pair. The last
+door is the boss gate: it starts shut and beating the boss completes the level.
+To change the waves, edit the `ROOMS` table in `scripts/room_plan.gd`; to
+change the counts, edit `wave_base_count` on `Cfg`.
+
 ## Art: DOOM-style billboard sprites with front/back + Seirin triangulation
 
 Characters are 2D sprites in a gritty Road-of-the-Dead flash style
@@ -144,11 +187,15 @@ and edit in the inspector — no code changes needed.
 
 [Dialogic 2](https://github.com/dialogic-godot/dialogic) is vendored in
 `addons/dialogic` (official repo, plugin enabled, `Dialogic` autoload).
-A sample timeline lives at `dialogue/intro.dtl`; it plays at round start.
-Assign any other timeline via `Cfg.intro_timeline` in the inspector.
-Note: the Dialogic 2 alpha never registers its `.dtl` runtime loader, so
-`game.gd` wires up the addon's own `DialogicTimelineFormatLoader` class,
-and `*.dtl` is added to the export include filters.
+Timelines live in `dialogue/`: `cutscene_01` (intro cutscene, plays between
+the menu and gameplay), `intro`, `quip1`, `betrayal` and `ending`.
+Assign them via the `Dialogue` group on `Cfg` in the inspector —
+`intro_timeline` (level start), `quip_timeline` (room clear) and
+`ending_timeline` (victory, before the result card).
+
+Note: the Dialogic 2 alpha never registers its `.dtl` runtime loader, so the
+addon's own `DialogicTimelineFormatLoader` class is wired up at boot, and
+`*.dtl` is added to the export include filters.
 
 ## History
 

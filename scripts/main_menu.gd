@@ -5,6 +5,10 @@ extends Control
 ## Widgets/styles come from UIKit; the settings screen is the shared
 ## SettingsPanel component — the pause menu shows the exact same panel.
 
+## START goes to the intro cutscene, which hands over to the game when the
+## timeline ends (or is skipped). Falls back to straight gameplay if the
+## cutscene scene is ever removed.
+const CUTSCENE := "res://dialogue/cutscence/cutscene_01.tscn"
 const GAME_SCENE := "res://scenes/game.tscn"
 
 var main_panel: Control
@@ -108,7 +112,8 @@ func start_game() -> void:
 	var tree := get_tree()
 	if tree == null:
 		return
-	tree.change_scene_to_file.call_deferred(GAME_SCENE)
+	var target := CUTSCENE if ResourceLoader.exists(CUTSCENE) else GAME_SCENE
+	tree.change_scene_to_file.call_deferred(target)
 
 
 func _unhandled_input(ev: InputEvent) -> void:

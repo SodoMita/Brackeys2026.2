@@ -16,7 +16,7 @@ Clear room → explore corridor → spend scrap (currency from kills) on weapons
 and upgrades at terminals.
 
 ## Implemented mapping
-- Rooms/doors/triggers: `scripts/game.gd` (ROOMS, DOOR_Z, ROOM_WAVES)
+- Rooms/doors/triggers: `scripts/room_plan.gd` (`ROOMS` table) driven by `scripts/level_director.gd`
 - Bullet hell: spitter volleys + parryable projectiles (`projectile.gd`)
 - Scrap & shop: `shop_terminal.gd` (nailgun / plating / overclock)
 - Companion & betrayal: `companion.gd`, `dialogue/*.dtl`
