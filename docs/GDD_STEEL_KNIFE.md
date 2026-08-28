@@ -16,8 +16,11 @@ Clear room → explore corridor → spend scrap (currency from kills) on weapons
 and upgrades at terminals.
 
 ## Implemented mapping
-- Rooms/doors/triggers: `scripts/game.gd` (ROOMS, DOOR_Z, ROOM_WAVES)
-- Bullet hell: spitter volleys + parryable projectiles (`projectile.gd`)
+- Rooms/doors/triggers: `scripts/room_plan.gd` (`ROOMS` table) driven by `scripts/level_director.gd`
+- Bullet hell: spitter volleys + parryable projectiles (`projectile.gd`);
+  parried spit is reflected back at the nearest enemy (2× damage by default,
+  `reflect_damage_mult` / `reflect_speed_mult` on Cfg)
 - Scrap & shop: `shop_terminal.gd` (nailgun / plating / overclock)
-- Companion & betrayal: `companion.gd`, `dialogue/*.dtl`
+- Companion & betrayal: `companion.gd`, `dialogue/betrayal.dtl`, gated by
+  `LevelDirector.start_gate` in the boss room
 - All tuning values: `Cfg` autoload (`scripts/game_config.tscn`)

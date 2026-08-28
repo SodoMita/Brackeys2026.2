@@ -89,9 +89,39 @@ static func apply(values: Dictionary) -> void:
 		var aa := clampi(int(current.aa_mode), 0, 3)
 		tree.root.msaa_3d = [Viewport.MSAA_DISABLED, Viewport.MSAA_2X, Viewport.MSAA_4X, Viewport.MSAA_8X][aa]
 		tree.root.scaling_3d_scale = clampf(float(current.render_scale), 0.5, 1.5)
+	apply_subtitles()
 
 static func apply_saved() -> void:
 	apply(load_config())
+
+## Whether the subtitles toggle is currently on. Defaults to on before any
+## settings are loaded (boot safety).
+static func subtitles_enabled() -> bool:
+	return bool(current.get("subtitles", true))
+
+## The `subtitles` toggle's consumer. Dialogic paints dialogue into nodes in
+## the `dialogic_dialog_text` / `dialogic_name_label` groups; hiding those two
+## hides the subtitles while the advance-input layer keeps working. Called
+## deferred after each timeline start because the layout nodes only exist once
+## a timeline has begun.
+static func apply_subtitles() -> void:
+	var tree := Engine.get_main_loop() as SceneTree
+	if tree == null:
+		return
+	var nodes: Array = []
+	nodes.append_array(tree.get_nodes_in_group("dialogic_dialog_text"))
+	nodes.append_array(tree.get_nodes_in_group("dialogic_name_label"))
+	apply_subtitles_to(nodes)
+
+
+## Visibility rule applied to whatever dialogue nodes the caller provides.
+## Split out from apply_subtitles() so the rule is testable without a live
+## SceneTree group registry.
+static func apply_subtitles_to(nodes: Array) -> void:
+	var show := subtitles_enabled()
+	for node in nodes:
+		if node is CanvasItem:
+			node.visible = show
 
 static func save(values: Dictionary) -> void:
 	apply(values)

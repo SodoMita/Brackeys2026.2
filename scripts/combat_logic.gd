@@ -36,6 +36,54 @@ static func on_hurt(points: float) -> float:
 	return points * 0.5
 
 
+## Headshots multiply the rolled damage; everything else passes through.
+static func apply_headshot(base_damage: float, mult: float, is_headshot: bool) -> float:
+	return base_damage * mult if is_headshot else base_damage
+
+
+## Knockback impulse along the shot direction, capped so a shotgun blast at
+## point-blank cannot launch an enemy across the arena.
+static func knockback(damage: float, scale: float = 0.35, cap: float = 9.0) -> float:
+	return clampf(maxf(damage, 0.0) * scale, 0.0, cap)
+
+
+## projectile.gd flies with `monitoring = false` and only reports expiry, so
+## the combat director does the hit test itself. Kept here so the rule
+## (combined radii, horizontal-ish, generous on Y for a capsule) is testable.
+static func projectile_hits(proj_pos: Vector3, target_pos: Vector3,
+		radius: float, target_height: float = 1.6) -> bool:
+	var to_target := target_pos - proj_pos
+	var half := target_height * 0.5
+	# Treat the player as a vertical capsule: clamp the vertical offset into
+	# the body's extent, then test the remaining distance against the radius.
+	var dy := clampf(to_target.y, -half, half)
+	var flat_sq := to_target.x * to_target.x + to_target.z * to_target.z
+	var vert := to_target.y - dy
+	return flat_sq + vert * vert <= radius * radius
+
+
+## Fan `count` shot directions around `center` on the XZ plane, evenly spaced
+## and symmetric, so a volley of 1 lines up with `center` and a volley of 3
+## straddles it. Pure and RNG-free so the pattern is testable and readable.
+static func volley_dirs(center: Vector3, count: int, spread: float) -> Array:
+	var out: Array = []
+	if count <= 0:
+		return out
+	var flat := Vector3(center.x, 0.0, center.z)
+	if flat.length_squared() < 0.000001:
+		flat = Vector3.FORWARD
+	flat = flat.normalized()
+	if count == 1:
+		out.append(flat)
+		return out
+	var right := flat.cross(Vector3.UP).normalized()
+	for i in range(count):
+		var t := (float(i) / float(count - 1)) * 2.0 - 1.0  # -1 .. 1
+		var d := (flat + right * (t * spread)).normalized()
+		out.append(d)
+	return out
+
+
 ## A parry pressed `age` seconds ago is still inside the active window.
 static func parry_active(age: float, active_window: float) -> bool:
 	return age >= 0.0 and age <= active_window

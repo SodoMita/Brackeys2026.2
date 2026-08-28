@@ -124,16 +124,20 @@ func _process(_dt: float) -> void:
 		var near := global_position.distance_to(player_ref.global_position) < 2.6
 		if prompt:
 			prompt.visible = near and not open
-		if open:
-			if Input.is_key_pressed(KEY_ESCAPE):
-				close()
+		# Walking out of reach closes the shop, so it can never stay open
+		# behind the player (e.g. after a pause/resume cleared `disabled`).
+		if open and not near:
+			close()
 	elif prompt:
 		prompt.visible = false
 
 
 func _unhandled_input(ev: InputEvent) -> void:
 	if ev is InputEventKey and ev.pressed and not ev.echo:
-		if ev.keycode == KEY_E and (prompt and prompt.visible) or (open and ev.keycode == KEY_E):
+		# E toggles the shop: opens when the prompt is visible, closes when
+		# already open. (Parentheses make the precedence explicit.)
+		if (ev.keycode == KEY_E and prompt and prompt.visible) \
+				or (open and ev.keycode == KEY_E):
 			if open:
 				close()
 			else:

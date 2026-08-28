@@ -165,7 +165,9 @@ func take_damage(d: float, dir: Vector3, knock: float) -> void:
 		if is_inside_tree():
 			queue_free()
 		else:
-			free()
+			# Detached (test rigs): free() here would free a locked object —
+			# we are still inside the `died` emission. Defer instead.
+			free.call_deferred()
 
 
 func _set_telegraph(on: bool) -> void:

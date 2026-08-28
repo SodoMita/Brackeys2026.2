@@ -8,6 +8,9 @@ signal consumed(pos: Vector3, parried: bool)
 @export var vel := Vector3.ZERO
 @export var life := 4.0
 @export var damage := 10.0
+## Set by CombatDirector when the player parries the shot: from that moment
+## the round flies at the nearest enemy and only ever hurts enemies.
+@export var reflected := false
 
 
 func _configured_radius() -> float:

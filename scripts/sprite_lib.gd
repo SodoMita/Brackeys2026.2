@@ -50,7 +50,7 @@ const SETS := {
 		"h": 1.8,
 	},
 	"boss": {
-		# Boss reuses COLT cyborg but corrupted - front/back with tint in game.gd
+		# Boss reuses COLT cyborg but corrupted - front/back, tinted by enemy.gd
 		"walk_front": ["colt_front_walk1.webp", "colt_front_walk2.webp", "colt_front_walk3.webp"],
 		"walk_back": ["colt_back_walk1.webp", "colt_back_walk2.webp", "colt_back_walk3.webp"],
 		"idle_front": ["colt_front_idle.webp"],
@@ -117,10 +117,10 @@ static func _build_frames(kind: String) -> SpriteFrames:
 	# Order matters: try to load directional first, then fallback
 	# All possible anim keys
 	var anim_keys := ["idle_front", "idle_back", "idle",
-					  "walk_front", "walk_back", "walk",
-					  "act_front", "act_back", "act",
-					  "dead", "dead_front", "dead_back",
-					  "walk_side", "idle_side", "act_side", "dead_side"]
+			"walk_front", "walk_back", "walk",
+			"act_front", "act_back", "act",
+			"dead", "dead_front", "dead_back",
+			"walk_side", "idle_side", "act_side", "dead_side"]
 
 	for anim in anim_keys:
 		if not s.has(anim):

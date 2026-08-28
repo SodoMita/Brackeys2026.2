@@ -5,19 +5,42 @@ Arena shooter.
 
 ```
 ├── project.godot           # Engine config (GL Compatibility renderer, 1280×720)
-├── scenes/main.tscn        # Main scene
+├── scenes/game.tscn        # Main gameplay scene (main.tscn wraps it)
 ├── scripts/
-│   ├── game.gd             # Root: arena, waves, HUD, style meter, audio
+│   ├── game_root.gd        # Thin root: wires references, owns the run systems
 │   ├── player.gd           # FPS controller (keyboard+mouse / gamepad / touch)
 │   ├── enemy.gd            # Melee chaser AI
-│   ├── touch_controls.gd   # Virtual stick + on-screen buttons (touch devices)
-│   └── combat_logic.gd     # Pure combat math — unit-testable, no nodes
+│   ├── combat_logic.gd     # Pure combat math — unit-testable, no nodes
+│   ├── room_plan.gd        # Pure wave/door table — unit-testable, no nodes
+│   ├── run_stats.gd        # Pure scoreboard (scrap, style, ranks) — no nodes
+│   ├── combat_director.gd  # Damage, healing, stagger, bullet hell
+│   ├── sfx.gd              # Procedural sound (autoload) — no audio assets
+│   ├── camera_shake.gd     # Trauma shake, honours the screen_shake option
+│   ├── level_director.gd   # trigger -> seal -> spawn -> clear -> open
+│   ├── hud_controller.gd   # Binds the authored HUD to live run state
+│   └── ui/
+│       ├── ui_layers.gd    # CanvasLayer stack contract (hud<touch<dialog<pause<result)
+│       ├── ui_manager.gd   # UI state machine: GAMEPLAY / DIALOG / PAUSED
+│       ├── ui_kit.gd       # Shared procedural widget factory (colors, buttons)
+│       ├── touch_controls.gd # Virtual stick + on-screen buttons (touch devices)
+│       ├── settings_panel.gd # Settings screen (shared by main menu + pause)
+│       ├── pause_menu.gd   # Pause menu (ESC / START / touch ||)
+│       └── result_screen.gd # Victory / game-over card
 ├── tests/
 │   ├── test_runner.gd      # Headless runner (SceneTree script, no addons)
 │   ├── test_base.gd        # Assertion helpers
 │   ├── test_combat.gd      # Combat math unit tests
+│   ├── test_combat_director.gd # Damage / parry / volley integration tests
+│   ├── test_sfx.gd         # Synthesis maths unit tests
+│   ├── test_camera_shake.gd # Shake trauma, clamping, settings gate
+│   ├── test_dialogue.gd    # .dtl loader registration + timeline resolution
+│   ├── test_room_plan.gd   # Wave table / door wiring unit tests
+│   ├── test_run_stats.gd   # Scrap / style / purchase unit tests
+│   ├── test_level_director.gd # Progression integration tests
 │   ├── test_input_map.gd   # Direct-launch input initialization
-│   └── test_scene.gd       # Scene integration tests
+│   ├── test_scene.gd       # Scene integration tests
+│   ├── test_settings.gd    # Options persistence + subtitles visibility rule
+│   └── test_ui.gd          # UI layer / pause / dialog-state tests
 ├── assets/                 # Art/audio go here
 ├── addons/                 # Third-party addons go here
 ├── export_presets.cfg      # Web / Windows / Linux / macOS / Android
@@ -87,7 +110,8 @@ GDD-driven retro FPS (original assets, fully procedural), PSX-style 320×180
 upscaled rendering. Mission 1: three sealed rooms (7 waves) of hounds and
 bullet-hell spitters in a desert complex, scrap terminals between rooms,
 COLT the colleague at your side — until the plaza, and the betrayal boss.
-Blood heals, style decays, parry everything.
+Blood heals, style decays, parry everything: melee strikes stagger, and a
+parried spitter spit is hurled back at the nearest enemy for double damage.
 
 | Input | Move | Look | Jump | Dash | Slide | Fire | Weapons |
 |---|---|---|---|---|---|---|---|
@@ -97,6 +121,111 @@ Blood heals, style decays, parry everything.
 
 Touch controls appear automatically on touch devices (virtual stick + button
 cluster); gamepad and keyboard work everywhere, including web exports.
+They exist only in the GAMEPLAY UI state — `scripts/ui/ui_manager.gd` hides
+and mutes them while a Dialogic timeline or the pause menu is on screen, so
+screen-half look/move surfaces never swallow dialogue or menu taps.
+CanvasLayer ordering is centralized in `scripts/ui/ui_layers.gd`
+(HUD < touch < dialogue < pause) — never hardcode `layer` numbers.
+
+## Game flow & progression
+
+```
+main_menu.tscn ──START──▶ cutscene_01.tscn ──timeline ends / skip──▶ game.tscn
+                                                                     │
+                                            ┌────────────────────────┘
+                                            ▼
+                    LevelDirector: trigger ▶ seal doors ▶ spawn wave
+                               clear ▶ open next doors ▶ next room
+                                            │
+                    boss trigger ──▶ INTERLUDE ▶ betrayal.dtl ▶ COLT vanishes
+                                            │           └──▶ release_room() ▶ boss
+                    boss room cleared ──────┴──▶ ending timeline ▶ ResultScreen
+                    player.hp <= 0 ────────────▶ ResultScreen (defeat)
+```
+
+The layering is deliberate — the numbers, the schedule and the nodes live in
+separate files so each can be changed (or tested) on its own:
+
+| File | Owns | Nodes? |
+|------|------|--------|
+| `scripts/game_config.gd` | every tunable number | no |
+| `scripts/combat_logic.gd` | damage / style / rank maths | no |
+| `scripts/room_plan.gd` | which doors seal, what each room spawns, where | no |
+| `scripts/run_stats.gd` | scrap, style meter, kill counters, purchases | no |
+| `scripts/combat_director.gd` | damage, healing, stagger, bullet-hell resolution | yes |
+| `scripts/level_director.gd` | *when* a fight happens | yes |
+| `scripts/camera_shake.gd` | trauma shake, driven by the `screen_shake` option | yes |
+| `scripts/hud_controller.gd` | writing run state into `scenes/hud.tscn` | yes |
+| `scripts/game_root.gd` | connecting all of the above | yes |
+
+Combat resolution is separated the same way. `player.gd` only *reports* what it
+hit (`fired`) and `enemy.gd` only *reports* its attacks (`attacked`, `volley`) —
+neither calls `take_damage`. `scripts/combat_director.gd` is the single place
+that turns those signals into consequences: it points each spawned enemy at the
+player (its whole AI block is gated on `target`), applies headshot-multiplied
+damage with knockback, heals the shooter (blood heals), staggers on a landed
+parry, spawns + hit-tests the spitter bullet-hell, and redirects a parried
+spit back at the nearest living enemy (a `reflected` round can never hurt the
+player again). Style is *not* awarded
+there — `game_root.gd` owns the scoreboard and listens for the same events.
+
+Rooms are derived from the authored geometry in `scenes/level_1.tscn` — the
+three `Area3D` triggers and five `Door` instances already there. Each trigger
+sits just past the doors it gates, so crossing it seals the pair behind the
+player, spawns the wave, and clearing the room opens the next pair. The last
+door is the boss gate: it starts shut and beating the boss completes the level.
+To change the waves, edit the `ROOMS` table in `scripts/room_plan.gd`; to
+change the counts, edit `wave_base_count` on `Cfg`.
+
+### The betrayal
+
+The GDD's ending is "the colleague betrays the player → boss fight", and
+`dialogue/betrayal.dtl` was already written for it — it just played nowhere.
+The boss room now opens with it: crossing the last trigger seals the gate and
+puts `LevelDirector` in `Phase.INTERLUDE`, `companion.vanish()` walks COLT off
+the map, the timeline plays, and `on_dialogue_ended()` calls `release_room()`
+to spawn the boss — which deliberately reuses the corrupted COLT sprite set in
+`sprite_lib.gd`, so the fight reads as the same character.
+
+The hold is opt-in through `LevelDirector.start_gate`, a
+`func(room_index) -> bool` that `game_root.gd` installs. If it returns `false`
+the room spawns immediately, so a room can never be stranded behind sealed
+doors with nothing to fight. `_gate_room_start()` returns `false` when the
+betrayal timeline fails to load, and only ever fires once.
+
+### Options that now actually do something
+
+Three entries in the settings menu were stored and read by nothing:
+
+| Option | Was | Now |
+|--------|-----|-----|
+| `screen_shake` | dead slider | scales trauma shake in `camera_shake.gd` |
+| `controller_vibration` | dead toggle | gates `Input.start_joy_vibration` |
+| `subtitles` | dead toggle | hides Dialogic's dialogue-text / name-label group nodes |
+
+Shake reads the setting on every kick rather than caching it, so dragging the
+slider to zero silences it immediately. Rumble fires on damage taken, on a
+landed parry, and lightly on every shot. Subtitles are applied deferred after
+each timeline start (`Settings.apply_subtitles()`), because Dialogic only
+creates the layout nodes that carry the text once a timeline begins.
+
+## Audio
+
+There are no audio assets in this repo, and none are needed: `scripts/sfx.gd`
+(autoloaded as `Sfx`) synthesises every effect at runtime from a `RECIPES`
+table of `{freq, dur, wave, vol, decay}`. Waveforms are sine, square, saw and
+a deterministic hashed noise, rendered to 16-bit mono PCM under an exponential
+decay envelope.
+
+`sfx.gd:RECIPES` covers shot / shotgun / nailgun / hit / headshot / die / hurt
+/ dash / slide / parry / coin / windup / spit / buy / door / click / move /
+victory / defeat. To retune a sound, edit that one table — there is nothing to
+import. An 8-voice pool steals the quietest voice when all are busy, so a
+shotgun's seven pellets do not cut each other off, and shot pitches are jittered
+so stacked samples do not phase-cancel into one louder thud.
+
+The synthesis maths (`synth_pcm`) is a pure static with no AudioServer
+dependency, so it is unit-tested headless where there is no audio driver.
 
 ## Art: DOOM-style billboard sprites with front/back + Seirin triangulation
 
@@ -132,20 +261,38 @@ and edit in the inspector — no code changes needed.
 
 [Dialogic 2](https://github.com/dialogic-godot/dialogic) is vendored in
 `addons/dialogic` (official repo, plugin enabled, `Dialogic` autoload).
-A sample timeline lives at `dialogue/intro.dtl`; it plays at round start.
-Assign any other timeline via `Cfg.intro_timeline` in the inspector.
-Note: the Dialogic 2 alpha never registers its `.dtl` runtime loader, so
-`game.gd` wires up the addon's own `DialogicTimelineFormatLoader` class,
-and `*.dtl` is added to the export include filters.
+Timelines live in `dialogue/`: `cutscene_01` (intro cutscene, plays between
+the menu and gameplay), `intro`, `quip1`, `betrayal` and `ending`.
+Assign them via the `Dialogue` group on `Cfg` in the inspector —
+`intro_timeline` (level start), `quip_timeline` (room clear) and
+`ending_timeline` (victory, before the result card).
+
+Note: Dialogic 2 ships `DialogicTimelineFormatLoader` but never registers it,
+so `ResourceLoader` cannot resolve `res://**.dtl` at all. `game_config.gd`
+(the first autoload) registers it in `_enter_tree()` and unregisters it in
+`_exit_tree()`; without that, every timeline in the project is unloadable and
+the game boots silently dialogue-free. `*.dtl` is also in the export include
+filters for all five presets. `tests/test_dialogue.gd` covers both.
 
 ## History
 
 The original multi-purpose template (procedural runner example) is preserved
 under the git tag `template`.
 
+Two boot-time landmines were defused after a headless audit run:
+
+- `sfx.gd` declared `class_name Sfx` while also being the `Sfx` autoload — a
+  hard parse error that silently failed the autoload, so the game shipped
+  with **no audio**. The class_name is gone; the autoload is the identifier.
+- Any static reference to Dialogic's `DialogicResourceUtil` runs its class
+  load, which calls `update_directory()`; before Cfg registered the `.dtl`
+  loader that erased every timeline entry and the game booted
+  **dialogue-free**. All references now load the util at runtime, after the
+  loader is up, and `Cfg.timeline_by_name()` falls back to the project's own
+  `dialogue/` layout so a stale Dialogic directory can never mute the story.
+
 ## Jam checklist
 
 - [ ] Keep gameplay math in pure classes like `combat_logic.gd` so it stays testable.
 - [ ] Swap `icon.svg` (and set an Android launcher icon in the preset when you have one).
 - [ ] Update `package/unique_name` and `application/identifier`.
-# test

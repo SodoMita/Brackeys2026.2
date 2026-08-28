@@ -19,6 +19,7 @@ config/icon="res://icon.svg"
 [autoload]
 
 Cfg="*res://scripts/game_config.tscn"
+Sfx="*res://scripts/sfx.gd"
 Dialogic="*uid://ds2q0uclmolvu"
 
 [dialogic]
@@ -36,8 +37,9 @@ directories/dtl_directory={
 "quip1": "res://dialogue/quip1.dtl"
 }
 layout/style_directory={
-"": "res://dialogue/cutscence/cutscence.tres",
-"cutscence": "res://dialogue/cutscence/cutscence.tres"
+"": "res://dialogue/ггооо.tres",
+"cutscence": "res://dialogue/cutscence/cutscence.tres",
+"ггооо": "res://dialogue/ггооо.tres"
 }
 text/letter_speed=0.01
 text/initial_text_reveal_skippable=true
@@ -72,8 +74,8 @@ audio/channel_defaults={
 "volume": 0.0
 }
 }
-layout/style_list=["res://dialogue/cutscence/cutscence.tres"]
-layout/default_style="res://dialogue/cutscence/cutscence.tres"
+layout/style_list=["res://dialogue/ггооо.tres", "res://dialogue/cutscence/cutscence.tres"]
+layout/default_style="res://dialogue/ггооо.tres"
 variables={}
 text/autoadvance_fixed_delay=0.0
 glossary/default_case_sensitive=true
