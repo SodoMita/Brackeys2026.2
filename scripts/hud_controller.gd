@@ -24,6 +24,7 @@ var _wave: Label
 var _scrap: Label
 var _weapon: Label
 var _overlay: Label
+var _crosshair: Control
 var _hurt_flash: ColorRect
 var _overlay_t := 0.0
 var _flash := 0.0
@@ -43,10 +44,15 @@ func bind(p_hud: CanvasLayer, p_player: Node3D, p_stats: RunStats,
 	_scrap = _label("Scrap")
 	_weapon = _label("Weapon")
 	_overlay = _label("Overlay")
+	_crosshair = hud.get_node_or_null("Crosshair") as Control
 	_hurt_flash = hud.get_node_or_null("HurtFlash") as ColorRect
 	if _hurt_flash != null:
 		_hurt_flash.color = HURT_FLASH_COLOR
 		_hurt_flash.modulate.a = 0.0
+	# The authored HUD ships with the title pre-typed in the overlay label; let
+	# it act as a boot splash that clears itself instead of lingering forever.
+	if _overlay != null and not _overlay.text.is_empty():
+		_overlay_t = 3.0
 	_refresh()
 
 
@@ -80,6 +86,10 @@ func _refresh() -> void:
 	if _weapon != null and player != null and "weapon" in player:
 		var idx := int(player.weapon)
 		_weapon.text = WEAPON_NAMES[idx] if idx >= 0 and idx < WEAPON_NAMES.size() else "?"
+	if _crosshair != null:
+		# The reticle only exists while the player is in control — hidden by
+		# the shop, dialogue, pause and the result card (all use `disabled`).
+		_crosshair.visible = player == null or not bool(player.get("disabled"))
 	if _wave != null and director != null:
 		_wave.text = _wave_text()
 
@@ -89,7 +99,10 @@ func _wave_text() -> String:
 		return ""
 	match director.phase:
 		LevelDirector.Phase.IDLE:
-			return "ROOM %d / %d" % [director.room_index + 1, RoomPlan.room_count()]
+			# room_index is -1 before the first room and points at the room
+			# just cleared afterwards, so +2 (clamped) is the room to reach.
+			var next := clampi(director.room_index + 2, 1, RoomPlan.room_count())
+			return "ROOM %d / %d" % [next, RoomPlan.room_count()]
 		LevelDirector.Phase.FIGHTING:
 			return "HOSTILES %d" % director.alive
 		LevelDirector.Phase.CLEARED:

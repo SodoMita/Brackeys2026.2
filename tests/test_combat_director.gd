@@ -229,3 +229,72 @@ func test_player_hit_signal_carries_the_amount() -> void:
 	r["combat"]._on_enemy_attacked(e)
 	assert_gt(got[0], 0.0, "host learns how hard the player was hit")
 	_teardown()
+
+
+func test_parried_round_reflects_at_the_nearest_enemy() -> void:
+	var r := _rig()
+	var e := _enemy()
+	r["pool"].add_child(e)
+	e.position = Vector3(0.0, 0.0, 5.0)
+	var combat: CombatDirector = r["combat"]
+	var proj: Node3D = combat._spawn_projectile(
+		Vector3(0.0, 0.0, -1.0), Vector3(0.0, 1.0, -3.0))
+	assert_true(proj != null, "volley spawns a round")
+	combat._on_projectile_consumed(Vector3.ZERO, true, proj)
+	assert_true(bool(proj.get("reflected")), "parried round is reflected")
+	assert_true(proj.vel.z > 0.0, "reflected round flies at the enemy")
+	assert_true(combat._projectiles.has(proj), "reflected round stays tracked")
+	proj.position = e.position + Vector3(0.0, 1.0, 0.0)
+	var before := float(e.hp)
+	combat._physics_process(0.1)
+	assert_lt(float(e.hp), before, "reflected round damages the enemy")
+	assert_false(combat._projectiles.has(proj), "spent reflected round is untracked")
+	_teardown()
+
+
+func test_reflected_round_expiry_never_hurts_the_player() -> void:
+	var r := _rig()
+	var combat: CombatDirector = r["combat"]
+	var proj: Node3D = combat._spawn_projectile(Vector3.FORWARD, Vector3(0.0, 1.0, -3.0))
+	proj.set("reflected", true)
+	var before := float(r["player"].hp)
+	combat._on_projectile_consumed(Vector3.ZERO, false, proj)
+	assert_ge(float(r["player"].hp), before, "expired reflected round is harmless")
+	assert_false(combat._projectiles.has(proj), "expired reflected round is untracked")
+	_teardown()
+
+
+func test_parried_round_without_enemies_is_consumed() -> void:
+	var r := _rig()
+	var combat: CombatDirector = r["combat"]
+	var proj: Node3D = combat._spawn_projectile(Vector3.FORWARD, Vector3(0.0, 1.0, -3.0))
+	var before := float(r["player"].hp)
+	combat._on_projectile_consumed(Vector3.ZERO, true, proj)
+	assert_ge(float(r["player"].hp), before, "parry still costs nothing")
+	assert_false(bool(proj.get("reflected")), "no enemy to reflect at")
+	assert_false(combat._projectiles.has(proj), "unreflected round is untracked")
+	_teardown()
+
+
+func test_expired_round_far_from_the_player_is_a_dodge() -> void:
+	# Regression: every expired round used to damage the player wherever it
+	# was, so dodged volleys still hurt at the far end of the arena.
+	var r := _rig()
+	var combat: CombatDirector = r["combat"]
+	var proj: Node3D = combat._spawn_projectile(Vector3.FORWARD, Vector3(0.0, 1.0, -30.0))
+	var before := float(r["player"].hp)
+	combat._on_projectile_consumed(Vector3.ZERO, false, proj)
+	assert_ge(float(r["player"].hp), before, "a distant expired round deals no damage")
+	assert_false(combat._projectiles.has(proj), "dodged round is untracked")
+	_teardown()
+
+
+func test_expired_round_on_top_of_the_player_still_lands() -> void:
+	var r := _rig()
+	var combat: CombatDirector = r["combat"]
+	var proj: Node3D = combat._spawn_projectile(Vector3.FORWARD, Vector3(0.0, 1.0, -30.0))
+	proj.position = Vector3(0.2, 0.8, 0.0)  # inside the player's capsule
+	var before := float(r["player"].hp)
+	combat._on_projectile_consumed(Vector3.ZERO, false, proj)
+	assert_lt(float(r["player"].hp), before, "expiring inside the player still hurts")
+	_teardown()

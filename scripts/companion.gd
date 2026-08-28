@@ -126,7 +126,8 @@ func _physics_process(dt: float) -> void:
 			var pool: Node3D = enemy_pool
 			if pool:
 				for en in pool.get_children():
-					if is_instance_valid(en) and en.has_method("take_damage"):
+					if is_instance_valid(en) and en.has_method("take_damage") \
+							and en.get("dead") != true:
 						var ed: float = en.global_position.distance_to(global_position)
 						if ed < bd:
 							bd = ed

@@ -25,6 +25,10 @@ var _run_over := false
 var _awaiting_ending := false
 var _awaiting_betrayal := false
 var _betrayal_played := false
+## Seconds the betrayal timeline may run before the boss room force-releases.
+## A timeline that started but never ends (Dialogic failure, a skipped signal)
+## must not leave the player trapped behind sealed doors with nothing to fight.
+var _betrayal_deadline := 0.0
 
 
 func _ready() -> void:
@@ -35,8 +39,13 @@ func _ready() -> void:
 	if player != null and enemies != null:
 		player.enemy_pool = enemies
 	var companion := get_node_or_null("Companion")
-	if companion != null and "player_ref" in companion:
-		companion.player_ref = player
+	if companion != null:
+		if "player_ref" in companion:
+			companion.player_ref = player
+		# COLT's support fire scans the enemy pool; without this wiring his
+		# entire combat block is dead code and he just follows you around.
+		if "enemy_pool" in companion:
+			companion.enemy_pool = enemies
 	var hud := get_node_or_null("HUD") as CanvasLayer
 	var level := get_node_or_null("Level1")
 	if level != null and hud != null and "terminals" in level:
@@ -46,7 +55,9 @@ func _ready() -> void:
 			terminal.player_ref = player
 			terminal.setup_ui(hud)
 			if terminal.has_signal("purchase_requested"):
-				terminal.purchase_requested.connect(_on_purchase)
+				# Bind the terminal so purchase/refresh requests can write back
+				# to the panel that sent them.
+				terminal.purchase_requested.connect(_on_purchase.bind(terminal))
 
 	stats = RunStats.new()
 	_configure_stats()
@@ -99,6 +110,12 @@ func _ready() -> void:
 
 
 func _process(dt: float) -> void:
+	# Safety net: the boss room is held while the betrayal plays; if the
+	# timeline somehow never ends, release it after a generous grace period.
+	if _awaiting_betrayal:
+		_betrayal_deadline -= dt
+		if _betrayal_deadline <= 0.0:
+			on_dialogue_ended()
 	if _run_over or stats == null:
 		return
 	stats.tick(dt)
@@ -307,6 +324,7 @@ func _gate_room_start(index: int) -> bool:
 	# Only wait for a callback if the timeline really started; otherwise the
 	# director spawns immediately and there is nothing to release later.
 	_awaiting_betrayal = started
+	_betrayal_deadline = 45.0
 	return started
 
 
@@ -314,7 +332,10 @@ func _on_room_started(index: int) -> void:
 	# The intro timeline already played at boot; a room opening only needs the
 	# HUD callout, otherwise the two would talk over each other.
 	if hud_controller != null:
-		hud_controller.say("HOSTILES INBOUND — ROOM %d" % (index + 1))
+		if RoomPlan.is_boss_room(index):
+			hud_controller.say("HOSTILES INBOUND — KILL THE BOSS")
+		else:
+			hud_controller.say("HOSTILES INBOUND — ROOM %d" % (index + 1))
 
 
 func _on_room_cleared(index: int) -> void:
@@ -371,16 +392,20 @@ func _end_run(won: bool) -> void:
 # --- shop ------------------------------------------------------------------
 
 
-func _on_purchase(request: Variant) -> void:
+func _on_purchase(request: Variant, terminal: Node = null) -> void:
 	if stats == null or player == null or not is_instance_valid(player):
 		return
 	if request is int and int(request) < 0:
-		return  # terminal only asked for a panel refresh
+		# Terminal opened: refresh its panel with live prices and scrap.
+		_refresh_shop_panel(terminal)
+		return
 	var index := int(request)
 	var cost := _purchase_cost(index)
 	if stats.owns(index) and index == RunStats.Purchase.NAILGUN:
+		_refresh_shop_panel(terminal)
 		return
 	if not stats.spend(cost):
+		_refresh_shop_panel(terminal)
 		return
 	stats.mark_owned(index)
 	_play("buy")
@@ -395,6 +420,18 @@ func _on_purchase(request: Variant) -> void:
 			if "damage_mult" in player:
 				player.damage_mult = float(player.damage_mult) \
 					* _cfg_float("overclock_mult", 1.15)
+	# Show the new scrap balance (and the "owned" marker) immediately.
+	_refresh_shop_panel(terminal)
+
+
+## Write the run state into a shop panel. Before this existed the panel was
+## created but never filled, so the shop opened as an empty box.
+func _refresh_shop_panel(terminal: Node) -> void:
+	if terminal == null or not is_instance_valid(terminal) or stats == null:
+		return
+	if terminal.has_method("refresh_panel"):
+		terminal.call("refresh_panel", stats.scrap,
+			stats.owns(RunStats.Purchase.NAILGUN))
 
 
 func _purchase_cost(index: int) -> int:
@@ -485,7 +522,12 @@ func _say_timeline(timeline: Resource) -> bool:
 static func _cfg_timeline(prop: String) -> Resource:
 	if Cfg == null or not (prop in Cfg):
 		return null
-	return Cfg.get(prop) as Resource
+	var timeline := Cfg.get(prop) as Resource
+	# Cfg resolves its *_timeline exports in _ready(); resolve by name as a
+	# fallback so an unusual boot order can never mute the dialogue.
+	if timeline == null and prop + "_name" in Cfg:
+		timeline = Cfg.timeline_by_name(String(Cfg.get(prop + "_name")))
+	return timeline
 
 
 static func _cfg_float(prop: String, fallback: float) -> float:

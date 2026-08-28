@@ -17,7 +17,9 @@ and upgrades at terminals.
 
 ## Implemented mapping
 - Rooms/doors/triggers: `scripts/room_plan.gd` (`ROOMS` table) driven by `scripts/level_director.gd`
-- Bullet hell: spitter volleys + parryable projectiles (`projectile.gd`)
+- Bullet hell: spitter volleys + parryable projectiles (`projectile.gd`);
+  parried spit is reflected back at the nearest enemy (2× damage by default,
+  `reflect_damage_mult` / `reflect_speed_mult` on Cfg)
 - Scrap & shop: `shop_terminal.gd` (nailgun / plating / overclock)
 - Companion & betrayal: `companion.gd`, `dialogue/betrayal.dtl`, gated by
   `LevelDirector.start_gate` in the boss room

@@ -1,6 +1,11 @@
-class_name Sfx
 extends Node
 ## Procedural sound effects.
+##
+## Deliberately NOT `class_name Sfx`: this script is the `Sfx` autoload, and a
+## class_name that matches an autoload identifier is a hard parse error
+## ("Class 'Sfx' hides an autoload singleton") — which silently failed the
+## autoload and shipped the game with no audio at all. The autoload IS the
+## global identifier.
 ##
 ## The game shipped with no audio at all — the tone synthesiser lived in the
 ## deleted procedural root and was never restored. Rather than block on art,

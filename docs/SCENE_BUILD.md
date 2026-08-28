@@ -17,7 +17,8 @@ scenes/
     boss.tscn           # kind=boss, is_boss=true, scale 1.5
   projectile.tscn       # Area3D bullet-hell projectile
   shop_terminal.tscn    # StaticBody3D shop
-  level.tscn            # Full arena: floors, walls, doors, triggers, shop terminals, environment
+  level_1.tscn          # The playable arena: floors, walls, doors, triggers, shop terminals, environment
+  level.tscn            # Earlier standalone arena (kept for load tests)
   hud.tscn              # CanvasLayer HUD: HP, Rank, Wave, Scrap, Weapon, Crosshair, HurtFlash, Overlay
   environment.tscn      # WorldEnvironment + Sun (reuse if you want separate)
   game.tscn             # Main gameplay scene: Level + Enemies + Player + Companion + HUD, scripted by game_root.gd
@@ -92,8 +93,8 @@ Exports were added:
 3. Child `CollisionShape3D` with `BoxShape3D` same size
 4. Save
 
-### 6. Level (`level.tscn`)
-This is the most involved. You can build it entirely in editor, or instance the provided `level.tscn` and edit.
+### 6. Level (`level_1.tscn`)
+This is the most involved. You can build it entirely in editor, or instance the provided `level_1.tscn` and edit.
 
 **Structure to recreate:**
 - `Node3D` named `Level`
@@ -146,7 +147,8 @@ You can also use CSGBoxes for walls for easier editing, then convert to StaticBo
 5. Instance `Companion` at (2,0,-2)
 6. Instance `HUD` as child
 7. (Optional) Add `Node` `SFX` with `AudioStreamPlayer` children named `Shot`, `Hit`, `Headshot`, `Die`, `Hurt`, `Dash`, `Slide`, `Parry`, `Coin`, `Windup`, `Spit`, `Buy`, `Door`.
-   The runtime tone synthesiser lived in the old procedural root and is not wired up yet — audio is currently silent.
+   Not needed — the `Sfx` autoload synthesises all effects procedurally at
+   runtime (see `scripts/sfx.gd`), so audio works without scene wiring.
 8. Save as `res://scenes/game.tscn`
 9. `cutscene_01.gd` targets `game.tscn` (falling back to `main.tscn`); `main_menu.gd` targets the cutscene
 

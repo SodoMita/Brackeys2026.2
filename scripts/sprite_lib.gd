@@ -117,10 +117,10 @@ static func _build_frames(kind: String) -> SpriteFrames:
 	# Order matters: try to load directional first, then fallback
 	# All possible anim keys
 	var anim_keys := ["idle_front", "idle_back", "idle",
-					  "walk_front", "walk_back", "walk",
-					  "act_front", "act_back", "act",
-					  "dead", "dead_front", "dead_back",
-					  "walk_side", "idle_side", "act_side", "dead_side"]
+			"walk_front", "walk_back", "walk",
+			"act_front", "act_back", "act",
+			"dead", "dead_front", "dead_back",
+			"walk_side", "idle_side", "act_side", "dead_side"]
 
 	for anim in anim_keys:
 		if not s.has(anim):

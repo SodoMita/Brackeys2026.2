@@ -6,6 +6,10 @@ extends TestBase
 ## these need to run.
 
 const RATE := 22050
+## sfx.gd has no class_name (it is the `Sfx` autoload), so instantiate the
+## script directly where a fresh instance is needed. Preloaded once: the
+## autoload instance and this script are the same resource.
+const SFX_SCRIPT := preload("res://scripts/sfx.gd")
 
 
 func test_pcm_byte_count_matches_duration() -> void:
@@ -121,7 +125,9 @@ func test_noise_stays_in_range() -> void:
 func test_play_without_voices_is_safe() -> void:
 	# Headless has no audio driver, so _ready() builds no voices; play() must
 	# no-op rather than crash. This is how the suite itself runs.
-	var s := Sfx.new()
+	# (sfx.gd has no class_name because it is the `Sfx` autoload — a matching
+	# class_name is a parse error that would kill the autoload itself.)
+	var s := (SFX_SCRIPT as GDScript).new()
 	s.play("shot")
 	s.play("not_a_sound")
 	s.play("shot", 0.0)      # out-of-range pitch
@@ -131,7 +137,7 @@ func test_play_without_voices_is_safe() -> void:
 
 
 func test_mute_roundtrip() -> void:
-	var s := Sfx.new()
+	var s := (SFX_SCRIPT as GDScript).new()
 	assert_false(s.is_muted(), "unmuted by default")
 	s.set_muted(true)
 	assert_true(s.is_muted(), "mute sticks")

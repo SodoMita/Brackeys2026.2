@@ -32,6 +32,10 @@ var dash_cd := 0.0
 var dash_t := 0.0
 var sliding := false
 var fire_cd := 0.0
+## True while a touch-emulated left-mouse press is held (device == -1). The
+## menus enable emulate_mouse_from_touch and never turn it off, so without
+## this every tap — virtual stick included — would fire the revolver.
+var _emulated_fire_down := false
 var weapon := 0  # 0 = revolver, 1 = shotgun
 var _want_dash := false
 
@@ -257,6 +261,11 @@ func toss_coin() -> void:
 func _unhandled_input(ev: InputEvent) -> void:
 	if dead or disabled:
 		return
+	if ev is InputEventMouseButton and ev.button_index == MOUSE_BUTTON_LEFT \
+			and ev.device == InputEvent.DEVICE_ID_EMULATION:
+		# A touch becoming a left click. Remember it so _physics_process can
+		# ignore the `fire` action while the finger is down.
+		_emulated_fire_down = ev.pressed
 	if ev is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		_apply_look(-ev.relative.x * Cfg.mouse_sensitivity, -ev.relative.y * Cfg.mouse_sensitivity)
 	if ev.is_action_pressed("dash"):
@@ -265,9 +274,9 @@ func _unhandled_input(ev: InputEvent) -> void:
 		request_parry()
 	if ev.is_action_pressed("weapon_1"):
 		weapon = 0
-	if ev.is_action_pressed("weapon_2"):
+	if ev.is_action_pressed("weapon_2") and weapons.size() > 1 and weapons[1]:
 		weapon = 1
-	if ev.is_action_pressed("weapon_3") and weapons[2]:
+	if ev.is_action_pressed("weapon_3") and weapons.size() > 2 and weapons[2]:
 		weapon = 2
 	if ev.is_action_pressed("coin"):
 		toss_coin()
@@ -382,8 +391,14 @@ func _physics_process(dt: float) -> void:
 	if coin_btn and not _prev_lt:
 		toss_coin()
 	_prev_lt = coin_btn
+	# Touch taps are emulated as left-mouse presses (the menus need that);
+	# in gameplay that would fire the gun on every touch, including the
+	# virtual stick. _emulated_fire_down tracks those exact events, so a
+	# real mouse keeps working even on touchscreen laptops.
+	if not Input.is_action_pressed("fire"):
+		_emulated_fire_down = false  # release event was swallowed by the UI
 	var firing := touch_fire_mouse or touch_fire \
-			or Input.is_action_pressed("fire") \
+			or (Input.is_action_pressed("fire") and not _emulated_fire_down) \
 			or Input.get_joy_axis(0, JOY_AXIS_TRIGGER_RIGHT) > 0.4
 	if firing:
 		try_fire()

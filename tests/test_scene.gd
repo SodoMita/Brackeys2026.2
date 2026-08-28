@@ -25,6 +25,9 @@ func test_game_root_wires_references() -> void:
 	assert_true(scene.player.enemy_pool != null, "player got the enemy pool")
 	var companion: Node = scene.get_node("Companion")
 	assert_eq(companion.player_ref, scene.player, "COLT follows the player")
+	assert_true(companion.enemy_pool != null, "COLT got the enemy pool (support fire)")
+	assert_eq(companion.enemy_pool, scene.get_node("Enemies"),
+		"COLT scans the same pool the director spawns into")
 	assert_true(scene.ui != null, "UIManager created")
 	scene.free()
 
@@ -121,7 +124,7 @@ func test_style_events_feed_the_meter() -> void:
 	var scene := _boot()
 	scene._ready()
 	scene._on_player_fired(null, true, false, 10.0, false)
-	var headshot := scene.stats.style
+	var headshot: float = scene.stats.style
 	assert_gt(headshot, 0.0, "headshot scored")
 	scene.stats.style = 0.0
 	scene._on_player_parried()
@@ -161,6 +164,34 @@ func test_refresh_request_is_not_a_purchase() -> void:
 	scene.free()
 
 
+func test_shop_panel_is_filled_on_open() -> void:
+	# Regression: the shop panel used to open blank because nothing ever
+	# called refresh_panel — prices and scrap only reached the screen after
+	# the player had already bought something.
+	var scene := _boot()
+	scene._ready()
+	var terminal: Node = scene.get_node("Level1/Shop")
+	scene.stats.scrap = 77
+	scene._on_purchase(-1, terminal)
+	assert_true(terminal.panel != null, "shop panel exists after setup")
+	assert_true(terminal.panel.text.find("77") >= 0, "scrap balance written to the panel")
+	assert_true(terminal.panel.text.find("NAILGUN") >= 0, "prices written to the panel")
+	scene.free()
+
+
+func test_shop_panel_refreshes_after_purchase() -> void:
+	var scene := _boot()
+	scene._ready()
+	var terminal: Node = scene.get_node("Level1/Shop")
+	scene.stats.scrap = 500
+	scene._on_purchase(RunStats.Purchase.PLATING, terminal)
+	assert_true(terminal.panel.text.find("460") >= 0,
+		"panel shows the balance after a purchase")
+	scene._on_purchase(-1, terminal)
+	assert_true(terminal.panel.text.find("PLATING") >= 0, "panel still lists items")
+	scene.free()
+
+
 func test_hud_labels_are_bound() -> void:
 	var scene := _boot()
 	scene._ready()
@@ -172,6 +203,15 @@ func test_hud_labels_are_bound() -> void:
 	assert_true(hp.text.length() > 0, "HP label was written")
 	var scrap: Label = hud.get_node_or_null("Scrap")
 	assert_true(scrap.text.find("42") >= 0, "scrap rendered from RunStats")
+	# Regression: the authored crosshair was `visible = false` and nothing
+	# ever flipped it, so the game shipped without a reticle.
+	var cross: Control = hud.get_node_or_null("Crosshair")
+	assert_true(cross != null, "crosshair node exists")
+	assert_true(cross.visible, "crosshair visible while the player is in control")
+	scene.player.disabled = true
+	scene.hud_controller._refresh()
+	assert_false(cross.visible, "crosshair hidden when input is owned by UI")
+	scene.player.disabled = false
 	scene.free()
 
 
@@ -239,7 +279,24 @@ func test_dialogue_end_does_not_double_release() -> void:
 	assert_eq(scene.director.phase, LevelDirector.Phase.INTERLUDE, "held")
 	scene._awaiting_betrayal = true
 	scene.on_dialogue_ended()
-	var alive := scene.director.alive
+	var alive: int = scene.director.alive
 	scene.on_dialogue_ended()
 	assert_eq(float(scene.director.alive), float(alive), "second call spawns nothing new")
+	scene.free()
+
+
+func test_betrayal_deadline_releases_the_boss_room() -> void:
+	# Safety net: if the betrayal timeline starts but never ends, the boss
+	# room must not stay sealed behind an interlude forever.
+	var scene := _boot()
+	scene._ready()
+	scene._awaiting_betrayal = true
+	scene._betrayal_deadline = -1.0
+	var director: LevelDirector = scene.director
+	director.room_index = 2
+	director.phase = LevelDirector.Phase.INTERLUDE
+	scene._process(0.1)
+	assert_false(scene._awaiting_betrayal, "deadline clears the wait")
+	assert_true(director.phase != LevelDirector.Phase.INTERLUDE,
+		"boss room released from the interlude")
 	scene.free()

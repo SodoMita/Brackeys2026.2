@@ -6,7 +6,7 @@ This folder now contains proper `.tscn` scenes instead of only procedural buildi
 
 1. Open Godot 4.7
 2. Open `res://scenes/game.tscn` → F6 to play
-3. Edit `res://scenes/level.tscn` to move walls, doors, triggers, shop terminals
+3. Edit `res://scenes/level_1.tscn` to move walls, doors, triggers, shop terminals
 4. Edit `res://scenes/player.tscn` to tweak camera, gun mesh, collision
 5. Edit `res://scenes/hud.tscn` to reposition HUD elements
 
@@ -20,7 +20,8 @@ This folder now contains proper `.tscn` scenes instead of only procedural buildi
   - `enemies/boss.tscn` — boss
 - `projectile.tscn` — spitter bullet
 - `shop_terminal.tscn` — scrap shop
-- `level.tscn` — arena geometry + doors + triggers + terminals + environment
+- `level_1.tscn` — the playable arena geometry + doors + triggers + terminals + environment (game.tscn uses this one)
+- `level.tscn` — earlier standalone arena scene, kept for load tests
 - `hud.tscn` — HUD CanvasLayer
 - `environment.tscn` — WorldEnvironment + Sun (standalone)
 - `game.tscn` — assembles Level + Player + Companion + Enemies + HUD; scripted by `scripts/game_root.gd`
@@ -46,7 +47,7 @@ So you can:
 
 ## Adding a New Room
 
-1. Duplicate `Floor_Room2` in `level.tscn`, adjust size/position
+1. Duplicate `Floor_Room2` in `level_1.tscn`, adjust size/position
 2. Duplicate 2 wall `StaticBody3D` and adjust
 3. Add a new `Door_-XX` in `Doors` container
 4. Add a new `Trigger_RoomX` in `Triggers` container

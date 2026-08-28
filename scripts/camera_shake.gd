@@ -53,6 +53,8 @@ func _process(dt: float) -> void:
 ## Quadratic falloff: small hits barely register, big ones really move.
 ## Scaled by the options-menu intensity so the slider is a real control.
 func _apply() -> void:
+	if camera == null or not is_instance_valid(camera):
+		return
 	var s := trauma * trauma * intensity()
 	var offset := Vector3(
 		randf_range(-MAX_OFFSET, MAX_OFFSET) * s,

@@ -109,7 +109,8 @@ GDD-driven retro FPS (original assets, fully procedural), PSX-style 320×180
 upscaled rendering. Mission 1: three sealed rooms (7 waves) of hounds and
 bullet-hell spitters in a desert complex, scrap terminals between rooms,
 COLT the colleague at your side — until the plaza, and the betrayal boss.
-Blood heals, style decays, parry everything.
+Blood heals, style decays, parry everything: melee strikes stagger, and a
+parried spitter spit is hurled back at the nearest enemy for double damage.
 
 | Input | Move | Look | Jump | Dash | Slide | Fire | Weapons |
 |---|---|---|---|---|---|---|---|
@@ -162,7 +163,9 @@ neither calls `take_damage`. `scripts/combat_director.gd` is the single place
 that turns those signals into consequences: it points each spawned enemy at the
 player (its whole AI block is gated on `target`), applies headshot-multiplied
 damage with knockback, heals the shooter (blood heals), staggers on a landed
-parry, and spawns + hit-tests the spitter bullet-hell. Style is *not* awarded
+parry, spawns + hit-tests the spitter bullet-hell, and redirects a parried
+spit back at the nearest living enemy (a `reflected` round can never hurt the
+player again). Style is *not* awarded
 there — `game_root.gd` owns the scoreboard and listens for the same events.
 
 Rooms are derived from the authored geometry in `scenes/level_1.tscn` — the
@@ -197,11 +200,13 @@ Three entries in the settings menu were stored and read by nothing:
 |--------|-----|-----|
 | `screen_shake` | dead slider | scales trauma shake in `camera_shake.gd` |
 | `controller_vibration` | dead toggle | gates `Input.start_joy_vibration` |
-| `subtitles` | dead toggle | still unwired — needs Dialogic text capture |
+| `subtitles` | dead toggle | hides Dialogic's dialogue-text / name-label group nodes |
 
 Shake reads the setting on every kick rather than caching it, so dragging the
 slider to zero silences it immediately. Rumble fires on damage taken, on a
-landed parry, and lightly on every shot.
+landed parry, and lightly on every shot. Subtitles are applied deferred after
+each timeline start (`Settings.apply_subtitles()`), because Dialogic only
+creates the layout nodes that carry the text once a timeline begins.
 
 ## Audio
 
@@ -273,9 +278,20 @@ filters for all five presets. `tests/test_dialogue.gd` covers both.
 The original multi-purpose template (procedural runner example) is preserved
 under the git tag `template`.
 
+Two boot-time landmines were defused after a headless audit run:
+
+- `sfx.gd` declared `class_name Sfx` while also being the `Sfx` autoload — a
+  hard parse error that silently failed the autoload, so the game shipped
+  with **no audio**. The class_name is gone; the autoload is the identifier.
+- Any static reference to Dialogic's `DialogicResourceUtil` runs its class
+  load, which calls `update_directory()`; before Cfg registered the `.dtl`
+  loader that erased every timeline entry and the game booted
+  **dialogue-free**. All references now load the util at runtime, after the
+  loader is up, and `Cfg.timeline_by_name()` falls back to the project's own
+  `dialogue/` layout so a stale Dialogic directory can never mute the story.
+
 ## Jam checklist
 
 - [ ] Keep gameplay math in pure classes like `combat_logic.gd` so it stays testable.
 - [ ] Swap `icon.svg` (and set an Android launcher icon in the preset when you have one).
 - [ ] Update `package/unique_name` and `application/identifier`.
-# test

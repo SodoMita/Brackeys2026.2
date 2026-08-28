@@ -32,6 +32,9 @@ func _ready() -> void:
 		dialogic.timeline_ended.connect(_on_timeline_ended)
 	if _has_timeline():
 		dialogic.call("start", TIMELINE)
+		# The layout nodes that carry the subtitles only exist once the
+		# timeline starts; apply the toggle after they are in the tree.
+		Settings.apply_subtitles.call_deferred()
 	else:
 		# No timeline authored yet: do not strand the player.
 		_advance.call_deferred()
@@ -59,8 +62,15 @@ func _dialogic() -> Node:
 ## (see the `directories/dtl_directory` map in project.godot). Asking its own
 ## resource util is the only reliable check — a bare ResourceLoader.exists()
 ## misses timelines whose runtime loader the addon registers lazily.
+##
+## The util is loaded at RUNTIME, not referenced statically: its class load
+## runs `update_directory()`, and if that ever happens before the .dtl loader
+## is registered the whole directory is erased. Loading it here keeps the
+## check safe in any boot order.
 static func _has_timeline() -> bool:
-	if DialogicResourceUtil.timeline_resource_exists(TIMELINE):
+	const UTIL := "res://addons/dialogic/Core/DialogicResourceUtil.gd"
+	var util: GDScript = load(UTIL) as GDScript
+	if util != null and util.timeline_resource_exists(TIMELINE):
 		return true
 	return ResourceLoader.exists("res://dialogue/cutscence/cutscene_01.dtl")
 

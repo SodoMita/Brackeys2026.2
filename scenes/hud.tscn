@@ -90,7 +90,7 @@ grow_vertical = 2
 mouse_filter = 2
 
 [node name="H1" type="ColorRect" parent="Crosshair" unique_id=827490958]
-visible = false
+visible = true
 layout_mode = 0
 offset_left = -4.0
 offset_top = -6.0
@@ -99,7 +99,7 @@ offset_bottom = -4.0
 color = Color(1, 1, 1, 0.9)
 
 [node name="H2" type="ColorRect" parent="Crosshair" unique_id=1428765157]
-visible = false
+visible = true
 layout_mode = 0
 offset_left = -4.0
 offset_top = 4.0
@@ -108,7 +108,7 @@ offset_bottom = 6.0
 color = Color(1, 1, 1, 0.9)
 
 [node name="V1" type="ColorRect" parent="Crosshair" unique_id=1854136909]
-visible = false
+visible = true
 layout_mode = 0
 offset_left = -2.0
 offset_top = -8.0
@@ -116,7 +116,7 @@ offset_bottom = -2.0
 color = Color(1, 1, 1, 0.9)
 
 [node name="V2" type="ColorRect" parent="Crosshair" unique_id=1407932091]
-visible = false
+visible = true
 layout_mode = 0
 offset_top = 2.0
 offset_right = 2.0

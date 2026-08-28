@@ -81,6 +81,9 @@ func _connect_dialogic() -> void:
 
 func _on_timeline_started() -> void:
 	_raise_dialogic_layout()
+	# The layout nodes that carry the text only exist once a timeline runs, so
+	# the subtitles toggle is applied deferred, after they are in the tree.
+	Settings.apply_subtitles.call_deferred()
 	if state == State.GAMEPLAY:
 		_set_state(State.DIALOG)
 

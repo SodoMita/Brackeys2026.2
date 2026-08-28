@@ -72,6 +72,8 @@ extends Node
 @export var projectile_speed := 12.0
 @export var projectile_damage := 10.0
 @export var projectile_radius := 0.18
+@export var reflect_damage_mult := 2.0  # parried spit damage multiplier
+@export var reflect_speed_mult := 1.4   # parried spit speed multiplier
 
 @export_group("Scrap & shop")
 @export var scrap_hound := 10
@@ -156,12 +158,29 @@ func _ready() -> void:
 ## Resolve a Dialogic timeline identifier to its resource, or null when the
 ## addon (or that timeline) is unavailable. Never raises — a missing timeline
 ## must degrade to "no dialogue", not a boot failure.
+##
+## DialogicResourceUtil is loaded at RUNTIME rather than referenced statically
+## because the util runs `update_directory()` as soon as its class loads. If
+## that happens before this autoload registered the .dtl loader, every entry
+## in the runtime directory dictionary is erased (ResourceLoader cannot see
+## .dtl yet) and the game boots dialogue-free. Loading it here — after
+## `_register_dtl_loader()` — keeps the directory intact.
 static func timeline_by_name(identifier: String) -> Resource:
 	if identifier.is_empty():
 		return null
-	if not DialogicResourceUtil.timeline_resource_exists(identifier):
-		return null
-	return DialogicResourceUtil.get_timeline_resource(identifier)
+	const UTIL := "res://addons/dialogic/Core/DialogicResourceUtil.gd"
+	var util: GDScript = load(UTIL) as GDScript
+	if util != null:
+		if util.timeline_resource_exists(identifier):
+			return util.get_timeline_resource(identifier)
+	# Fallback for a stale/emptied Dialogic directory: resolve by the project's
+	# own layout so a broken addon bookkeeping can never mute the story.
+	var path := "res://dialogue/%s.dtl" % identifier
+	if ResourceLoader.exists(path):
+		var timeline := load(path)
+		if timeline != null:
+			return timeline
+	return null
 
 
 func heal_on_damage(current_hp: float, damage: float) -> float:

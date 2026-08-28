@@ -33,6 +33,21 @@ func _process(_delta: float) -> bool:
 			check(p != null and p.is_inside_tree(), "player in tree")
 			check(p.position.y > -0.5, "floor holds the player (y=%.2f)" % p.position.y)
 			check(scene.ui != null, "UIManager attached")
+		15:
+			# Regression: the game used to boot dialogue-free because the Cfg
+			# autoload's static Dialogic reference erased the timeline directory.
+			var dialogic := scene.get_node_or_null("/root/Dialogic")
+			check(dialogic != null and dialogic.get("current_timeline") != null,
+					"intro dialogue starts on boot")
+		20:
+			# Headless nobody presses the advance action, so skip the intro the
+			# way a player would: end the timeline. This must return control.
+			var dlg := scene.get_node_or_null("/root/Dialogic")
+			if dlg != null and dlg.get("current_timeline") != null:
+				dlg.call("end_timeline")
+		25:
+			check(scene.ui.state == UIManager.State.GAMEPLAY,
+					"ending the intro returns to gameplay")
 		30:
 			p.position.y = maxf(p.position.y, 0.0)
 			p.try_fire()
