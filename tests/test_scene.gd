@@ -1,57 +1,36 @@
 extends TestBase
-## Integration tests: instantiate the FPS root scene headless.
+## Integration tests: instantiate the game root scene headless.
+## (Rewritten after game.gd was removed — the old suite tested its dead API.)
 
 
 func _boot() -> Node3D:
-	var scene: Node3D = (load("res://scenes/main.tscn") as PackedScene).instantiate()
-	scene._ready()
+	var scene: Node3D = (load("res://scenes/game.tscn") as PackedScene).instantiate()
 	return scene
 
 
-func test_scene_boots_into_menu() -> void:
+func test_game_scene_structure() -> void:
 	var scene := _boot()
-	assert_true(scene.player != null, "player spawned")
-	assert_true(scene.player.cam != null, "camera built")
-	assert_eq(scene.state, scene.State.MENU, "boots into menu")
-	assert_true(scene.companion != null, "COLT spawned")
-	assert_eq(scene.doors.size(), 5.0, "five doors")
-	assert_eq(scene.terminals.size(), 2.0, "two shop terminals")
-	assert_true(scene.hud_hp != null, "HUD built")
-	assert_true(scene.hud_rank != null, "style rank HUD built")
+	assert_true(scene.get_node_or_null("Player") != null, "player in scene")
+	assert_true(scene.get_node_or_null("Companion") != null, "COLT in scene")
+	assert_true(scene.get_node_or_null("Enemies") != null, "enemy pool in scene")
+	assert_true(scene.get_node_or_null("Level1") != null, "level in scene")
+	assert_true(scene.get_node_or_null("HUD") != null, "HUD in scene")
 	scene.free()
 
 
-func test_start_spawns_first_wave() -> void:
+func test_game_root_wires_references() -> void:
 	var scene := _boot()
-	scene._start()
-	assert_eq(scene.wave, 1, "wave counter")
-	assert_gt(float(scene.enemies.get_child_count()), 0.0, "room 1 wave 1 spawned")
-	assert_eq(float(scene.alive), float(scene.enemies.get_child_count()), "alive counter synced")
-	assert_eq(scene.state, scene.State.PLAYING)
+	scene._ready()
+	assert_true(scene.player != null, "root resolved the player")
+	assert_true(scene.player.enemy_pool != null, "player got the enemy pool")
+	var companion: Node = scene.get_node("Companion")
+	assert_eq(companion.player_ref, scene.player, "COLT follows the player")
+	assert_true(scene.ui != null, "UIManager created")
 	scene.free()
 
 
-func test_wave_scaling() -> void:
-	var scene := _boot()
-	scene._start()
-	var before: int = scene.alive
-	scene._enter_room(1)
-	assert_eq(scene.room, 1)
-	assert_gt(float(scene.alive), float(before), "room 2 adds more hostiles")
-	scene.free()
-
-
-func test_audio_synthesis() -> void:
-	var scene := _boot()
-	var wav: AudioStreamWAV = scene._tone(440.0, 0.1, 0.5)
-	assert_true(wav != null, "tone generator returns a stream")
-	assert_eq(wav.data.size(), int(0.1 * 22050.0) * 2, "16-bit PCM length")
-	scene.free()
-
-
-func test_input_sources_do_not_crash_headless() -> void:
-	# Touch/gamepad paths are guarded for headless; make sure boot + start work.
-	var scene := _boot()
-	scene._start()
-	scene._process(0.016)
+func test_main_scene_instances_game() -> void:
+	var scene: Node3D = (load("res://scenes/main.tscn") as PackedScene).instantiate()
+	assert_true(scene.get_node_or_null("Game") != null, "main.tscn wraps game.tscn")
+	assert_true(scene.get_node_or_null("Game/Player") != null, "player reachable")
 	scene.free()

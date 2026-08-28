@@ -5,19 +5,26 @@ Arena shooter.
 
 ```
 ├── project.godot           # Engine config (GL Compatibility renderer, 1280×720)
-├── scenes/main.tscn        # Main scene
+├── scenes/game.tscn        # Main gameplay scene (main.tscn wraps it)
 ├── scripts/
-│   ├── game.gd             # Root: arena, waves, HUD, style meter, audio
+│   ├── game_root.gd        # Thin root: wires references, owns UIManager
 │   ├── player.gd           # FPS controller (keyboard+mouse / gamepad / touch)
 │   ├── enemy.gd            # Melee chaser AI
-│   ├── touch_controls.gd   # Virtual stick + on-screen buttons (touch devices)
-│   └── combat_logic.gd     # Pure combat math — unit-testable, no nodes
+│   ├── combat_logic.gd     # Pure combat math — unit-testable, no nodes
+│   └── ui/
+│       ├── ui_layers.gd    # CanvasLayer stack contract (hud<touch<dialog<pause)
+│       ├── ui_manager.gd   # UI state machine: GAMEPLAY / DIALOG / PAUSED
+│       ├── ui_kit.gd       # Shared procedural widget factory (colors, buttons)
+│       ├── touch_controls.gd # Virtual stick + on-screen buttons (touch devices)
+│       ├── settings_panel.gd # Settings screen (shared by main menu + pause)
+│       └── pause_menu.gd   # Pause menu (ESC / START / touch ||)
 ├── tests/
 │   ├── test_runner.gd      # Headless runner (SceneTree script, no addons)
 │   ├── test_base.gd        # Assertion helpers
 │   ├── test_combat.gd      # Combat math unit tests
 │   ├── test_input_map.gd   # Direct-launch input initialization
-│   └── test_scene.gd       # Scene integration tests
+│   ├── test_scene.gd       # Scene integration tests
+│   └── test_ui.gd          # UI layer / pause / dialog-state tests
 ├── assets/                 # Art/audio go here
 ├── addons/                 # Third-party addons go here
 ├── export_presets.cfg      # Web / Windows / Linux / macOS / Android
@@ -97,6 +104,11 @@ Blood heals, style decays, parry everything.
 
 Touch controls appear automatically on touch devices (virtual stick + button
 cluster); gamepad and keyboard work everywhere, including web exports.
+They exist only in the GAMEPLAY UI state — `scripts/ui/ui_manager.gd` hides
+and mutes them while a Dialogic timeline or the pause menu is on screen, so
+screen-half look/move surfaces never swallow dialogue or menu taps.
+CanvasLayer ordering is centralized in `scripts/ui/ui_layers.gd`
+(HUD < touch < dialogue < pause) — never hardcode `layer` numbers.
 
 ## Art: DOOM-style billboard sprites with front/back + Seirin triangulation
 
